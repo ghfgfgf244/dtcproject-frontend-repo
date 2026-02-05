@@ -1,0 +1,52 @@
+.hero {
+  height: 90vh;
+  background: url("/Background.jpg") center/cover no-repeat;
+  position: relative;
+}
+
+.overlay {
+  height: 100%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px; /* 👈 quan trọng: gọn hơn */
+  text-align: center;
+}
+
+.welcome {
+  letter-spacing: 4px;
+  font-size: 14px;
+}
+
+.title {
+  font-size: 56px;
+  font-family: "Playfair Display", serif;
+}
+
+.subtitle {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.primary {
+  padding: 10px 24px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.secondary {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid #fff;
+  color: #fff;
+}
