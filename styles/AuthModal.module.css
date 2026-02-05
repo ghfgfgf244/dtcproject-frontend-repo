@@ -1,0 +1,122 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* ===== MODAL ===== */
+.modal {
+  width: 900px;
+  height: 520px;
+  background: #f8f6ef;
+  display: flex;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* ===== LEFT FORM ===== */
+.left {
+  width: 45%;
+  padding: 48px 42px;
+  display: flex;
+  flex-direction: column;
+}
+
+.left h2 {
+  text-align: center;
+  font-size: 28px;
+  margin-bottom: 32px;
+  color: #6b6545;
+}
+
+.left input {
+  height: 46px;
+  border-radius: 24px;
+  border: none;
+  padding: 0 18px;
+  margin-bottom: 18px;
+  background: #7a7455;
+  color: #fff;
+  font-size: 15px;
+}
+
+.left input::placeholder {
+  color: #eee;
+}
+
+.forgot {
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 24px;
+  color: #6b6545;
+  cursor: pointer;
+}
+
+/* ===== BUTTON ===== */
+.primaryBtn {
+  height: 46px;
+  border-radius: 24px;
+  border: none;
+  background: #6b6545;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 26px;
+}
+
+/* ===== SOCIAL ===== */
+.divider {
+  text-align: center;
+  font-size: 14px;
+  color: #6b6545;
+  margin-bottom: 14px;
+}
+
+.socials {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+
+.social {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* ===== RIGHT IMAGE ===== */
+.right {
+  width: 55%;
+  background-image: url("/Login.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+.title {
+  text-align: center;
+  font-size: 28px;
+  margin-bottom: 32px;
+  color: #6b6545;
+}
+
+.input {
+  height: 46px;
+  border-radius: 24px;
+  border: none;
+  padding: 0 18px;
+  margin-bottom: 18px;
+  background: #7a7455;
+  color: #fff;
+  font-size: 15px;
+}
+
+.input::placeholder {
+  color: #eee;
+}
