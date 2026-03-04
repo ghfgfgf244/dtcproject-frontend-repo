@@ -5,7 +5,6 @@ import { useState } from "react";
 import Hero from "@/components/ui/Hero";
 import Features from "@/components/ui/Features";
 import Instructors from "@/components/ui/Instructors";
-import Footer from "@/components/ui/Footer";
 import AuthModal from "@/components/ui/AuthModal";
 
 export default function Home() {
@@ -34,8 +33,6 @@ export default function Home() {
 
       <Features />
       <Instructors />
-      <Footer />
-
       {/* Popup Auth */}
       <AuthModal
         open={openAuth}
