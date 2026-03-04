@@ -8,6 +8,7 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import Footer from '@/components/ui/Footer'
 import '../styles/globals.css'
 
 const geistSans = Geist({
@@ -27,13 +28,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+        >
+          {/* HEADER */}
           <header className="flex justify-end items-center p-4 gap-4 h-16">
             <SignedOut>
               <SignInButton />
@@ -47,7 +51,14 @@ export default function RootLayout({
               <UserButton />
             </SignedIn>
           </header>
-          {children}
+
+          {/* MAIN CONTENT */}
+          <main className="flex-1">
+            {children}
+          </main>
+
+          {/* FOOTER */}
+          <Footer />
         </body>
       </html>
     </ClerkProvider>
