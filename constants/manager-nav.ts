@@ -7,21 +7,21 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
   TrainingManager: {
     title: 'Training Operations',
     items: [
-      { label: 'Dashboard', href: '/training/dashboard', icon: 'dashboard' },
-      { label: 'Courses', href: '/training/courses', icon: 'auto_stories' },
-      { label: 'Classes & Schedules', href: '/training/classes', icon: 'groups' },
-      { label: 'Exams', href: '/training/exams', icon: 'assignment' },
-      { label: 'Instructors', href: '/training/instructors', icon: 'badge' },
+      { label: 'Dashboard', href: '/training-manager/dashboard', icon: 'dashboard' },
+      { label: 'Courses', href: '/training-manager/courses', icon: 'auto_stories' },
+      { label: 'Classes & Schedules', href: '/training-manager/classes', icon: 'groups' },
+      { label: 'Exams', href: '/training-manager/exams', icon: 'assignment' },
+      { label: 'Instructors', href: '/training-manager/instructors', icon: 'badge' },
     ]
   },
   EnrollmentManager: {
-    title: 'Enrollment Hub',
+    title: 'Enrollment System',
     items: [
-      { label: 'Dashboard', href: '/enrollment/dashboard', icon: 'monitoring' },
-      { label: 'Admissions', href: '/enrollment/admissions', icon: 'campaign' },
-      { label: 'Collaborators', href: '/enrollment/collaborators', icon: 'handshake' },
-      { label: 'Registrations', href: '/enrollment/registrations', icon: 'how_to_reg' },
-      { label: 'Reports', href: '/enrollment/reports', icon: 'bar_chart' },
+      { label: 'Dashboard', href: '/enrollment-manager/dashboard', icon: 'dashboard' },
+      { label: 'Collaborator Management', href: '/enrollment-manager/collaborators', icon: 'group' },
+      { label: 'Admission Posts', href: '/enrollment-manager/admissions', icon: 'post_add' },
+      { label: 'Statistics & Reports', href: '/enrollment-manager/reports', icon: 'bar_chart' },
+      { label: 'Notifications', href: '/enrollment-manager/notifications', icon: 'notifications' },
     ]
   },
   Admin: {
