@@ -12,6 +12,7 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Classes & Schedules', href: '/training-manager/classes', icon: 'groups' },
       { label: 'Exams', href: '/training-manager/exams', icon: 'assignment' },
       { label: 'Instructors', href: '/training-manager/instructors', icon: 'badge' },
+      { label: 'Notifications', href: '/training-manager/notifications', icon: 'notifications' },
     ]
   },
   EnrollmentManager: {
@@ -32,6 +33,7 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Users & Roles', href: '/admin/users', icon: 'manage_accounts' },
       { label: 'Financials', href: '/admin/financials', icon: 'account_balance' },
       { label: 'Settings', href: '/admin/settings', icon: 'settings' },
+      { label: 'Notifications', href: '/admin/notifications', icon: 'notifications' },
     ]
   }
 };
