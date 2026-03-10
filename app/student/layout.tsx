@@ -3,7 +3,7 @@
 import { UserButton, SignedIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation"; // Thêm hook này
-import { STUDENT_MENU } from "@/constants/navigation";
+// import { STUDENT_MENU } from "@/constants/navigation";
 
 export default function StudentLayout({
   children,
@@ -33,7 +33,7 @@ export default function StudentLayout({
             </div>
           </div>
 
-          <nav className="flex flex-col gap-2">
+          {/* <nav className="flex flex-col gap-2">
             {STUDENT_MENU.map((item) => {
               // 1. Kiểm tra trạng thái Active dựa trên URL thực tế
               const isActive =
@@ -72,7 +72,7 @@ export default function StudentLayout({
                 </Link>
               );
             })}
-          </nav>
+          </nav> */}
         </div>
       </aside>
 

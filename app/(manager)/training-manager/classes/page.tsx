@@ -1,6 +1,5 @@
 import React from 'react';
 import { ClassItem } from '@/types/class';
-import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs';
 import { ClassStats } from '@/components/manager/ClassManagement/ClassStats';
 import { ClassTable } from '@/components/manager/ClassManagement/ClassTable';
 import { ClassActionCards } from '@/components/manager/ClassManagement/ClassActionCards';
@@ -14,11 +13,17 @@ const MOCK_CLASSES: ClassItem[] = [
   { id: '4', courseId: 'c4', className: 'Class C-Apr2026',  startDate: '2026-04-01', endDate: '2026-08-15', courseName: 'Heavy Truck License C', licenseType: 'C', studentCount: 12 },
 ];
 
-export default async function ClassManagementPage() {
-  const classes = MOCK_CLASSES; // Sau này thay bằng await fetch/DB call
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
+export default async function ClassDetailPage({ params }: PageProps) {
+  // Bắt buộc phải await params trước khi sử dụng
+  const { id } = await params;
+  const classes = MOCK_CLASSES;
   return (
-    <div>
+   <div className="p-8">
+      <h1 className="text-2xl font-bold">Chi tiết lớp học: {id}</h1>
       {/* Header & Actions */}
       <ClassPageHeader/>
 
