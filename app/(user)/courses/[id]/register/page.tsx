@@ -68,10 +68,40 @@ export default function RegisterPage() {
 
           <div className="grid md:grid-cols-2 gap-6">
 
+            {/* Personal Info Section */}
+            <div className="md:col-span-2">
+              <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4 border-b border-slate-700 pb-2">
+                Personal Information
+              </h3>
+            </div>
+
             <input
               placeholder="Full Name"
               className="input"
             />
+
+            <input
+              type="date"
+              className="input uppercase text-slate-400"
+            />
+
+            <div className="flex items-center gap-6 text-sm bg-slate-900/50 p-3 rounded-xl border border-slate-700">
+              <span className="text-slate-400 font-medium">Gender:</span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="gender" className="accent-cyan-500 w-4 h-4" />
+                Male
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="gender" className="accent-cyan-500 w-4 h-4" />
+                Female
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="gender" className="accent-cyan-500 w-4 h-4" />
+                Other
+              </label>
+            </div>
 
             <input
               placeholder="Phone Number"
@@ -84,49 +114,58 @@ export default function RegisterPage() {
             />
 
             <input
-              type="date"
-              className="input"
-            />
-
-            <input
               placeholder="Residential Address"
-              className="input md:col-span-2"
-            />
-
-            <input
-              placeholder="Citizen ID (CCCD)"
               className="input"
             />
 
-            {/* gender */}
-            <div className="flex items-center gap-4 text-sm">
+            {/* Documents Section */}
+            <div className="md:col-span-2 mt-4">
+              <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4 border-b border-slate-700 pb-2">
+                Required Documents
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Please upload clear, legible photos. Max size 5MB per file.
+              </p>
+            </div>
 
-              <label className="flex items-center gap-2">
-                <input type="radio" name="gender"/>
-                Male
+            {/* Upload Grids */}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-300">Personal Photo (Portrait)</span>
+              <label className="border border-dashed border-slate-600 rounded-xl p-4 text-center hover:bg-slate-700/50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-900/30">
+                <span className="text-2xl mb-1">📸</span>
+                <span className="text-xs text-slate-400">Click to upload photo</span>
+                <input type="file" accept="image/*" className="hidden" />
               </label>
+            </div>
 
-              <label className="flex items-center gap-2">
-                <input type="radio" name="gender"/>
-                Female
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-300">Citizen ID (Front)</span>
+              <label className="border border-dashed border-slate-600 rounded-xl p-4 text-center hover:bg-slate-700/50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-900/30">
+                <span className="text-2xl mb-1">🪪</span>
+                <span className="text-xs text-slate-400">Upload Front Side</span>
+                <input type="file" accept="image/*" required className="hidden" />
               </label>
+            </div>
 
-              <label className="flex items-center gap-2">
-                <input type="radio" name="gender"/>
-                Other
+            <div className="flex flex-col gap-2 md:col-span-2 md:w-1/2 md:pr-3">
+              <span className="text-sm font-medium text-slate-300">Citizen ID (Back)</span>
+              <label className="border border-dashed border-slate-600 rounded-xl p-4 text-center hover:bg-slate-700/50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-900/30">
+                <span className="text-2xl mb-1">🪪</span>
+                <span className="text-xs text-slate-400">Upload Back Side</span>
+                <input type="file" accept="image/*" required className="hidden" />
               </label>
-
             </div>
 
           </div>
 
           {/* terms */}
-          <div className="flex items-start gap-2 mt-6 text-sm text-slate-400">
-            <input type="checkbox"/>
-            <p>
-              I agree to the <span className="text-cyan-400">terms and conditions</span>
-              {" "}of the training center.
-            </p>
+          <div className="mt-8 pt-4 border-t border-slate-700">
+            <label className="flex items-center gap-3 text-sm text-slate-300 cursor-pointer w-fit">
+              <input type="checkbox" className="w-4 h-4 accent-cyan-500 rounded border-slate-600 bg-slate-900" />
+              <span>
+                I agree to the <span className="text-cyan-400 hover:underline">terms and conditions</span> of the training center.
+              </span>
+            </label>
           </div>
 
           {/* buttons */}

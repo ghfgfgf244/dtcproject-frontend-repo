@@ -27,7 +27,7 @@ export default function UserLayout({
       </main>
 
       {/* FOOTER */}
-      <Footer />
+      {/* <Footer /> */}
 
     </div>
   );

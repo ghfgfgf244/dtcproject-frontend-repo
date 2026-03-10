@@ -1,47 +1,13 @@
-"use client";
-
-import { useState } from "react";
-
 import Hero from "@/components/ui/Hero";
 import Features from "@/components/ui/Features";
 import Instructors from "@/components/ui/Instructors";
-import AuthModal from "@/components/ui/AuthModal";
-import Header from "@/components/ui/header";
-
 
 export default function Home() {
-  const [openAuth, setOpenAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-
   return (
     <>
-      {/* <Header
-        onLogin={() => {
-          setAuthMode("login");
-          setOpenAuth(true);
-        }}
-        onRegister={() => {
-          setAuthMode("register");
-          setOpenAuth(true);
-        }}
-      /> */}
-
-      <Hero
-        onRegister={() => {
-          setAuthMode("register");
-          setOpenAuth(true);
-        }}
-      />
-
+      <Hero />
       <Features />
       <Instructors />
-      {/* Popup Auth */}
-      <AuthModal
-        open={openAuth}
-        mode={authMode}
-        onClose={() => setOpenAuth(false)}
-        onSwitch={setAuthMode}
-      />
     </>
   );
 }

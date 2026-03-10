@@ -3,6 +3,7 @@
 import styles from "@/styles/header.module.css";
 import NotificationDropdown from "./dropdown";
 import Link from "next/link";
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export default function Header() {
   return (
@@ -20,19 +21,27 @@ export default function Header() {
 
       {/* Menu */}
       <nav className={styles.nav}>
-        <Link href="/homepage">Homepage</Link>
+        <Link href="/homepage">Home</Link>
         <Link href="courses/my-course">My Courses</Link>
       </nav>
 
       {/* Right */}
       <div className={styles.right}>
+        <SignedOut>
+          <div className={styles.authButtons}>
+            <SignInButton mode="modal">
+              <button className={styles.loginBtn}>Login</button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className={styles.registerBtn}>Register</button>
+            </SignUpButton>
+          </div>
+        </SignedOut>
 
-        <NotificationDropdown />
-
-        <img
-          src="https://i.pravatar.cc/40"
-          className={styles.avatar}
-        />
+        <SignedIn>
+          <NotificationDropdown />
+          <UserButton />
+        </SignedIn>
       </div>
 
     </header>
