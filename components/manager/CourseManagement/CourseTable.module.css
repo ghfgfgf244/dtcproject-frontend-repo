@@ -1,0 +1,13 @@
+.tableWrapper {
+  overflow: hidden;
+}
+
+.scrollArea {
+  overflow-x: auto;
+}
+
+.mainTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px; /* Chống co rúm bảng trên màn hình nhỏ */
+}
