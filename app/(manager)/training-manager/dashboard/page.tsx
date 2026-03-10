@@ -1,9 +1,9 @@
 import React from 'react';
 import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs';
-import { KPICards } from '@/components/manager/Dashboard/KPICards';
-import { EnrollmentChart } from '@/components/manager/Dashboard/EnrollmentChart';
-import { UpcomingExams } from '@/components/manager/Dashboard/UpcomingExams';
-import { InstructorStatus } from '@/components/manager/Dashboard/InstructorStatus';
+import { KPICards } from '@/components/manager/TrainingDashboard/KPICards';
+import { EnrollmentChart } from '@/components/manager/TrainingDashboard/EnrollmentChart';
+import { UpcomingExams } from '@/components/manager/TrainingDashboard/UpcomingExams';
+import { InstructorStatus } from '@/components/manager/TrainingDashboard/InstructorStatus';
 
 export default function TrainingDashboardPage() {
   const breadcrumbs = [
