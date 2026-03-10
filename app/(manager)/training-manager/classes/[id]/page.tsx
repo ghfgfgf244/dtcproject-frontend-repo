@@ -37,9 +37,10 @@ const getMockClassDetail = async (id: string): Promise<ClassDetailData> => {
 export default async function ClassDetailPage({ 
   params 
 }: { 
-  params: { id: string } 
+  params: Promise<{ id: string }> // 🚀 1. Định nghĩa params là một Promise
 }) {
-  const data = await getMockClassDetail(params.id);
+  const resolvedParams = await params; // 🚀 2. Dùng await để lấy id ra
+  const data = await getMockClassDetail(resolvedParams.id); // 🚀 3. Truyền id đã resolve vào hàm get
 
   return (
     <div className={styles.pageWrapper}>
