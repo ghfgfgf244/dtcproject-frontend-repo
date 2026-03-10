@@ -1,4 +1,5 @@
 import styles from "@/styles/hero.module.css";
+import Link from "next/link";
 
 type HeroProps = {
   onRegister: () => void;
@@ -13,9 +14,14 @@ export default function Hero({ onRegister }: HeroProps) {
         <p className={styles.subtitle}>Theory and Practice Course</p>
 
         <div className={styles.actions}>
-          <button className={styles.primary}>Learn More</button>
+          <Link href="/courses" className={styles.primaryBtn}>
+            View courses
+          </Link>
 
-          <button onClick={onRegister}>
+          <button 
+            onClick={onRegister}
+            className={styles.secondaryBtn}
+          >
             Register now
           </button>
         </div>

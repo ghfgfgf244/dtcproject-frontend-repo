@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
+
 import Footer from "@/components/ui/Footer";
 import "../styles/globals.css";
 
@@ -15,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+
   title: "DriveSafe Academy",
   description: "Hệ thống quản lý đào tạo lái xe thông minh",
 };
@@ -27,6 +29,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
         >
@@ -54,4 +57,5 @@ export default function RootLayout({
       </html>
     </ClerkProvider>
   );
+
 }
