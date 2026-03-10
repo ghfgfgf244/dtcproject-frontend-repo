@@ -28,8 +28,18 @@ export interface EnrolledStudent extends UserBasicInfo {
 }
 
 export interface ClassDetailData extends ClassItem {
-  instructor: UserBasicInfo | null;
-  students: EnrolledStudent[];
-  location: string;
-  progressPercent: number; // Mock data tiến độ lớp học
+  location?: string;
+  progressPercent?: number;
+  instructor?: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+  students: Array<{
+    id: string;
+    fullName: string;
+    email: string;
+    enrollDate: string;
+  }>;
 }

@@ -6,12 +6,10 @@ export default function ManagerRouteLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 🚀 Mock Role (Thay đổi chuỗi này để test các menu khác nhau)
-  const currentRole = 'TrainingManager'; 
   
   return (
     // Truyền role giả lập xuống Layout UI
-    <SharedManagerLayout role={currentRole}>
+    <SharedManagerLayout>
       {children}
     </SharedManagerLayout>
   );

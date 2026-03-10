@@ -9,9 +9,9 @@ import styles from './NotificationList.module.css';
 
 // Mock data chuyên biệt cho System Admin
 const ADMIN_NOTIFS: AppNotification[] = [
-  { id: 'a1', category:'general', title: 'Unusual Login Activity', content: 'Multiple failed login attempts detected from IP 192.168.1.105 trying to access the Finance module.', createdAt: '2026-03-10T18:22:00Z', createdBy: 'Security Bot', isRead: false, category: 'conflict' },
-  { id: 'a2', category:'general', title: 'Manager Access Request', content: 'Alex Rivera has requested access to the "Collaborator Payouts" permission group.', createdAt: '2026-03-10T09:15:00Z', createdBy: 'Alex Rivera', isRead: false, category: 'enrollment' },
-  { id: 'a3', category:'general', title: 'Database Backup Completed', content: 'Automated global database backup completed successfully to AWS S3 bucket.', createdAt: '2026-03-09T02:00:00Z', createdBy: 'System', isRead: true, category: 'update' },
+  { id: 'a1', title: 'Unusual Login Activity', content: 'Multiple failed login attempts detected from IP 192.168.1.105 trying to access the Finance module.', createdAt: '2026-03-10T18:22:00Z', createdBy: 'Security Bot', isRead: false, category: 'conflict' },
+  { id: 'a2', title: 'Manager Access Request', content: 'Alex Rivera has requested access to the "Collaborator Payouts" permission group.', createdAt: '2026-03-10T09:15:00Z', createdBy: 'Alex Rivera', isRead: false, category: 'enrollment' },
+  { id: 'a3', title: 'Database Backup Completed', content: 'Automated global database backup completed successfully to AWS S3 bucket.', createdAt: '2026-03-09T02:00:00Z', createdBy: 'System', isRead: true, category: 'update' },
 ];
 
 export default function AdminNotificationPage() {

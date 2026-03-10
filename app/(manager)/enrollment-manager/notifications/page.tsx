@@ -9,9 +9,9 @@ import styles from './NotificationList.module.css';
 
 // Mock data chuyên biệt cho Tuyển sinh
 const ENROLLMENT_NOTIFS: AppNotification[] = [
-  { id: 'e1', category:'general', title: 'New Collaborator Registered', content: 'Anna White has registered as a new collaborator and is pending approval.', createdAt: '2026-03-10T10:30:00Z', createdBy: 'System', isRead: false, category: 'enrollment' },
-  { id: 'e2', category:'general', title: 'Admission Post Needs Review', content: 'James Smith has submitted a new admission campaign for the B2 Course. Please review before publishing.', createdAt: '2026-03-09T16:45:00Z', createdBy: 'James Smith', isRead: false, category: 'general' },
-  { id: 'e3', category:'general', title: 'Monthly Target Reached', content: 'Congratulations! The enrollment target for March has been reached (120%).', createdAt: '2026-03-08T09:00:00Z', createdBy: 'System', isRead: true, category: 'update' },
+  { id: 'e1', title: 'New Collaborator Registered', content: 'Anna White has registered as a new collaborator and is pending approval.', createdAt: '2026-03-10T10:30:00Z', createdBy: 'System', isRead: false, category: 'enrollment' },
+  { id: 'e2', title: 'Admission Post Needs Review', content: 'James Smith has submitted a new admission campaign for the B2 Course. Please review before publishing.', createdAt: '2026-03-09T16:45:00Z', createdBy: 'James Smith', isRead: false, category: 'general' },
+  { id: 'e3', title: 'Monthly Target Reached', content: 'Congratulations! The enrollment target for March has been reached (120%).', createdAt: '2026-03-08T09:00:00Z', createdBy: 'System', isRead: true, category: 'update' },
 ];
 
 export default function EnrollmentNotificationPage() {
