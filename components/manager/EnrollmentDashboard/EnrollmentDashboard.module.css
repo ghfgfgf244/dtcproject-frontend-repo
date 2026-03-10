@@ -1,0 +1,47 @@
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; /* space-y-8 */
+}
+
+/* KPI Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+/* Middle Section (Chart + Collaborator) */
+.middleGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 2rem;
+}
+.chartSection {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Table Section */
+.tableWrapper {
+  overflow: hidden;
+}
+.scrollArea {
+  overflow-x: auto;
+}
+.mainTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+/* Responsive Rules */
+@media (min-width: 768px) {
+  .kpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .kpiGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .middleGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .chartSection { grid-column: span 2 / span 2; }
+}
