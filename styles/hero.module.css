@@ -12,7 +12,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 12px; /* 👈 quan trọng: gọn hơn */
+  gap: 12px; 
   text-align: center;
 }
 
