@@ -8,7 +8,7 @@ export const ClassPageHeader = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/training/dashboard' },
+    { label: 'Dashboard', href: '/training-manager/dashboard' },
     { label: 'Classes' }
   ];
 
