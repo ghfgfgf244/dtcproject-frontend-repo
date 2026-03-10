@@ -1,0 +1,166 @@
+.page{
+background:#0b1220;
+min-height:100vh;
+}
+
+.container{
+padding:30px 40px;
+max-width:1300px;
+margin:auto;
+color:white;
+}
+
+.title{
+font-size:26px;
+margin-bottom:20px;
+font-weight:600;
+}
+
+/* GRID LAYOUT */
+
+.grid{
+display:grid;
+grid-template-columns:2fr 1fr;
+gap:20px;
+align-items:stretch;
+}
+
+/* LEFT + RIGHT COLUMN */
+
+.left{
+display:grid;
+gap:20px;
+}
+
+.right{
+display:grid;
+gap:20px;
+}
+
+/* CARD */
+
+.card{
+background:#1e293b;
+border-radius:12px;
+padding:18px 20px;
+box-shadow:0 6px 20px rgba(0,0,0,0.25);
+border:1px solid rgba(255,255,255,0.05);
+}
+/* COURSE OVERVIEW */
+
+.courseOverview{
+display:flex;
+gap:16px;
+align-items:center;
+}
+
+.courseImage{
+width:140px;
+height:95px;
+object-fit:cover;
+border-radius:8px;
+}
+
+.infoGrid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:8px 20px;
+margin-top:6px;
+font-size:14px;
+}
+
+/* METRICS */
+
+.metric{
+margin-top:12px;
+}
+
+.metricLabel{
+display:flex;
+justify-content:space-between;
+margin-bottom:5px;
+font-size:14px;
+}
+
+.progress{
+height:7px;
+background:#334155;
+border-radius:6px;
+overflow:hidden;
+}
+
+.progressFill{
+height:100%;
+background:#38bdf8;
+}
+
+/* ROADMAP */
+
+.roadmapHeader{
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+font-size:14px;
+}
+
+.roadmapItem{
+padding:10px 12px;
+margin-top:8px;
+background:#334155;
+border-radius:7px;
+font-size:14px;
+}
+
+.roadmapItemActive{
+padding:10px 12px;
+margin-top:8px;
+background:#0ea5e9;
+border-radius:7px;
+font-size:14px;
+}
+
+/* MATERIALS */
+
+.materialGrid{
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:12px;
+margin-top:10px;
+}
+
+.materialCard{
+background:#334155;
+padding:14px;
+border-radius:7px;
+text-align:center;
+font-size:14px;
+}
+
+/* EXAMS */
+
+.examPass{
+display:flex;
+justify-content:space-between;
+background:#065f46;
+padding:10px 12px;
+border-radius:7px;
+margin-top:10px;
+font-size:14px;
+}
+
+/* ATTENDANCE */
+
+.attendanceItem{
+display:flex;
+justify-content:space-between;
+padding:6px 0;
+font-size:14px;
+}
+
+.present{
+color:#22c55e;
+}
+
+.absent{
+color:#ef4444;
+}

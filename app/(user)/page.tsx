@@ -6,6 +6,8 @@ import Hero from "@/components/ui/Hero";
 import Features from "@/components/ui/Features";
 import Instructors from "@/components/ui/Instructors";
 import AuthModal from "@/components/ui/AuthModal";
+import Header from "@/components/ui/header";
+
 
 export default function Home() {
   const [openAuth, setOpenAuth] = useState(false);

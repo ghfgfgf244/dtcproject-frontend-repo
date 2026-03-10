@@ -62,9 +62,11 @@ export default async function CourseDetail({ params }: PageProps) {
             Trọn gói – Không phát sinh
           </p>
 
-          <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black py-2 rounded-xl font-semibold transition">
-            Đăng ký ngay
-          </button>
+          <Link href={`/courses/${id}/register`}>
+            <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black py-2 rounded-xl font-semibold transition">
+              Đăng ký ngay
+            </button>
+          </Link>
         </div>
       </div>
 
