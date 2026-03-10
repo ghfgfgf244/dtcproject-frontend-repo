@@ -11,10 +11,10 @@ interface ClassModalProps {
 }
 
 // Mock danh sách Khóa học và Giáo viên (Sau này lấy qua API)
-const MOCK_COURSES = [
-  { id: 'c1', name: 'Standard Car B2' },
-  { id: 'c2', name: 'Premium Automatic B1' },
-  { id: 'c3', name: 'Heavy Truck License C' },
+const MOCK_TERMS = [
+  { id: 't1', name: 'Khóa K24 - B2' },
+  { id: 't2', name: 'Khóa K25 - B1' },
+  { id: 't3', name: 'Khóa K23 - C' },
 ];
 
 const MOCK_INSTRUCTORS = [
@@ -71,8 +71,8 @@ export const ClassModal = ({ isOpen, onClose, classData }: ClassModalProps) => {
                   required
                 >
                   <option disabled value="">Select a course</option>
-                  {MOCK_COURSES.map(course => (
-                    <option key={course.id} value={course.id}>{course.name}</option>
+                  {MOCK_TERMS.map(terms => (
+                    <option key={terms.id} value={terms.id}>{terms.name}</option>
                   ))}
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-3.5 text-slate-400 pointer-events-none">expand_more</span>

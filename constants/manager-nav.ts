@@ -9,10 +9,12 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
     items: [
       { label: 'Dashboard', href: '/training-manager/dashboard', icon: 'dashboard' },
       { label: 'Courses', href: '/training-manager/courses', icon: 'auto_stories' },
+      { label: 'Terms (Batches)', href: '/training-manager/terms', icon: 'calendar_view_month' },
       { label: 'Classes & Schedules', href: '/training-manager/classes', icon: 'groups' },
       { label: 'Exams', href: '/training-manager/exams', icon: 'assignment' },
       { label: 'Instructors', href: '/training-manager/instructors', icon: 'badge' },
       { label: 'Notifications', href: '/training-manager/notifications', icon: 'notifications' },
+      { label: 'Personal Docs', href: '/training-manager/documents', icon: 'description' }, 
     ]
   },
   EnrollmentManager: {
@@ -23,6 +25,7 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Admission Posts', href: '/enrollment-manager/admissions', icon: 'post_add' },
       { label: 'Statistics & Reports', href: '/enrollment-manager/reports', icon: 'bar_chart' },
       { label: 'Notifications', href: '/enrollment-manager/notifications', icon: 'notifications' },
+      { label: 'Personal Docs', href: '/training-manager/documents', icon: 'description' }, 
     ]
   },
   Admin: {

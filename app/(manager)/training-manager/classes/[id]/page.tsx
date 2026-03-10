@@ -43,14 +43,17 @@ export default async function ClassDetailPage({
 
   return (
     <div className={styles.pageWrapper}>
+      {/* Header đã bao gồm Breadcrumbs, Tiêu đề và Nút Edit (kèm Modal) */}
       <ClassDetailHeader data={data} />
 
       <div className={styles.contentGrid}>
+        {/* Cột trái (Rộng hơn) */}
         <div className={styles.mainContent}>
           <ClassInfoCard data={data} />
           <EnrolledStudents students={data.students} totalCount={data.studentCount} />
         </div>
 
+        {/* Cột phải (Sidebar hẹp) */}
         <div>
           <ClassSidePanel data={data} />
         </div>

@@ -1,0 +1,12 @@
+.tableWrapper {
+  overflow: hidden;
+  margin-top: 1.5rem;
+}
+.scrollArea {
+  overflow-x: auto;
+}
+.mainTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
