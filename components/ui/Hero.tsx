@@ -1,11 +1,8 @@
 import styles from "@/styles/hero.module.css";
 import Link from "next/link";
+import { SignUpButton } from "@clerk/nextjs";
 
-type HeroProps = {
-  onRegister: () => void;
-};
-
-export default function Hero({ onRegister }: HeroProps) {
+export default function Hero() {
   return (
     <section className={styles.hero}>
       <div className={styles.overlay}>
@@ -18,12 +15,11 @@ export default function Hero({ onRegister }: HeroProps) {
             View courses
           </Link>
 
-          <button 
-            onClick={onRegister}
-            className={styles.secondaryBtn}
-          >
-            Register now
-          </button>
+          <SignUpButton mode="modal">
+            <button className={styles.secondaryBtn}>
+              Register now
+            </button>
+          </SignUpButton>
         </div>
       </div>
     </section>
