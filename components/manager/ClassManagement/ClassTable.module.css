@@ -1,0 +1,14 @@
+.tableWrapper {
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.scrollArea {
+  overflow-x: auto;
+}
+
+.mainTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px; /* Bảng lớp học nhiều cột hơn nên để rộng hơn chút */
+}
