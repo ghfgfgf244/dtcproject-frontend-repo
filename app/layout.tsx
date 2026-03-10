@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
-import "../styles/globals.css"; // Đảm bảo đường dẫn này đúng với file globals.css đã sửa
+import Footer from "@/components/ui/Footer";
+import "../styles/globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +27,15 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+        >
+          {/* MAIN CONTENT */}
+          <main className="flex-1">{children}</main>
+
+          {/* FOOTER */}
+          <Footer />
+        </body>
         <head>
           {/* Tăng tốc kết nối tới server Font */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -41,7 +51,6 @@ export default function RootLayout({
             href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
           />
         </head>
-        <body className="antialiased">{children}</body>
       </html>
     </ClerkProvider>
   );
