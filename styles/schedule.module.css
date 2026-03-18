@@ -1,0 +1,199 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.month {
+  font-size: 18px;
+  font-weight: 700;
+  color: #18233a;
+  margin-bottom: 10px;
+}
+
+.weekRow {
+  display: flex;
+  gap: 10px;
+  background: #f4f7fb;
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.weekDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 56px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.weekDay strong {
+  font-size: 14px;
+  color: #1c2a44;
+}
+
+.weekDayActive {
+  background: #e6f7ff;
+  color: #1a8ed1;
+  font-weight: 600;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.todayButton {
+  border: none;
+  background: #eef2f7;
+  color: #1c2a44;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #1ca7ec;
+  color: #ffffff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.section {
+  margin-top: 18px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a96ab;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card h3 {
+  font-size: 15px;
+  color: #18233a;
+  margin: 0;
+}
+
+.attendanceRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.attendanceBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+}
+
+.attendancePresent {
+  background: #e8f8ef;
+  color: #1b8f5a;
+}
+
+.attendanceAbsent {
+  background: #ffe9ea;
+  color: #d64545;
+}
+
+.meta {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tag {
+  background: #1ca7ec;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tagMuted {
+  background: #eef2f7;
+  color: #8a96ab;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.badge {
+  background: #2bb673;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cardHighlight {
+  border: 2px solid #1ca7ec;
+  background: #f1fbff;
+}
+
+.cardMuted {
+  opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    justify-content: flex-start;
+  }
+
+  .weekRow {
+    flex-wrap: wrap;
+  }
+}
