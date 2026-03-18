@@ -21,8 +21,7 @@ export default function Header() {
 
       {/* Menu */}
       <nav className={styles.nav}>
-        <Link href="/homepage">Home</Link>
-        <Link href="courses/my-course">My Courses</Link>
+        <Link href="/homepage">Homepage</Link>
       </nav>
 
       {/* Right */}

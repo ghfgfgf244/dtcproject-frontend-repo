@@ -1,0 +1,23 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #17213a;
+  margin: 0;
+}
+
+.header p {
+  font-size: 14px;
+  color: #6c7a96;
+  margin: 0;
+}
+
+.gridWrap {
+  margin-top: 18px;
+}

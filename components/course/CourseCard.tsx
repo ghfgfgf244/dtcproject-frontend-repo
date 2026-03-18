@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "@/styles/course-card.module.css";
 
 interface Course {
   courseId: number;
@@ -17,34 +18,23 @@ interface Props {
 
 export default function CourseCard({ course }: Props) {
   return (
-    <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-2">
-      
-      {/* Image placeholder */}
-      <div className="h-40 bg-gradient-to-r from-blue-500 to-sky-400 flex items-center justify-center text-xl font-semibold">
-        🚗 {course.name}
-      </div>
+    <div className={styles.card}>
+      <div className={styles.media}>{course.name}</div>
 
-      <div className="p-6 flex flex-col justify-between h-64">
-        <div>
-          <p className="text-gray-300 text-sm mb-4 line-clamp-3">
-            {course.description}
-          </p>
+      <div className={styles.body}>
+        <p className={styles.description}>{course.description}</p>
 
-          <p className="text-sky-400 font-bold text-lg">
-            {course.price.toLocaleString()} VNĐ
-          </p>
-
-          <div className="mt-3 text-sm text-gray-400">
-            <p>{course.center.name}</p>
-            <p>{course.center.address}</p>
-          </div>
+        <div className={styles.price}>
+          {course.price.toLocaleString()} VND
         </div>
 
-        <Link
-          href={`/courses/${course.courseId}`}
-          className="mt-6 inline-block text-center bg-sky-500 hover:bg-sky-600 transition px-4 py-2 rounded-lg font-semibold"
-        >
-          Xem Chi Tiết
+        <div className={styles.center}>
+          <p>{course.center.name}</p>
+          <p>{course.center.address}</p>
+        </div>
+
+        <Link href={`/courses/${course.courseId}`} className={styles.cta}>
+          Xem Chi Tiet
         </Link>
       </div>
     </div>
