@@ -1,17 +1,13 @@
-export type LicenseType = 'A1' | 'A2' | 'B1' | 'B2' | 'C' | 'D' | 'E' | 'F' | string;
+// src/types/course.ts
 
-export interface CourseItem {
+export type LicenseType = 'A1' | 'B1' | 'B2' | 'C';
+export type CourseStatus = 'Hoạt động' | 'Ngừng hoạt động';
+
+export interface CourseRecord {
   id: string;
-  centerId?: string;
-  courseName: string;
-  licenseType: string; // VD: B1, B2, C
+  name: string;
   description: string;
-  price: number;
-  isActive: boolean; // Thay thế cho status kiểu string
-  
-  // Các trường Audit
-  createdAt?: string;
-  createdBy?: string;
-  updatedAt?: string;
-  updatedBy?: string;
+  licenseType: LicenseType;
+  price: number; // Lưu theo VNĐ
+  status: CourseStatus;
 }

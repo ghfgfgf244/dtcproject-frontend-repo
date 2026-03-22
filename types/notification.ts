@@ -1,20 +1,50 @@
-// Các loại danh mục để hiển thị icon/màu sắc trên UI
-export type NotificationCategory = 'enrollment' | 'conflict' | 'exam' | 'update' | 'general';
+// src/types/notification.ts
 
-export interface AppNotification {
+export type NotificationCategory = 'Enrollment' | 'Schedule' | 'Exams' | 'System' | 'Document';
+export type NotificationStatus = 'unread' | 'read';
+export type UserRole = 'training_manager' | 'enrollment_manager' | 'admin';
+
+export interface BellNotification {
   id: string;
   title: string;
-  content: string;
+  message: string;
+  timeAgo: string;
+  isUnread: boolean;
+  type: 'enrollment' | 'schedule' | 'system' | 'exam' | 'document' | 'finance';
+}
+
+export interface NotificationRecord {
+  id: string;
+  title: string;
+  timeAgo: string;
+  message: string;
+  category: NotificationCategory;
+  status: NotificationStatus;
+  actionText?: string;
+}
+
+export interface SystemAlert {
+  id: string;
+  title: string;
+  message: string;
+  type: 'error' | 'warning';
+}
+export interface UserAudit {
+  id: string;
+  name: string;
+  initials: string;
+}
+
+export interface NotificationDetailRecord {
+  id: string;
+  tag: string;           // VD: 'CẢNH BÁO HỆ THỐNG'
+  title: string;
+  type: string;          // VD: 'Bắt buộc tuân thủ'
+  content: string[];     // Array các đoạn văn (paragraphs)
+  centerId: string;
+  isDeleted: boolean;
   createdAt: string;
-  
-  // Các trường dùng cho quản lý (Broadcast)
-  createdBy?: string;
-  roleTarget?: string | null; 
-  centerId?: string | null;
-  
-  // Trạng thái đọc (Join từ UserNotifications)
-  isRead: boolean;
-  
-  // Custom UI Type để render màu/icon tương ứng
-  category: NotificationCategory; 
+  createdBy: UserAudit;
+  updatedAt: string;
+  updatedBy: UserAudit;
 }

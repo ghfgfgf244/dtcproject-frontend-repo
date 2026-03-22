@@ -1,0 +1,13 @@
+.headerWrapper {
+  height: 4rem; /* tương đương h-16 */
+  border-bottom: 1px solid var(--slate-200, #e2e8f0);
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}

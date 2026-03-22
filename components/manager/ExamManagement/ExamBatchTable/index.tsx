@@ -1,0 +1,69 @@
+// src/app/(manager)/training-manager/exams/_components/ExamBatchTable/index.tsx
+import React from 'react';
+import styles from './table.module.css';
+import { ExamBatch } from '@/types/exam';
+
+interface Props {
+  batches: ExamBatch[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  onEditClick: (batch: ExamBatch) => void;
+}
+
+export default function ExamBatchTable({ batches, selectedId, onSelect, onEditClick }: Props) {
+  return (
+    <div className={styles.tableWrapper}>
+      <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+        <h3 className="font-bold text-slate-900">Danh sách Đợt thi</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className={styles.tableLayout}>
+          <thead>
+            <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+              <th className="px-6 py-4 font-bold">Thông tin Đợt thi</th>
+              <th className="px-6 py-4 font-bold">Mã Khóa học</th>
+              <th className="px-6 py-4 font-bold">Trạng thái</th>
+              <th className="px-6 py-4 font-bold text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {batches.map((batch) => (
+              <tr 
+                key={batch.id} 
+                onClick={() => onSelect(batch.id)}
+                className={`cursor-pointer transition-colors ${selectedId === batch.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+              >
+                <td className="px-6 py-4">
+                  <p className="text-sm font-bold text-slate-900">{batch.batchName}</p>
+                  <p className="text-xs text-slate-400">ID: {batch.id}</p>
+                </td>
+                <td className="px-6 py-4 text-xs font-mono text-slate-700">{batch.courseId}</td>
+                <td className="px-6 py-4">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    batch.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 
+                    batch.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {batch.status === 'ACTIVE' ? 'ĐANG DIỄN RA' :
+                     batch.status === 'UPCOMING' ? 'SẮP DIỄN RA' :
+                     batch.status === 'COMPLETED' ? 'ĐÃ KẾT THÚC' : batch.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation(); // QUAN TRỌNG: Ngăn click lan ra ngoài
+                      onEditClick(batch);
+                    }}
+                    className="text-blue-600 hover:underline text-xs font-bold px-2 py-1 rounded hover:bg-blue-50"
+                  >
+                    Quản lý
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

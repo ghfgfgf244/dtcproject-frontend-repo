@@ -1,5 +1,5 @@
 import React from 'react';
-import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs';
+import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs/index';
 import { KPICards } from '@/components/manager/EnrollmentDashboard/KPICards';
 import { RegistrationChart } from '@/components/manager/EnrollmentDashboard/RegistrationChart';
 import { CollaboratorRank } from '@/components/manager/EnrollmentDashboard/CollaboratorRank';

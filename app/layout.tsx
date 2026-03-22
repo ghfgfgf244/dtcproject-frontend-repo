@@ -73,7 +73,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
 
           {/* FOOTER */}
-          <Footer />
+          {/* <Footer /> */}
         </body>
       </html>
     </ClerkProvider>
