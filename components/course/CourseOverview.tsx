@@ -3,20 +3,20 @@ import styles from "@/styles/mycourse.module.css";
 export default function CourseOverview() {
   return (
     <div className={styles.card}>
-
       <div className={styles.courseOverview}>
-
         <img
           src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c"
           className={styles.courseImage}
         />
 
-        <div className={styles.courseInfo}>
-
+        <div className={styles.courseInfo}
+        >
           <h3>Course Overview</h3>
+          <p className={styles.courseDesc}>
+            Khóa học đào tạo lái xe B2 bao gồm lý thuyết + thực hành + thi tốt nghiệp
+          </p>
 
           <div className={styles.infoGrid}>
-
             <div>
               <span>Instructor</span>
               <p>Nguyen Van A</p>
@@ -26,6 +26,7 @@ export default function CourseOverview() {
               <span>Training Center</span>
               <p>Nha Trang Training Center</p>
             </div>
+            
 
             <div>
               <span>Duration</span>
@@ -36,13 +37,9 @@ export default function CourseOverview() {
               <span>Total Students</span>
               <p>24 Enrolled</p>
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

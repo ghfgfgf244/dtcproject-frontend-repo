@@ -20,9 +20,9 @@ export default function Header() {
       </Link>
 
       {/* Menu */}
-      <nav className={styles.nav}>
+      {/* <nav className={styles.nav}>
         <Link href="/homepage">Homepage</Link>
-      </nav>
+      </nav> */}
 
       {/* Right */}
       <div className={styles.right}>

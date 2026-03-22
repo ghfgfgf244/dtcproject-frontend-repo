@@ -64,23 +64,30 @@ export default function ExamSchedulePage() {
 
       <section className={shellStyles.content}>
         <header className={styles.header}>
-          <div>
-            <div className={styles.month}>October 2023</div>
-            <div className={styles.weekRow}>
-              {weekDays.map((item) => (
-                <div
-                  key={`${item.day}-${item.date}`}
-                  className={`${styles.weekDay} ${
-                    item.active ? styles.weekDayActive : ""
-                  }`}
-                >
-                  <span>{item.day}</span>
-                  <strong>{item.date}</strong>
-                </div>
-              ))}
-            </div>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.title}>Lịch thi</h1>
+            <p className={styles.subtitle}>
+              Theo dõi lịch thi sắp tới và các kỳ kiểm tra quan trọng.
+            </p>
           </div>
         </header>
+
+        <div className={styles.monthRow}>
+          <div className={styles.month}>October 2023</div>
+          <div className={styles.weekRow}>
+            {weekDays.map((item) => (
+              <div
+                key={`${item.day}-${item.date}`}
+                className={`${styles.weekDay} ${
+                  item.active ? styles.weekDayActive : ""
+                }`}
+              >
+                <span>{item.day}</span>
+                <strong>{item.date}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Morning</div>
