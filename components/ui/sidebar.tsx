@@ -8,23 +8,25 @@ import {
   ChevronRight,
   GraduationCap,
   HelpCircle,
+  Home,
   LogOut,
   Settings,
+  User,
 } from "lucide-react";
 import styles from "@/styles/sidebar.module.css";
 
 const mainMenu = [
   {
+    key: "homepage",
+    label: "Trang chủ",
+    icon: Home,
+    href: "/homepage",
+  },
+  {
     key: "courses",
     label: "Khóa học của tôi",
     icon: BookOpenCheck,
     href: "/courses/my-course",
-  },
-  {
-    key: "progress",
-    label: "Tiến độ học tập",
-    icon: BarChart3,
-    href: "/progress",
   },
   { key: "schedule", label: "Lịch học", icon: CalendarClock, href: "/schedule" },
   { key: "exams", label: "Lịch thi", icon: CalendarCheck2, href: "/exams" },
@@ -34,6 +36,24 @@ const mainMenu = [
     label: "Báo cáo điểm",
     icon: GraduationCap,
     href: "/report",
+  },
+  {
+    key: "profile",
+    label: "Hồ sơ",
+    icon: User,
+    href: "/profile",
+  },
+  {
+    key: "teaching-schedule",
+    label: "Lịch giảng dạy",
+    icon: CalendarClock,
+    href: "/teaching-schedule",
+  },
+  {
+    key: "partner-dashboard",
+    label: "Đối tác",
+    icon: BookOpenCheck,
+    href: "/partner-dashboard",
   },
 ];
 
@@ -49,23 +69,6 @@ type SidebarProps = {
 export default function Sidebar({ activeKey = "courses" }: SidebarProps) {
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.brand}>
-        <div className={styles.brandIcon}>
-          <GraduationCap className={styles.brandIconSvg} />
-        </div>
-        <span className={styles.brandText}>DriveMaster</span>
-      </div>
-
-      <div className={styles.user}>
-        <div className={styles.avatar}>
-          <span className={styles.avatarInitials}>AJ</span>
-          <span className={styles.statusDot} />
-        </div>
-        <div className={styles.userInfo}>
-          <div className={styles.userName}>Alex Johnson</div>
-          <div className={styles.userMeta}>Học viên B2</div>
-        </div>
-      </div>
 
       <nav className={styles.nav}>
         <ul className={styles.menuList}>

@@ -3,15 +3,11 @@ import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/score-report.module.css";
 
 const breakdown = [
-  { label: "Attendance", weight: "10% weight", score: "9.0/10", value: 90 },
-  {
-    label: "Assignment / Practice",
-    weight: "20% weight",
-    score: "8.5/10",
-    value: 85,
-  },
-  { label: "Midterm Exam", weight: "30% weight", score: "7.5/10", value: 75 },
-  { label: "Final Exam", weight: "40% weight", score: "8.0/10", value: 80 },
+  { label: "Attendance", score: "12/15", value: 80 },
+
+  { label: "Theory Exam", score: "29/30", value: 96.67 },
+  { label: "Simulation Exam", score: "35/50", value: 70 },
+  { label: "Practical Exam", score: "85/100", value: 85 },
 ];
 
 const exams = [
@@ -77,7 +73,6 @@ export default function ScoreReportPage() {
                   <div className={styles.breakdownRow}>
                     <div>
                       <span className={styles.breakdownLabel}>{item.label}</span>
-                      <span className={styles.breakdownWeight}>{item.weight}</span>
                     </div>
                     <span className={styles.breakdownScore}>{item.score}</span>
                   </div>

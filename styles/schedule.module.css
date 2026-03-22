@@ -3,6 +3,29 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  margin-bottom: 14px;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #17213a;
+  margin: 0;
+}
+
+.subtitle {
+  color: #6c7a96;
+  font-size: 14px;
+  margin: 0;
+}
+
+.monthRow {
   margin-bottom: 18px;
 }
 

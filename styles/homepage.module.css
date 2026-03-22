@@ -1,0 +1,10 @@
+.content {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .content {
+    max-width: 100%;
+  }
+}

@@ -1,16 +1,11 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/schedule.module.css";
 
-const weekDays = [
-  { day: "Mon", date: "23" },
-  { day: "Tue", date: "24" },
-  { day: "Wed", date: "25", active: true },
-  { day: "Thu", date: "26" },
-  { day: "Fri", date: "27" },
-  { day: "Sat", date: "28" },
-  { day: "Sun", date: "29" },
-];
+const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const sessions = {
   morning: [
@@ -62,30 +57,95 @@ const sessions = {
   ],
 };
 
+function startOfWeek(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addDays(date: Date, offset: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function formatRange(start: Date) {
+  const end = addDays(start, 6);
+  const opts: Intl.DateTimeFormatOptions = { month: "long", day: "numeric" };
+  const startText = start.toLocaleDateString("en-US", opts);
+  const endText = end.toLocaleDateString("en-US", opts);
+  return `${startText} - ${endText}`;
+}
+
 export default function SchedulePage() {
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = addDays(weekStart, index);
+      return {
+        day: dayLabels[date.getDay()],
+        date,
+        isToday: new Date().toDateString() === date.toDateString(),
+      };
+    });
+  }, [weekStart]);
+
   return (
     <div className={shellStyles.page}>
       <Sidebar activeKey="schedule" />
 
       <section className={shellStyles.content}>
         <header className={styles.header}>
-          <div>
-            <div className={styles.month}>October 2023</div>
-            <div className={styles.weekRow}>
-              {weekDays.map((item) => (
-                <div
-                  key={`${item.day}-${item.date}`}
-                  className={`${styles.weekDay} ${
-                    item.active ? styles.weekDayActive : ""
-                  }`}
-                >
-                  <span>{item.day}</span>
-                  <strong>{item.date}</strong>
-                </div>
-              ))}
-            </div>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.title}>Lịch học</h1>
+            <p className={styles.subtitle}>
+              Quản lý lịch học hàng tuần và theo dõi buổi học.
+            </p>
+          </div>
+          <div className={styles.headerActions}>
+            <button
+              type="button"
+              className={styles.todayButton}
+              onClick={() => setWeekStart(startOfWeek(new Date()))}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={() => setWeekStart(addDays(weekStart, -7))}
+            >
+              ◀
+            </button>
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={() => setWeekStart(addDays(weekStart, 7))}
+            >
+              ▶
+            </button>
           </div>
         </header>
+
+        <div className={styles.monthRow}>
+          <div className={styles.month}>{formatRange(weekStart)}</div>
+          <div className={styles.weekRow}>
+            {weekDays.map((item) => (
+              <div
+                key={item.date.toISOString()}
+                className={`${styles.weekDay} ${
+                  item.isToday ? styles.weekDayActive : ""
+                }`}
+              >
+                <span>{item.day}</span>
+                <strong>{item.date.getDate()}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Morning</div>
