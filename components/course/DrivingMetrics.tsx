@@ -27,10 +27,6 @@ export default function DrivingMetrics() {
           <div className={styles.progressFill} style={{ width: "60%" }}></div>
         </div>
       </div>
-
-      <Link href="/progress" className={styles.viewLink}>
-        Xem chi tiết
-      </Link>
     </div>
   );
 }

@@ -50,7 +50,7 @@ export default function RootLayout({
         },
       }}
     >
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <head>
           {/* Tăng tốc kết nối tới server Font */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
