@@ -8,10 +8,8 @@ import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@cl
 export default function Header() {
   return (
     <header className={styles.header}>
-
-      {/* Logo */}
       <Link href="/" className={styles.logo}>
-        <div className={styles.icon}>🚗</div>
+        <div className={styles.icon}>??</div>
 
         <div style={{ fontSize: "10px" }}>
           <h1>DriveMaster</h1>
@@ -19,12 +17,13 @@ export default function Header() {
         </div>
       </Link>
 
-      {/* Menu */}
-      {/* <nav className={styles.nav}>
-        <Link href="/homepage">Homepage</Link>
-      </nav> */}
+      <nav className={styles.nav}>
+        <Link href="/">Trang chủ</Link>
+        <Link href="/homepage">Bài đăng</Link>
+        <Link href="/courses">Khóa học</Link>
+        <Link href="/contact">Liên hệ</Link>
+      </nav>
 
-      {/* Right */}
       <div className={styles.right}>
         <SignedOut>
           <div className={styles.authButtons}>
@@ -42,7 +41,6 @@ export default function Header() {
           <UserButton />
         </SignedIn>
       </div>
-
     </header>
   );
 }

@@ -1,22 +1,20 @@
 import { mockCourses } from "@/lib/mockCourses";
 import CourseGrid from "@/components/course/CourseGrid";
+import styles from "@/styles/courses-guest.module.css";
 
 export default function CoursesPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* HERO */}
-      <section className="text-center py-20 bg-gradient-to-r from-sky-600 to-blue-800">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6">
-          Làm Chủ Tay Lái – Vững Vàng Mọi Hành Trình
-        </h1>
-        <p className="max-w-2xl mx-auto text-lg opacity-90">
-          Đăng ký khóa học lái xe tại các trung tâm uy tín.
-          Thực hành bài bản, sẵn sàng chinh phục mọi cung đường.
-        </p>
+    <div className={styles.page}>
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <h1>Khóa học lại xe</h1>
+          <p>
+            Đăng ký tham gia các trung tâm đào tạo đáng tin cậy và xây dựng sự tự tin lái xe thực tế cho mọi hành trình.
+          </p>
+        </div>
       </section>
 
-      {/* COURSE LIST */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div className={styles.listWrap}>
         <CourseGrid courses={mockCourses} />
       </div>
     </div>

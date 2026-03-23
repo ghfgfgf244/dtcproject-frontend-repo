@@ -1,4 +1,5 @@
 import styles from "@/styles/mycourse.module.css";
+import Link from "next/link";
 
 export default function LearningMaterials() {
   return (
@@ -8,9 +9,9 @@ export default function LearningMaterials() {
 
       <div className={styles.materialGrid}>
 
-        <div className={styles.materialCard}>
+        <Link href="/courses/my-course/theory-practice" className={styles.materialCard}>
           Theory questions and answers
-        </div>
+        </Link>
 
         <div className={styles.materialCard}>
           Simulation test and tips

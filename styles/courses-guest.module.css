@@ -1,0 +1,38 @@
+.page {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #1f2a44;
+}
+
+.hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  border-bottom: 1px solid #eef2f7;
+}
+
+.heroContent {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 24px 48px;
+  text-align: center;
+}
+
+.heroContent h1 {
+  margin: 0 0 10px;
+  font-size: 36px;
+  color: #1f2a44;
+  font-weight: 800;
+}
+
+.heroContent p {
+  margin: 0 auto;
+  color: #7a89a6;
+  font-size: 16px;
+  max-width: 720px;
+  line-height: 1.6;
+}
+
+.listWrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
