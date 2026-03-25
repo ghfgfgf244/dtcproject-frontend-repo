@@ -21,10 +21,11 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
     items: [
       { label: 'Trang chủ', href: '/enrollment-manager/dashboard', icon: 'dashboard' },
       { label: 'Kỳ tuyển sinh', href: '/enrollment-manager/terms', icon: 'calendar_view_month' },
-      { label: 'Quản lý cộng tác viên', href: '/enrollment-manager/collaborators', icon: 'group' },
-      { label: 'Bài đăng tuyển sinh', href: '/enrollment-manager/admissions', icon: 'post_add' },
+      { label: 'Bài đăng tuyển sinh', href: '/enrollment-manager/posts', icon: 'post_add' },
       { label: 'Thống kê & Báo cáo', href: '/enrollment-manager/reports', icon: 'bar_chart' },
       { label: 'Thông báo', href: '/enrollment-manager/notifications', icon: 'notifications' },
+      { label: 'Quản lý hồ sơ', href: '/enrollment-manager/profiles', icon: 'people_alt' },
+      { label: 'Quản lý hoa hồng', href: '/enrollment-manager/commissions', icon: 'description' },
       { label: 'Tài liệu cá nhân', href: '/enrollment-manager/documents', icon: 'description' }, 
     ]
   },
