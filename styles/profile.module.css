@@ -216,6 +216,79 @@
   background: linear-gradient(90deg, #1ca7ec, #2ec4ff);
 }
 
+.myPosts {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e6edf5;
+}
+
+.myPostsHeader h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #17213a;
+}
+
+.myPostsList {
+  display: grid;
+  gap: 12px;
+}
+
+.myPostCard {
+  border: 1px solid #edf1f6;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f9fbfd;
+}
+
+.myPostTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.myPostTop strong {
+  display: block;
+  color: #17213a;
+}
+
+.myPostTime {
+  display: block;
+  font-size: 12px;
+  color: #8b98b2;
+}
+
+.myPostActions {
+  display: flex;
+  gap: 8px;
+}
+
+.myPostActions button {
+  border: none;
+  background: #e9eff7;
+  color: #1c2a44;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deleteBtn {
+  background: #ffe9ea;
+  color: #d64545;
+}
+
+.myPostContent {
+  margin: 0;
+  color: #4b5873;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: 1fr;

@@ -55,6 +55,15 @@ const students = [
 export default function StudentDirectoryPage() {
   const [selectedClass, setSelectedClass] = useState(classes[0]);
   const [query, setQuery] = useState("");
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  const [kmData, setKmData] = useState<Record<string, { morning: number; evening: number }>>(
+    () =>
+      students.reduce((acc, student) => {
+        acc[student.id] = { morning: 0, evening: 0 };
+        return acc;
+      }, {} as Record<string, { morning: number; evening: number }>)
+  );
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -112,37 +121,177 @@ export default function StudentDirectoryPage() {
               <span>Email</span>
               <span>Attendance</span>
               <span>Status</span>
+              <span></span>
             </div>
 
-            {filtered.map((student, index) => (
-              <div key={student.id} className={styles.row}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <span className={styles.avatar}>{student.name[0]}</span>
-                <span className={styles.studentId}>{student.id}</span>
-                <span className={styles.studentName}>{student.name}</span>
-                <span className={styles.email}>{student.email}</span>
-                <span className={styles.attendance}>
-                  <span className={styles.attendanceBar}>
+            {filtered.map((student, index) => {
+              const km = kmData[student.id] ?? { morning: 0, evening: 0 };
+              const isOpen = openRow === student.id;
+              return (
+                <div key={student.id} className={styles.rowGroup}>
+                  <div className={styles.row}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <span className={styles.avatar}>{student.name[0]}</span>
+                    <span className={styles.studentId}>{student.id}</span>
+                    <span className={styles.studentName}>{student.name}</span>
+                    <span className={styles.email}>{student.email}</span>
+                    <span className={styles.attendance}>
+                      <span className={styles.attendanceBar}>
+                        <span
+                          className={`${styles.attendanceFill} ${
+                            student.attendance < 60 ? styles.attendanceLow : ""
+                          }`}
+                          style={{ width: `${student.attendance}%` }}
+                        />
+                      </span>
+                      <strong>{student.attendance}%</strong>
+                    </span>
                     <span
-                      className={`${styles.attendanceFill} ${
-                        student.attendance < 60 ? styles.attendanceLow : ""
+                      className={`${styles.statusPill} ${
+                        student.status === "Present"
+                          ? styles.present
+                          : styles.absent
                       }`}
-                      style={{ width: `${student.attendance}%` }}
-                    />
-                  </span>
-                  <strong>{student.attendance}%</strong>
-                </span>
-                <span
-                  className={`${styles.statusPill} ${
-                    student.status === "Present"
-                      ? styles.present
-                      : styles.absent
-                  }`}
-                >
-                  {student.status}
-                </span>
-              </div>
-            ))}
+                    >
+                      {student.status}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.expandBtn}
+                      onClick={() =>
+                        setOpenRow((prev) =>
+                          prev === student.id ? null : student.id
+                        )
+                      }
+                    >
+                      {isOpen ? "▾" : "▸"}
+                    </button>
+                  </div>
+
+                  {isOpen && (
+                    <div className={styles.dropdown}>
+                      <div className={styles.kmRow}>
+                        <span>km buổi sáng ({km.morning}/710)</span>
+                        <div className={styles.progressTrack}>
+                          <div
+                            className={styles.progressFill}
+                            style={{ width: `${(km.morning / 710) * 100}%` }}
+                          />
+                        </div>
+                        <div className={styles.kmControls}>
+                          <button
+                            onClick={() =>
+                              setKmData((prev) => ({
+                                ...prev,
+                                [student.id]: {
+                                  ...prev[student.id],
+                                  morning: Math.max(
+                                    0,
+                                    prev[student.id].morning - 1
+                                  ),
+                                },
+                              }))
+                            }
+                          >
+                            -
+                          </button>
+                          <strong>{km.morning}</strong>
+                          <button
+                            onClick={() =>
+                              setKmData((prev) => ({
+                                ...prev,
+                                [student.id]: {
+                                  ...prev[student.id],
+                                  morning: Math.min(
+                                    710,
+                                    prev[student.id].morning + 1
+                                  ),
+                                },
+                              }))
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={styles.kmRow}>
+                        <span>km buổi tối ({km.evening}/100)</span>
+                        <div className={styles.progressTrack}>
+                          <div
+                            className={styles.progressFill}
+                            style={{ width: `${(km.evening / 100) * 100}%` }}
+                          />
+                        </div>
+                        <div className={styles.kmControls}>
+                          <button
+                            onClick={() =>
+                              setKmData((prev) => ({
+                                ...prev,
+                                [student.id]: {
+                                  ...prev[student.id],
+                                  evening: Math.max(
+                                    0,
+                                    prev[student.id].evening - 1
+                                  ),
+                                },
+                              }))
+                            }
+                          >
+                            -
+                          </button>
+                          <strong>{km.evening}</strong>
+                          <button
+                            onClick={() =>
+                              setKmData((prev) => ({
+                                ...prev,
+                                [student.id]: {
+                                  ...prev[student.id],
+                                  evening: Math.min(
+                                    100,
+                                    prev[student.id].evening + 1
+                                  ),
+                                },
+                              }))
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={styles.kmFooter}>
+                        {saved[student.id] && (
+                          <span className={styles.savedTag}>Đã lưu</span>
+                        )}
+                        <button
+                          className={styles.cancelBtn}
+                          onClick={() =>
+                            setKmData((prev) => ({
+                              ...prev,
+                              [student.id]: { morning: 0, evening: 0 },
+                            }))
+                          }
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          className={styles.saveBtn}
+                          onClick={() =>
+                            setSaved((prev) => ({
+                              ...prev,
+                              [student.id]: true,
+                            }))
+                          }
+                        >
+                          Lưu
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className={styles.footer}>

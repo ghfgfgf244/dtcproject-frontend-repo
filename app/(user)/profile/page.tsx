@@ -1,10 +1,41 @@
+"use client";
+
 import Image from "next/image";
 import { Camera, GraduationCap, Lock } from "lucide-react";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/profile.module.css";
+import { useState } from "react";
+import PostModal from "@/components/ui/post-modal";
 
 export default function ProfilePage() {
+  const [posts, setPosts] = useState([
+    {
+      id: 1,
+      time: "2 giờ trước",
+      content: "Hôm nay mình hoàn thành bài sa hình số 8, cảm giác rất tốt!",
+    },
+    {
+      id: 2,
+      time: "Hôm qua",
+      content: "Chia sẻ một vài mẹo căn côn khi đề-pa dốc.",
+    },
+  ]);
+  const [editingPost, setEditingPost] = useState<null | {
+    id: number;
+    content: string;
+  }>(null);
+
+  const handleUpdate = (content: string) => {
+    if (!editingPost) return;
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === editingPost.id ? { ...post, content } : post
+      )
+    );
+    setEditingPost(null);
+  };
+
   return (
     <div className={shellStyles.page}>
       <Sidebar activeKey="profile" />
@@ -87,6 +118,44 @@ export default function ProfilePage() {
                 Change Password
               </button>
             </div>
+
+            <div className={styles.myPosts}>
+              <div className={styles.myPostsHeader}>
+                <h3>Bài đăng của tôi</h3>
+              </div>
+              <div className={styles.myPostsList}>
+                {posts.map((post) => (
+                  <div key={post.id} className={styles.myPostCard}>
+                    <div className={styles.myPostTop}>
+                      <div>
+                        <strong>Alex Johnson</strong>
+                        <span className={styles.myPostTime}>{post.time}</span>
+                      </div>
+                      <div className={styles.myPostActions}>
+                        <button
+                          onClick={() =>
+                            setEditingPost({ id: post.id, content: post.content })
+                          }
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() =>
+                            setPosts((prev) =>
+                              prev.filter((item) => item.id !== post.id)
+                            )
+                          }
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                    <p className={styles.myPostContent}>{post.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <aside className={styles.sideColumn}>
@@ -141,6 +210,15 @@ export default function ProfilePage() {
           </aside>
         </div>
       </section>
+
+      <PostModal
+        open={Boolean(editingPost)}
+        title="Chỉnh sửa bài viết"
+        submitLabel="CẬP NHẬT"
+        initialContent={editingPost?.content}
+        onClose={() => setEditingPost(null)}
+        onSubmit={handleUpdate}
+      />
     </div>
   );
 }
