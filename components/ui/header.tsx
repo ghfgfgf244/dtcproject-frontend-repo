@@ -9,7 +9,7 @@ export default function Header() {
   return (
     <header className={styles.header}>
       <Link href="/" className={styles.logo}>
-        <div className={styles.icon}>??</div>
+        <div className={styles.icon}>🚗</div>
 
         <div style={{ fontSize: "10px" }}>
           <h1>DriveMaster</h1>
