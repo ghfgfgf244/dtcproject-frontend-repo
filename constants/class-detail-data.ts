@@ -1,5 +1,6 @@
 // src/constants/class-detail-data.ts
 import { ClassDetailRecord } from "@/types/class-detail";
+import { StudentOption } from "@/types/class-detail";
 
 export const MOCK_CLASS_DETAIL: ClassDetailRecord = {
   id: "cls-1",
@@ -27,3 +28,38 @@ export const MOCK_CLASS_DETAIL: ClassDetailRecord = {
     { id: "stu-4", fullName: "Phạm Dung", email: "dung.pham@email.com", enrollDate: "05 Thg 01, 2026", initials: "PD", theme: "emerald" },
   ]
 };
+
+export const MOCK_STUDENT_OPTIONS: StudentOption[] = [
+  {
+    id: "stu-search-1",
+    fullName: "Nguyễn Thành Trung",
+    email: "trung.nt@gmail.com",
+    phone: "090 123 4567",
+    avatar: "https://i.pravatar.cc/150?u=trung",
+    enrolledCourses: ["Lập trình React", "Python Pro"]
+  },
+  {
+    id: "stu-search-2",
+    fullName: "Trần Thị Mỹ Hạnh",
+    email: "hanhtran@edu.vn",
+    phone: "098 888 7777",
+    avatar: "https://i.pravatar.cc/150?u=hanh",
+    enrolledCourses: ["Java Master"]
+  },
+  {
+    id: "stu-search-3",
+    fullName: "Đặng Quang Vinh",
+    email: "vinhdang@gmail.com",
+    phone: "097 555 4433",
+    avatar: "https://i.pravatar.cc/150?u=vinh",
+    enrolledCourses: ["Marketing Digital"]
+  },
+  {
+    id: "stu-search-4",
+    fullName: "Phạm Quỳnh Hoa",
+    email: "hoapq@gmail.com",
+    phone: "091 222 3344",
+    avatar: "https://i.pravatar.cc/150?u=hoa",
+    enrolledCourses: ["UI/UX Design", "Figma Mastery"]
+  }
+];

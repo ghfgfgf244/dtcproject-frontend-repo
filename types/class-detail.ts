@@ -31,3 +31,12 @@ export interface ClassDetailRecord {
   };
   students: EnrolledStudent[];
 }
+
+export interface StudentOption {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  enrolledCourses: string[];
+}
