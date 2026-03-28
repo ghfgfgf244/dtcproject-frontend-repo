@@ -1,0 +1,273 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #17213a;
+  margin: 0;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: #6c7a96;
+  font-size: 14px;
+}
+
+.createBtn {
+  border: none;
+  background: #1ca7ec;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e6edf5;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 50px 1.2fr 1.5fr 1fr 1fr 180px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.head {
+  background: #f6f8fb;
+  color: #8b98b2;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.row + .row {
+  border-top: 1px solid #edf1f6;
+}
+
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e9eff7;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #1c2a44;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.email {
+  color: #6c7a96;
+  font-size: 13px;
+}
+
+.role {
+  color: #1c2a44;
+  font-weight: 600;
+}
+
+.status {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  justify-self: flex-start;
+}
+
+.active {
+  background: #e6f7ef;
+  color: #1b8f5a;
+}
+
+.inactive {
+  background: #ffe9ea;
+  color: #d64545;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.editBtn,
+.deleteBtn,
+.saveBtn,
+.cancelBtn {
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editBtn {
+  background: #e9eff7;
+  color: #1c2a44;
+}
+
+.deleteBtn {
+  background: #ffe9ea;
+  color: #d64545;
+}
+
+.saveBtn {
+  background: #1ca7ec;
+  color: #ffffff;
+}
+
+.cancelBtn {
+  background: #f2f4f7;
+  color: #475569;
+}
+
+.input,
+.select {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1c2a44;
+}
+
+.editGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uploadBtn {
+  border: 1px dashed #cbd5e1;
+  background: #ffffff;
+  color: #1c2a44;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uploadBtn input {
+  display: none;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  display: grid;
+  gap: 16px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  color: #17213a;
+}
+
+.modalHeader button {
+  border: none;
+  background: #f2f4f7;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.modalGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.modalField {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.uploadCard {
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  place-items: center;
+  background: #f8fafc;
+  cursor: pointer;
+  min-height: 120px;
+}
+
+.uploadCard img {
+  width: 100%;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.uploadCard input {
+  display: none;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #1ca7ec;
+  box-shadow: 0 0 0 3px rgba(28, 167, 236, 0.15);
+}
