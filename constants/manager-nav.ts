@@ -12,6 +12,9 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Lớp học & Lịch trình', href: '/training-manager/classes', icon: 'groups' },
       { label: 'Kỳ thi', href: '/training-manager/exams', icon: 'assignment' },
       { label: 'Giảng viên', href: '/training-manager/instructors', icon: 'badge' },
+      { label: 'Duyệt đăng ký', href: '/training-manager/registrations', icon: 'how_to_reg' },
+      { label: 'Bộ đề thi thử', href: '/training-manager/mock-exams', icon: 'note' },
+      { label: 'Điều phối giảng viên', href: '/training-manager/assignments', icon: 'swap_horiz' },
       { label: 'Thông báo', href: '/training-manager/notifications', icon: 'notifications' },
       { label: 'Tài liệu cá nhân', href: '/training-manager/documents', icon: 'description' }, 
     ]
@@ -32,8 +35,10 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
     title: 'Admin',
     items: [
       { label: 'Tổng quan', href: '/admin/dashboard', icon: 'pie_chart' },
-      { label: 'Trung tâm', href: '/admin/centers', icon: 'domain' },
+      { label: 'Quản lý trung tâm', href: '/admin/centers', icon: 'domain' },
       { label: 'Quản lý người dùng', href: '/admin/users', icon: 'manage_accounts' },
+      { label: 'Duyệt kỳ thi', href: '/admin/exam-approvals', icon: 'verified' },
+      { label: 'Duyệt khóa học', href: '/admin/courses', icon: 'auto_stories' },
       { label: 'Tài chính', href: '/admin/financials', icon: 'account_balance' },
       { label: 'Cài đặt', href: '/admin/settings', icon: 'settings' },
       { label: 'Thông báo', href: '/admin/notifications', icon: 'notifications' },
