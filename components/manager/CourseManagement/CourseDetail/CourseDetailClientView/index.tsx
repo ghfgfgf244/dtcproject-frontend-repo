@@ -4,42 +4,52 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ArrowLeft, Edit3, FileText, Banknote, ShieldCheck, IdCard } from 'lucide-react';
-import CourseModal from '@/components/manager/Modals/CourseModal';
-import { LicenseType, CourseStatus } from '@/types/course';
-
-interface CourseDetail {
-  id: string;
-  name: string;
-  status: string;
-  licenseType: string;
-  longDescription: string;
-  duration: string;
-  inclusions: string;
-  price: number;
-}
+import CourseModal, { CourseSubmitData } from '@/components/manager/Modals/CourseModal';
+import { LicenseType, CourseStatus, Course, CourseRecord } from '@/types/course';
+import { courseService } from '@/services/courseService';
 
 interface Props {
-  course: CourseDetail;
+  course: Course;
 }
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN').format(amount);
 };
 
-export default function CourseDetailClientView({ course }: Props) {
+export default function CourseDetailClientView({ course: initialCourse }: Props) {
   const router = useRouter();
+  const [course, setCourse] = useState<Course>(initialCourse);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Ép kiểu dữ liệu chuẩn để truyền vào Modal
-  const mapToFormRecord = (detail: CourseDetail) => {
+  // Ép kiểu dữ liệu để truyền vào Modal (Dùng CourseRecord cho tính tương thích)
+  const mapToFormRecord = (c: Course): CourseRecord => {
     return {
-      id: detail.id,
-      name: detail.name,
-      description: detail.duration, 
-      licenseType: detail.licenseType as LicenseType,
-      price: detail.price,
-      status: detail.status as CourseStatus
+      id: c.id,
+      name: c.courseName,
+      description: c.description, 
+      licenseType: c.licenseType as LicenseType,
+      price: c.price,
+      status: c.isActive ? 'Hoạt động' : 'Ngừng hoạt động'
     };
+  };
+
+  const handleUpdate = async (data: CourseSubmitData) => {
+    try {
+      const payload = {
+        courseName: data.name,
+        description: data.description,
+        price: Number(data.price),
+        isActive: data.status === 'Hoạt động'
+      };
+      
+      if (data.id) {
+        const updated = await courseService.updateCourse(data.id, payload);
+        setCourse(updated);
+        setIsModalOpen(false);
+      }
+    } catch (err) {
+      alert("Lỗi khi cập nhật khóa học.");
+    }
   };
 
   return (
@@ -51,18 +61,18 @@ export default function CourseDetailClientView({ course }: Props) {
         <ChevronRight className="w-4 h-4" />
         <button onClick={() => router.push('/training-manager/courses')} className="hover:text-blue-600 transition-colors">Khóa học</button>
         <ChevronRight className="w-4 h-4" />
-        <span className="text-slate-900 font-bold">{course.name}</span>
+        <span className="text-slate-900 font-bold">{course.courseName}</span>
       </nav>
 
       {/* Page Header & Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900">{course.name}</h1>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900">{course.courseName}</h1>
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wider uppercase ${
-              course.status === 'Hoạt động' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'
+              course.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'
             }`}>
-              {course.status}
+              {course.isActive ? 'Hoạt động' : 'Ngừng hoạt động'}
             </span>
           </div>
           <p className="text-slate-500 flex items-center gap-2 font-medium">
@@ -99,18 +109,18 @@ export default function CourseDetailClientView({ course }: Props) {
             <div>
               <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mô tả chi tiết</h4>
               <p className="text-slate-700 leading-relaxed font-medium">
-                {course.longDescription}
+                {course.description}
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Thời lượng</h4>
-                <p className="text-slate-900 font-bold text-lg">{course.duration}</p>
+                <p className="text-slate-900 font-bold text-lg">{course.durationInWeeks} Tuần</p>
               </div>
               <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
-                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Bao gồm</h4>
-                <p className="text-slate-900 font-bold text-lg">{course.inclusions}</p>
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Số lượng tối đa</h4>
+                <p className="text-slate-900 font-bold text-lg">{course.maxStudents} Học viên / lớp</p>
               </div>
             </div>
           </div>
@@ -147,10 +157,7 @@ export default function CourseDetailClientView({ course }: Props) {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         initialData={mapToFormRecord(course)} 
-        onSubmit={(data) => {
-          console.log("Cập nhật Khóa học từ trang chi tiết:", data);
-          setIsModalOpen(false);
-        }}
+        onSubmit={handleUpdate}
       />
     </div>
   );

@@ -1,19 +1,34 @@
-// src/types/document.ts
+// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\types\document.ts
 
-export type DocumentType = 'CCCD / CMND' | 'Giấy phép Lái xe' | 'Chứng chỉ nghề' | 'Giấy khám Sức khỏe' | 'Khác';
+export interface DocumentResponse {
+  id: string;
+  userId: string;
+  resourceType: string;
+  providerPublicId: string;
+  version: string;
+  fileName: string;
+  extension: string;
+  size: number;
+  isVerified: boolean;
+  fileUrl: string;
+  createdAt: string;
+}
+
+export type DocumentType = 'CCCD / CMND' | 'Giấy phép Lái xe' | 'Giấy khám Sức khỏe' | 'Chứng chỉ nghề' | 'Khác' | 'Tài liệu';
 
 export interface DocumentRecord {
-  id?: string;             // DB: Id (uuid)
-  userId: string;          // DB: UserId (uuid) - Biết tài liệu này của ai
-  documentType: DocumentType; // DB: DocumentType (nvarchar)
-  fileUrl: string;         // DB: FileUrl (nvarchar)
-  fileName: string;        // DB: FileName (nvarchar)
-  fileExtension: string;   // DB: FileExtension (nvarchar(10))
-  fileSize: number;        // DB: FileSize (int) - Lưu theo Bytes
-  uploadDate?: string;     // DB: UploadDate (datetime)
-  isVerified: boolean;     // DB: IsVerified (bit)
+  id: string;
+  userId: string;
+  documentType: DocumentType;
+  fileName: string;
+  fileExtension: string;
+  fileSize: number;
+  fileUrl: string;
+  isVerified: boolean;
+  uploadDate: string;
 }
-// src/types/document.ts
 
-export type DocCategory = 'Giáo trình' | 'Quy định' | 'Biểu mẫu' | 'Khác';
-export type DocFormat = 'PDF' | 'DOCX' | 'XLSX' | 'MP4';
+export interface DocumentUploadResponse {
+  success: boolean;
+  data: DocumentResponse;
+}

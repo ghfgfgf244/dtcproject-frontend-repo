@@ -29,7 +29,7 @@ export default function ExamBatchTable({
           <thead>
             <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
               <th className="px-6 py-4 font-bold">Thông tin Đợt thi</th>
-              <th className="px-6 py-4 font-bold">Mã Khóa học</th>
+              <th className="px-6 py-4 font-bold">Số lượng ứng viên</th>
               <th className="px-6 py-4 font-bold">Trạng thái</th>
               <th className="px-6 py-4 font-bold text-right">Thao tác</th>
             </tr>
@@ -45,15 +45,25 @@ export default function ExamBatchTable({
                   <p className="text-sm font-bold text-slate-900">{batch.batchName}</p>
                   <p className="text-xs text-slate-400">ID: {batch.id}</p>
                 </td>
-                <td className="px-6 py-4 text-xs font-mono text-slate-700">{batch.courseId}</td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-1.5 text-xs font-bold">
+                    <span className="text-blue-600">{batch.currentCandidates}</span>
+                    <span className="text-slate-400">/ {batch.maxCandidates}</span>
+                  </div>
+                </td>
                 <td className="px-6 py-4">
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                    batch.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 
-                    batch.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                    batch.status === 'OpenForRegistration' || batch.status === 'InProgress' ? 'bg-emerald-100 text-emerald-700' : 
+                    batch.status === 'Pending' ? 'bg-blue-100 text-blue-700' : 
+                    batch.status === 'Completed' ? 'bg-slate-100 text-slate-600' : 
+                    batch.status === 'ClosedForRegistration' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                   }`}>
-                    {batch.status === 'ACTIVE' ? 'ĐANG DIỄN RA' :
-                     batch.status === 'UPCOMING' ? 'SẮP DIỄN RA' :
-                     batch.status === 'COMPLETED' ? 'ĐÃ KẾT THÚC' : batch.status}
+                    {batch.status === 'Pending' ? 'CHƯA MỞ ĐĂNG KÝ' :
+                     batch.status === 'OpenForRegistration' ? 'ĐANG MỞ ĐĂNG KÝ' :
+                     batch.status === 'ClosedForRegistration' ? 'ĐÃ ĐÓNG ĐĂNG KÝ' :
+                     batch.status === 'InProgress' ? 'ĐANG DIỄN RA KỲ THI' :
+                     batch.status === 'Completed' ? 'ĐÃ KẾT THÚC' : 
+                     batch.status === 'Cancelled' ? 'ĐÃ HỦY' : batch.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">

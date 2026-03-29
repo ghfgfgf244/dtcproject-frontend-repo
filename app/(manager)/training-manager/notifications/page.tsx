@@ -16,10 +16,7 @@ export default function NotificationsPage() {
         <Breadcrumbs items={breadcrumbItems} />
       </div>
 
-      <NotificationClientView 
-        initialNotifications={MOCK_NOTIFICATIONS} 
-        alerts={MOCK_ALERTS} 
-      />
+      <NotificationClientView />
     </div>
   );
 }
