@@ -1,0 +1,133 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #17213a;
+  margin: 0;
+}
+
+.header p {
+  color: #6c7a96;
+  font-size: 14px;
+  margin: 0;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e6edf5;
+}
+
+.examInfo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.examInfo div {
+  background: #f6f8fb;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.examInfo span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8b98b2;
+}
+
+.examInfo strong {
+  color: #17213a;
+  font-size: 14px;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.field input {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1c2a44;
+}
+
+.signature {
+  grid-column: span 2;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.resetBtn,
+.cancelBtn,
+.submitBtn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.resetBtn {
+  background: #f2f4f7;
+  color: #475569;
+}
+
+.cancelBtn {
+  background: #ffe9ea;
+  color: #d64545;
+}
+
+.submitBtn {
+  background: #1ca7ec;
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .examInfo {
+    grid-template-columns: 1fr;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .signature {
+    grid-column: span 1;
+  }
+}
