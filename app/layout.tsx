@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import Footer from "@/components/ui/Footer";
+import SyncUser from "@/components/auth/SyncUser";
 import "../styles/globals.css";
 import "../styles/clerk.css";
 
@@ -69,6 +70,9 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
         >
+          {/* Sync Clerk user with local backend on login */}
+          <SyncUser />
+
           {/* MAIN CONTENT */}
           <main className="flex-1">{children}</main>
 

@@ -1,29 +1,75 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
 import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs/index';
 import NotificationDetail from '@/components/manager/Shared/NotificationDetail';
-import { MOCK_NOTIFICATION_DETAILS } from '@/constants/notification-data';
+import { notificationService } from '@/services/notificationService';
+import { NotificationRecord } from '@/types/notification';
 
-// Thêm async và hỗ trợ Promise cho params (Chuẩn Next.js 15+)
-export default async function NotificationDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> | { id: string } 
-}) {
+export default function NotificationDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const { getToken } = useAuth();
+  const [data, setData] = useState<NotificationRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+
   const breadcrumbsItems = [
     { label: 'Dashboard', href: '/training-manager/dashboard' },
     { label: 'Notifications', href: '/training-manager/notifications' },
     { label: 'Detail' }
   ];
 
-  // 1. Lấy ID từ URL an toàn
-  const resolvedParams = await params;
-  const currentId = resolvedParams.id;
+  const fetchData = useCallback(async (id: string) => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      const detail = await notificationService.getNotificationById(id);
+      if (detail) {
+        setData(detail);
+        // Tự động đánh dấu đã đọc khi xem chi tiết
+        if (!detail.isRead) {
+          await notificationService.markAsRead(id);
+          setData({ ...detail, isRead: true });
+        }
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      console.error("Error fetching notification detail:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
 
-  // 2. Tra cứu đúng 1 bài thông báo cụ thể từ Từ điển (Mock Data)
-  const detailData = MOCK_NOTIFICATION_DETAILS[currentId];
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolved = await params;
+      setCurrentId(resolved.id);
+      fetchData(resolved.id);
+    };
+    resolveParams();
+  }, [params, fetchData]);
 
-  // 3. Lớp phòng thủ: Nếu ID trên URL bịa đặt hoặc không tồn tại
-  if (!detailData) {
+  if (loading) {
+    return (
+      <div className="p-6 md:p-8 flex flex-col min-h-screen bg-slate-50">
+        <div className="mb-6">
+          <Breadcrumbs items={breadcrumbsItems} />
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white rounded-xl border border-slate-200">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-slate-500 font-medium">Đang tải thông báo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
     return (
       <div className="p-6 md:p-8 flex flex-col min-h-screen bg-slate-50">
         <div className="mb-6">
@@ -31,21 +77,18 @@ export default async function NotificationDetailPage({
         </div>
         <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white rounded-xl border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-800 mb-2">Không tìm thấy thông báo</h2>
-          <p className="text-slate-500">Thông báo mang mã (ID: {currentId}) không tồn tại trong hệ thống.</p>
+          <p className="text-slate-500">Thông báo mang mã (ID: {currentId}) không tồn tại hoặc bạn không có quyền xem.</p>
         </div>
       </div>
     );
   }
 
-  // 4. Nếu tìm thấy, truyền ĐÚNG 1 BÀI VÀO COMPONENT
   return (
     <div className="p-6 md:p-8 flex flex-col min-h-screen bg-slate-50">
       <div className="mb-6">
         <Breadcrumbs items={breadcrumbsItems} />
       </div>
-
-      {/* Sửa lại ở đây: Truyền detailData thay vì cả cục MOCK_NOTIFICATION_DETAILS */}
-      <NotificationDetail data={detailData} />
+      <NotificationDetail data={data as any} />
     </div>
   );
 }

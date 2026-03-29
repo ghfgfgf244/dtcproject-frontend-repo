@@ -12,18 +12,21 @@ interface Props {
 export default function NotificationDetail({ data }: Props) {
   const router = useRouter();
 
-  // GUARD CLAUSE: Bảo vệ component khỏi lỗi "Cannot read properties of undefined"
-  // Đảm bảo nếu bị truyền data rỗng, nó sẽ không cố gắng render các thuộc tính như data.tag, data.title
   if (!data) {
     return (
       <div className="w-full h-40 flex items-center justify-center">
-        <p className="text-slate-400 font-medium">Đang tải dữ liệu thông báo...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400 font-medium">Đang tải dữ liệu thông báo...</p>
+        </div>
       </div>
     );
   }
 
+  // Derive initials or placeholder data for the premium UI
+  const initials = data.title.substring(0, 2).toUpperCase();
+
   return (
-    // Thêm animate-in fade-in slide-in-from-bottom-4 để tạo hiệu ứng trượt nhẹ từ dưới lên
     <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Nút Quay Lại */}
@@ -45,7 +48,7 @@ export default function NotificationDetail({ data }: Props) {
           <div>
             <div className="flex items-center gap-3 mb-3">
               <span className="px-3 py-1 bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest rounded-full">
-                {data.tag}
+                {data.typeLabel}
               </span>
               <span className="text-slate-400 text-[11px] font-mono">ID: {data.id.split('-')[0]}...</span>
             </div>
@@ -69,71 +72,40 @@ export default function NotificationDetail({ data }: Props) {
           <div className="lg:col-span-2 space-y-8">
             <div className="space-y-4">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nội dung chi tiết</h3>
-              <div className="text-slate-700 leading-relaxed text-[15px] bg-slate-50/50 p-6 rounded-xl border border-slate-100">
-                {data.content.map((paragraph, index) => (
-                  <p key={index} className="mb-4 last:mb-0">
-                    {paragraph}
-                  </p>
-                ))}
+              <div className="text-slate-700 leading-relaxed text-[15px] bg-slate-50/50 p-6 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                {data.message}
               </div>
             </div>
 
             {/* Thuộc tính Hệ thống */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Mã Trung tâm</span>
-                <span className="text-sm font-mono text-slate-900 truncate block">{data.centerId}</span>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Thời gian gửi</span>
+                <span className="text-sm font-bold text-slate-900 block">{new Date(data.createdAt).toLocaleString('vi-VN')}</span>
               </div>
               <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái Xóa</span>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</span>
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${data.isDeleted ? 'bg-red-500' : 'bg-slate-300'}`}></span>
-                  <span className="text-sm font-bold text-slate-900">{data.isDeleted ? 'Đúng (True)' : 'Sai (False)'}</span>
+                  <span className={`w-2 h-2 rounded-full ${data.isRead ? 'bg-slate-300' : 'bg-blue-500'}`}></span>
+                  <span className="text-sm font-bold text-slate-900">{data.isRead ? 'Đã đọc' : 'Chưa đọc'}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Cột Phải: Siêu dữ liệu (Metadata & Actions) */}
+          {/* Cột Phải: Metadata & Actions */}
           <div className="space-y-8 lg:border-l lg:border-slate-100 lg:pl-8">
             
-            {/* Lịch sử Tạo */}
+            {/* Thông tin thêm */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Lịch sử bản ghi</h3>
-              <div className="space-y-1">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tạo lúc</span>
-                <span className="text-sm font-bold text-slate-900">{data.createdAt}</span>
-              </div>
-              <div className="space-y-2">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tạo bởi</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center">
-                    <span className="text-[10px] font-black text-slate-600">{data.createdBy.initials}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-bold text-slate-900 block">{data.createdBy.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono block">User: {data.createdBy.id}</span>
-                  </div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Người gửi</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs">
+                  {initials}
                 </div>
-              </div>
-            </div>
-
-            {/* Lịch sử Cập nhật */}
-            <div className="space-y-4 pt-4 border-t border-slate-100">
-              <div className="space-y-1">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cập nhật lúc</span>
-                <span className="text-sm font-bold text-slate-900">{data.updatedAt}</span>
-              </div>
-              <div className="space-y-2">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cập nhật bởi</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center">
-                    <span className="text-[10px] font-black text-slate-600">{data.updatedBy.initials}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-bold text-slate-900 block">{data.updatedBy.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono block">User: {data.updatedBy.id}</span>
-                  </div>
+                <div>
+                  <span className="text-sm font-bold text-slate-900 block">Ban quản trị hệ thống</span>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Administrator</span>
                 </div>
               </div>
             </div>

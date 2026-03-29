@@ -25,7 +25,7 @@ export default function CourseTable({ courses, currentPage, totalPages, totalIte
     switch (type) {
       case 'A1': return <Bike className="w-5 h-5" />;
       case 'B1': return <CarFront className="w-5 h-5" />;
-      case 'B2': return <Car className="w-5 h-5" />;
+      case 'B': return <Car className="w-5 h-5" />;
       case 'C': return <Truck className="w-5 h-5" />;
     }
   };
