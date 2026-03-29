@@ -1,13 +1,12 @@
 // src/app/(manager)/enrollment-manager/terms/_components/TermClientView/index.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Filter, CalendarCheck2 } from 'lucide-react';
 import { TermRecord, TermStatus } from '@/types/term';
 
 import TermTable from '../TermTable';
-// import TermModal from '../Modals/TermModal'; 
-// import ConfirmModal from '@/components/ui/ConfirmModal';
+import TermModal from '../../Modals/TermModal';
 
 interface Props {
   initialTerms: TermRecord[];
@@ -16,15 +15,24 @@ interface Props {
 export default function TermClientView({ initialTerms }: Props) {
   // 1. States cho Filter
   const [statusFilter, setStatusFilter] = useState<TermStatus | 'All'>('All');
+  const [courseFilter, setCourseFilter] = useState<string>('All'); // Thêm state quản lý filter Hệ đào tạo
   
   // 2. States cho Modal (Sẽ dùng ở bước sau)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTerm, setEditingTerm] = useState<TermRecord | null>(null);
   
-  // 3. Lọc dữ liệu
-  const filteredTerms = initialTerms.filter(term => {
-    return statusFilter === 'All' || term.status === statusFilter;
-  });
+  // 3. Lọc dữ liệu (Tối ưu bằng useMemo)
+  const filteredTerms = useMemo(() => {
+    return initialTerms.filter(term => {
+      // Điều kiện 1: Trạng thái
+      const matchStatus = statusFilter === 'All' || term.status === statusFilter;
+      
+      // Điều kiện 2: Hệ đào tạo (Tìm kiếm chuỗi B1, B2, C bên trong courseName)
+      const matchCourse = courseFilter === 'All' || term.courseName.includes(courseFilter);
+
+      return matchStatus && matchCourse;
+    });
+  }, [initialTerms, statusFilter, courseFilter]);
 
   // Tính số lượng học kỳ đang hoạt động
   const activeCount = initialTerms.filter(t => t.status === 'Active').length;
@@ -82,11 +90,16 @@ export default function TermClientView({ initialTerms }: Props) {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Hệ đào tạo</label>
-            <select className="bg-slate-100 border-none rounded-lg py-2 px-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-600 min-w-[180px] cursor-pointer">
-              <option>Tất cả hạng bằng</option>
-              <option>Hạng B1 (Số tự động)</option>
-              <option>Hạng B2 (Số sàn)</option>
-              <option>Hạng C (Xe tải)</option>
+            <select 
+              className="bg-slate-100 border-none rounded-lg py-2 px-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-600 min-w-[180px] cursor-pointer"
+              value={courseFilter}
+              onChange={(e) => setCourseFilter(e.target.value)}
+            >
+              {/* Đã bổ sung thuộc tính value để so khớp với dữ liệu */}
+              <option value="All">Tất cả hạng bằng</option>
+              <option value="B1">Hạng B1 (Số tự động)</option>
+              <option value="B2">Hạng B2 (Số sàn)</option>
+              <option value="C">Hạng C (Xe tải)</option>
             </select>
           </div>
 
@@ -119,13 +132,13 @@ export default function TermClientView({ initialTerms }: Props) {
       />
 
       {/* Modals (Placeholder cho công việc tiếp theo) */}
-      {/* <TermModal 
+      <TermModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={editingTerm}
         onSubmit={(data) => { console.log('Save Term', data); setIsModalOpen(false); }}
       /> 
-      */}
+     
       
     </div>
   );

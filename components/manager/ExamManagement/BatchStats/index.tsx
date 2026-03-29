@@ -37,10 +37,6 @@ export default function BatchStats({ batchName, examCount }: Props) {
           </div>
         </div>
       </div>
-
-      <button className="mt-auto w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">
-        Xem báo cáo chi tiết
-      </button>
     </section>
   );
 }

@@ -51,8 +51,8 @@ export default function DocumentClientView({ initialDocs }: Props) {
           <div className="mb-2">
             <Breadcrumbs items={breadcrumbsItems} />
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">Quản lý Hồ sơ</h2>
-          <p className="text-slate-500 mt-1">Kiểm tra và xác thực giấy tờ tùy thân, bằng cấp của nhân sự & học viên.</p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900">Hồ sơ cá nhân</h2>
+          <p className="text-slate-500 mt-1">Đăng tải và quản lý các giấy tờ cá nhân của bạn.</p>
         </div>
         <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95">
           <UploadCloud className="w-5 h-5" /> Tải hồ sơ lên
