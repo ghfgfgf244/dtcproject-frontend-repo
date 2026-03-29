@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/admin-courses.module.css";
 
@@ -60,8 +59,6 @@ export default function AdminCoursesPage() {
 
   return (
     <div className={shellStyles.page}>
-      <Sidebar activeKey="admin-courses" />
-
       <section className={shellStyles.content}>
         <header className={styles.header}>
           <div>
