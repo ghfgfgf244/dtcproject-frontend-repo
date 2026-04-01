@@ -9,6 +9,7 @@ import { MOCK_POST_KPIS } from "@/constants/post-data";
 import PostStats from "../PostStats";
 import PostTable from "../PostTable";
 import PostModal from "../../Modals/PostModal";
+import ConfirmModal from "@/components/ui/confirm-modal"; // Đảm bảo đường dẫn này đúng trong dự án của bạn
 
 interface Props {
   initialPosts: PostRecord[];
@@ -17,24 +18,29 @@ interface Props {
 const ITEMS_PER_PAGE = 5;
 
 export default function PostClientView({ initialPosts }: Props) {
+  // 1. Quản lý dữ liệu chính (để cập nhật UI real-time)
+  const [posts, setPosts] = useState<PostRecord[]>(initialPosts);
+
+  // 2. States cho Filter & Pagination
   const [categoryFilter, setCategoryFilter] = useState("Tất cả hạng");
   const [statusFilter, setStatusFilter] = useState("Tất cả trạng thái");
   const [currentPage, setCurrentPage] = useState(1);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // 3. States cho Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostFormData | null>(null);
-  const [startDate, setStartDate] = useState(''); // State Từ ngày
-  const [endDate, setEndDate] = useState('');     // State Đến ngày
+  
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<PostRecord | null>(null);
 
-// 3. Logic Lọc (Real-time Filter)
+  // 4. Logic Lọc (Real-time Filter)
   const filteredPosts = useMemo(() => {
-    return initialPosts.filter(post => {
-      // Lọc theo Hạng
+    return posts.filter(post => {
       const matchCategory = categoryFilter === 'Tất cả hạng' || post.category === categoryFilter;
-      
-      // Lọc theo Trạng thái
       const matchStatus = statusFilter === 'Tất cả trạng thái' || post.status === statusFilter;
       
-      // Lọc theo Khoảng thời gian (Ngày đăng)
       let matchDate = true;
       if (startDate && endDate) {
         matchDate = post.publishedDate >= startDate && post.publishedDate <= endDate;
@@ -46,9 +52,9 @@ export default function PostClientView({ initialPosts }: Props) {
 
       return matchCategory && matchStatus && matchDate;
     });
-  }, [initialPosts, categoryFilter, statusFilter, startDate, endDate]);
+  }, [posts, categoryFilter, statusFilter, startDate, endDate]);
 
-  // Logic Phân trang
+  // 5. Logic Phân trang
   const totalItems = filteredPosts.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const paginatedPosts = filteredPosts.slice(
@@ -56,13 +62,38 @@ export default function PostClientView({ initialPosts }: Props) {
     currentPage * ITEMS_PER_PAGE,
   );
 
-  // Hàm Reset bộ lọc
+  // --- HANDLERS ---
+
   const resetFilters = () => {
     setCategoryFilter('Tất cả hạng');
     setStatusFilter('Tất cả trạng thái');
     setStartDate('');
     setEndDate('');
     setCurrentPage(1);
+  };
+
+  const handleOpenDelete = (post: PostRecord) => {
+    setPostToDelete(post);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (postToDelete) {
+      // Logic xóa cục bộ để UI cập nhật ngay lập tức
+      setPosts(prev => prev.filter(p => p.id !== postToDelete.id));
+      
+      // TODO: Gọi API delete thực tế tại đây
+      console.log("Deleted post successfully:", postToDelete.id);
+      
+      // Đóng modal và reset state tạm
+      setIsDeleteModalOpen(false);
+      setPostToDelete(null);
+
+      // Nếu trang hiện tại không còn item nào sau khi xóa, quay lại trang trước
+      if (paginatedPosts.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
+    }
   };
 
   return (
@@ -93,18 +124,14 @@ export default function PostClientView({ initialPosts }: Props) {
         </div>
       </div>
 
-      {/* KPI Stats */}
       <PostStats data={MOCK_POST_KPIS} />
 
-      {/* Filters & Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Filter Bar */}
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                Hạng bằng
-              </label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hạng bằng</label>
               <select
                 className="text-sm font-medium border-none bg-white rounded-lg px-4 py-2 ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-600 w-40 cursor-pointer outline-none"
                 value={categoryFilter}
@@ -121,9 +148,7 @@ export default function PostClientView({ initialPosts }: Props) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                Trạng thái
-              </label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Trạng thái</label>
               <select
                 className="text-sm font-medium border-none bg-white rounded-lg px-4 py-2 ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-600 w-40 cursor-pointer outline-none"
                 value={statusFilter}
@@ -139,7 +164,6 @@ export default function PostClientView({ initialPosts }: Props) {
               </select>
             </div>
 
-            {/* Filter Date Mockup */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Khoảng thời gian đăng</label>
               <div className="flex items-center gap-2">
@@ -171,7 +195,6 @@ export default function PostClientView({ initialPosts }: Props) {
           </div>
         </div>
 
-        {/* Table Component */}
         <PostTable
           data={paginatedPosts}
           currentPage={currentPage}
@@ -181,28 +204,41 @@ export default function PostClientView({ initialPosts }: Props) {
           onPageChange={setCurrentPage}
           onView={(post) => console.log("View post", post.id)}
           onEdit={(post) => {
-            // Chuyển đổi dữ liệu Record thành FormData
             setEditingPost({
               id: post.id,
               title: post.title,
               category: post.category,
-              summary: "", // Có thể fetch thêm chi tiết nếu cần
-              content: "", // Có thể fetch thêm chi tiết nếu cần
+              summary: "", 
+              content: "", 
               isPublished: post.status === "Đang hiển thị",
             });
             setIsModalOpen(true);
           }}
-          onDelete={(post) => console.log("Delete post", post.id)}
+          onDelete={handleOpenDelete} // Sử dụng handler mới để mở ConfirmModal
         />
       </div>
+
+      {/* --- MODALS --- */}
+      
       <PostModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={editingPost}
         onSubmit={(data) => {
           console.log("Dữ liệu Submit Bài Đăng:", data);
-          // TODO: Gọi API Create/Update tại đây
+          // TODO: Logic Create/Update API
           setIsModalOpen(false);
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Xác nhận xóa bài đăng"
+        message={`Bạn có chắc chắn muốn xóa bài viết "${postToDelete?.title}"? Hành động này sẽ gỡ bỏ bài viết khỏi hệ thống và không thể hoàn tác.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setIsDeleteModalOpen(false);
+          setPostToDelete(null);
         }}
       />
     </div>
