@@ -1,7 +1,6 @@
 // src/app/(manager)/training-manager/registrations/page.tsx
 import React from 'react';
 import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs/index';
-import { MOCK_REGISTRATIONS } from '@/constants/registration-data';
 import RegistrationClientView from '@/components/manager/RegistrationManagement/RegistrationClientView';
 
 export default function ExamRegistrationPage() {
@@ -17,7 +16,7 @@ export default function ExamRegistrationPage() {
         <Breadcrumbs items={breadcrumbsItems} />
       </div>
       <div className="max-w-7xl mx-auto w-full">
-        <RegistrationClientView initialData={MOCK_REGISTRATIONS} />
+        <RegistrationClientView />
       </div>
     </div>
   );

@@ -1,43 +1,35 @@
-export type ExamBatchStatus = 'ACTIVE' | 'UPCOMING' | 'COMPLETED' | 'CANCELED';
+export type ExamBatchStatus = 
+  | 'Pending' 
+  | 'OpenForRegistration' 
+  | 'ClosedForRegistration' 
+  | 'InProgress' 
+  | 'Completed' 
+  | 'Cancelled';
 
-export type ExamType = 'ONLINE' | 'ONSITE' | 'Theory' | 'Practice' | 'Simulation';
+export type ExamType = 'Theory' | 'Simulation' | 'Practice';
+
+export type ExamLevel = 'A1' | 'A' | 'B1' | 'B' | 'B2' | 'C1' | 'C' | 'D1' | 'D2' | 'D' | 'BE' | 'C1E' | 'CE' | 'D1E' | 'D2E' | 'DE';
 
 export interface ExamBatch {
   id: string;
-  courseId: string;
   batchName: string;
   registrationStartDate: string;
   registrationEndDate: string;
   examStartDate: string;
   status: ExamBatchStatus;
+  maxCandidates: number;
+  currentCandidates: number;
 }
 
 export interface Exam {
   id: string;
   examBatchId: string;
-  examName: string;
-  examDate: string;
-  examType: ExamType;
-  durationMinutes: number;
-}
-
-
-export interface ExamBatch {
-  id: string;
   courseId: string;
-  batchName: string;
-  registrationStartDate: string;
-  registrationEndDate: string;
-  examStartDate: string;
-  status: ExamBatchStatus;
-}
-
-export interface Exam {
-  id: string;
-  examBatchId: string;
   examName: string;
   examDate: string;
   examType: ExamType;
+  licenseType?: ExamLevel;
   durationMinutes: number;
-  // Bạn có thể thêm các trường phụ thuộc UI vào đây nếu cần, hoặc bỏ qua
+  totalScore: number;
+  passScore: number;
 }

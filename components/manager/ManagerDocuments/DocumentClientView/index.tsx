@@ -1,21 +1,96 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Search, Filter, UploadCloud, XCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Filter, UploadCloud, XCircle, Loader2 } from 'lucide-react';
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
 import { DocumentRecord, DocumentType } from '@/types/document';
 import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs';
-
+import { documentService } from '@/services/documentService';
 import DocumentTable from '../DocumentTable';
 
 interface Props {
-  initialDocs: DocumentRecord[];
+  initialDocs?: DocumentRecord[];
 }
 
-export default function DocumentClientView({ initialDocs }: Props) {
+export default function DocumentClientView({ initialDocs = [] }: Props) {
+  const { getToken } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // DATA STATES
+  const [documents, setDocuments] = useState<DocumentRecord[]>(initialDocs);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
   // STATES BỘ LỌC
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<DocumentType | 'Tất cả'>('Tất cả');
   const [statusFilter, setStatusFilter] = useState<'Tất cả' | 'Đã duyệt' | 'Chờ duyệt'>('Tất cả');
+
+  // FETCH DATA
+  const fetchDocs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      const data = await documentService.getMyDocuments();
+      setDocuments(data);
+    } catch (err) {
+      setError("Không thể tải danh sách hồ sơ.");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    fetchDocs();
+  }, [fetchDocs]);
+
+  // HANDLERS
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      // Determine resourceType based on extension for Cloudinary
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      const resourceType = ['jpg', 'jpeg', 'png', 'gif'].includes(ext || '') ? 'image' : 'raw';
+
+      const newDoc = await documentService.uploadDocument(file, resourceType);
+      if (newDoc) {
+        setDocuments(prev => [newDoc, ...prev]);
+        alert("Tải hồ sơ lên thành công!");
+      }
+    } catch (err) {
+      alert("Lỗi khi tải hồ sơ lên. Vui lòng thử lại.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa hồ sơ này?")) return;
+    
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await documentService.deleteDocument(id);
+      setDocuments(prev => prev.filter(doc => doc.id !== id));
+      alert("Đã xóa hồ sơ.");
+    } catch (err) {
+      alert("Lỗi khi xóa hồ sơ.");
+    }
+  };
 
   const breadcrumbsItems = [
     { label: 'Trang chủ', href: '/training-manager' },
@@ -23,7 +98,7 @@ export default function DocumentClientView({ initialDocs }: Props) {
   ];
 
   // LOGIC LỌC
-  const filteredDocs = initialDocs.filter(doc => {
+  const filteredDocs = documents.filter(doc => {
     const matchSearch = doc.fileName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType = typeFilter === 'Tất cả' || doc.documentType === typeFilter;
     const matchStatus = 
@@ -42,6 +117,8 @@ export default function DocumentClientView({ initialDocs }: Props) {
 
   const isFiltering = searchTerm !== '' || typeFilter !== 'Tất cả' || statusFilter !== 'Tất cả';
 
+  if (loading && documents.length === 0) return <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>;
+
   return (
     <div className="space-y-8">
       
@@ -54,9 +131,25 @@ export default function DocumentClientView({ initialDocs }: Props) {
           <h2 className="text-3xl font-black tracking-tight text-slate-900">Hồ sơ cá nhân</h2>
           <p className="text-slate-500 mt-1">Đăng tải và quản lý các giấy tờ cá nhân của bạn.</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95">
-          <UploadCloud className="w-5 h-5" /> Tải hồ sơ lên
+        <button 
+          onClick={handleUploadClick}
+          disabled={uploading}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+        >
+          {uploading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <UploadCloud className="w-5 h-5" />
+          )}
+          {uploading ? "Đang tải lên..." : "Tải hồ sơ lên"}
         </button>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleFileChange} 
+          className="hidden" 
+          accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+        />
       </div>
 
       {/* FILTER BAR SECTION - ĐÃ ĐƯA LÊN CÙNG 1 HÀNG */}
@@ -123,9 +216,9 @@ export default function DocumentClientView({ initialDocs }: Props) {
       {/* Bảng Dữ liệu */}
       <DocumentTable 
         documents={filteredDocs} 
-        onView={(doc) => console.log('View', doc.fileName)}
-        onDownload={(doc) => console.log('Download', doc.fileUrl)}
-        onDelete={(doc) => console.log('Delete', doc.id)}
+        onView={(doc) => window.open(doc.fileUrl, '_blank')}
+        onDownload={(doc) => window.open(doc.fileUrl, '_blank')}
+        onDelete={(doc) => handleDelete(doc.id)}
       />
     </div>
   );

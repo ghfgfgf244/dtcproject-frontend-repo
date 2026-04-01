@@ -1,7 +1,11 @@
-// src/app/(manager)/training-manager/courses/_components/Modals/CourseModal.tsx
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import { X, Save, ShieldCheck, ChevronDown } from 'lucide-react';
+import { X, Save, ShieldCheck, ChevronDown, Loader2 } from 'lucide-react';
+import { useAuth } from '@clerk/nextjs';
+import { setAuthToken } from '@/lib/api';
 import { CourseRecord } from '@/types/course';
+import { centerService, Center } from '@/services/centerService';
 
 export interface CourseSubmitData {
   id?: string;
@@ -17,10 +21,13 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialData: CourseRecord | null;
-  onSubmit: (data: CourseSubmitData) => void; // <-- Thay 'any' bằng Type vừa tạo
+  onSubmit: (data: CourseSubmitData) => void;
 }
 
 export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: Props) {
+  const { getToken } = useAuth();
+  const [centers, setCenters] = useState<Center[]>([]);
+  const [loadingCenters, setLoadingCenters] = useState(false);
   const [formData, setFormData] = useState({
     centerId: '',
     name: '',
@@ -31,11 +38,28 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
   });
 
   useEffect(() => {
+    async function fetchCenters() {
+      if (isOpen) {
+        setLoadingCenters(true);
+        try {
+          const token = await getToken();
+          setAuthToken(token);
+          const data = await centerService.getAllCenters();
+          setCenters(data);
+        } catch (error) {
+          console.error("Failed to fetch centers", error);
+        } finally {
+          setLoadingCenters(false);
+        }
+      }
+    }
+    fetchCenters();
+  }, [isOpen, getToken]);
+
+  useEffect(() => {
     if (initialData) {
-      // 2. SỬA LỖI EFFECT: Bỏ qua cảnh báo linter cho riêng dòng set state này
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
-        centerId: 'Main Campus',
+        centerId: '', // Ideally we should have centerId in CourseRecord or fetch it
         name: initialData.name,
         licenseType: initialData.licenseType,
         price: initialData.price.toString(),
@@ -43,7 +67,6 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
         isActive: initialData.status === 'Hoạt động'
       });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         centerId: '',
         name: '',
@@ -94,17 +117,22 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
             </label>
             <div className="relative">
               <select 
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none appearance-none font-medium text-slate-700" 
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none appearance-none font-medium text-slate-700 disabled:opacity-50" 
                 required
                 value={formData.centerId}
                 onChange={(e) => setFormData({...formData, centerId: e.target.value})}
+                disabled={loadingCenters}
               >
-                <option value="" disabled>Chọn cơ sở đào tạo</option>
-                <option value="Main Campus">Trụ sở chính</option>
-                <option value="Downtown Branch">Chi nhánh Trung tâm</option>
-                <option value="North Training Wing">Sân tập phía Bắc</option>
+                <option value="" disabled>{loadingCenters ? 'Đang tải...' : 'Chọn cơ sở đào tạo'}</option>
+                {centers.map(center => (
+                   <option key={center.id} value={center.id}>{center.centerName}</option>
+                ))}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              {loadingCenters ? (
+                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />
+              ) : (
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              )}
             </div>
           </div>
 

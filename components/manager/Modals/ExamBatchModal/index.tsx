@@ -30,6 +30,8 @@ export default function ExamBatchModal({ isOpen, onClose, initialData, onSubmit 
       registrationStartDate: formData.get('registrationStartDate') as string,
       registrationEndDate: formData.get('registrationEndDate') as string,
       examStartDate: formData.get('examStartDate') as string,
+      maxCandidates: Number(formData.get('maxCandidates')) || 0,
+      currentCandidates: initialData?.currentCandidates || 0,
     };
 
     onSubmit(batchData);
@@ -70,20 +72,27 @@ export default function ExamBatchModal({ isOpen, onClose, initialData, onSubmit 
                   {/* Thêm name và required */}
                   <select required name="courseId" defaultValue={initialData?.courseId} className="w-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-600 px-4 py-3 text-sm rounded-lg font-medium text-slate-900 outline-none cursor-pointer">
                     <option value="" disabled>Chọn Khóa học</option>
-                    <option value="B1">Hạng B1 - Số tự động</option>
-                    <option value="B2">Hạng B2 - Số sàn</option>
-                    <option value="C">Hạng C - Xe tải</option>
+                    <option value="07e22f05-19b4-40bb-9e3a-1e9c6356ac4b">Hạng B2 - Số sàn (Mock Course)</option>
+                    <option value="11111111-2222-3333-4444-555555555555">Hạng B1 - Số tự động</option>
+                    <option value="66666666-7777-8888-9999-000000000000">Hạng C - Xe tải</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Trạng thái ban đầu <span className="text-red-500">*</span></label>
-                  {/* Thêm name và required */}
-                  <select required name="status" defaultValue={initialData?.status || 'UPCOMING'} className="w-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-600 px-4 py-3 text-sm rounded-lg font-medium text-slate-900 outline-none cursor-pointer">
-                    <option value="UPCOMING">Sắp diễn ra (Upcoming)</option>
-                    <option value="ACTIVE">Đang diễn ra (Active)</option>
-                    <option value="COMPLETED">Đã kết thúc (Completed)</option>
+                  <select required name="status" defaultValue={initialData?.status || 'Pending'} className="w-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-600 px-4 py-3 text-sm rounded-lg font-medium text-slate-900 outline-none cursor-pointer">
+                    <option value="Pending">Chưa mở đăng ký</option>
+                    <option value="OpenForRegistration">Đang mở đăng ký</option>
+                    <option value="ClosedForRegistration">Đã đóng đăng ký</option>
+                    <option value="InProgress">Đang diễn ra kỳ thi</option>
+                    <option value="Completed">Đã kết thúc</option>
+                    <option value="Cancelled">Đã hủy</option>
                   </select>
+                </div>
+
+                <div>
+                   <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Số ứng viên tối đa <span className="text-red-500">*</span></label>
+                   <input required name="maxCandidates" type="number" min="1" defaultValue={initialData?.maxCandidates || 100} className="w-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-600 px-4 py-3 text-sm rounded-lg font-medium text-slate-900 outline-none placeholder:text-slate-400" />
                 </div>
               </div>
 

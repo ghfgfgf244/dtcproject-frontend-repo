@@ -1,11 +1,14 @@
 // src/app/(manager)/training-manager/exams/_components/ExamClientView/index.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Search, Plus, ClipboardCheck } from "lucide-react";
-import { ExamBatch, Exam } from "@/types/exam";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { Search, Plus, ClipboardCheck, Loader2 } from "lucide-react";
+import { ExamBatch, Exam, ExamBatchStatus } from "@/types/exam";
 import { EXAM_TABS } from "@/constants/exam-data";
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { examService } from "@/services/examService";
 
 import ExamBatchTable from "../ExamBatchTable";
 import ExamCardList from "../ExamCardList";
@@ -14,41 +17,63 @@ import ExamBatchModal from "../../Modals/ExamBatchModal";
 import ExamModal from "../../Modals/ExamModal";
 import ConfirmModal from "@/components/ui/confirm-modal";
 
-interface Props {
-  initialBatches: ExamBatch[];
-  initialExams: Exam[];
-}
+export default function ExamClientView() {
+  const { getToken } = useAuth();
+  
+  // 1. State quản lý dữ liệu
+  const [batches, setBatches] = useState<ExamBatch[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function ExamClientView({
-  initialBatches,
-  initialExams,
-}: Props) {
-  const [batches, setBatches] = useState<ExamBatch[]>(initialBatches);
-  const [exams, setExams] = useState<Exam[]>(initialExams);
-  // 1. State quản lý UI cơ bản
-  const [selectedBatchId, setSelectedBatchId] = useState<string>(
-    initialBatches[0]?.id || "",
-  );
+  // 2. State quản lý UI cơ bản
+  const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedLicenseType, setSelectedLicenseType] = useState<string>("all");
 
-  // 2. State quản lý Modal Đợt thi (Batch)
+  // 3. State quản lý Modal
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<ExamBatch | null>(null);
-
-  // 3. State quản lý Modal Bài thi (Exam)
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
-
-  // 4. State quản lý Modal Xóa (Delete Confirm)
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<ExamBatch | null>(null);
-
-  // 5. State quản lý Modal Xóa Bài thi (Delete Confirm)
   const [isExamConfirmModalOpen, setIsExamConfirmModalOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<Exam | null>(null);
 
-  // --- HANDLERS CHO ĐỢT THI (BATCH) ---
+  // --- FETCH DATA ---
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      const [fetchedBatches, fetchedExams] = await Promise.all([
+        examService.getAllExamBatches(),
+        examService.getAllExams()
+      ]);
+      
+      setBatches(fetchedBatches);
+      setExams(fetchedExams);
+      
+      if (fetchedBatches.length > 0 && !selectedBatchId) {
+        setSelectedBatchId(fetchedBatches[0].id);
+      }
+    } catch (err: any) {
+      console.error("Lỗi khi tải dữ liệu:", err);
+      setError("Không thể tải dữ liệu đợt thi. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, selectedBatchId]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // --- HANDLERS ---
   const handleCreateBatch = () => {
     setEditingBatch(null);
     setIsBatchModalOpen(true);
@@ -59,7 +84,6 @@ export default function ExamClientView({
     setIsBatchModalOpen(true);
   };
 
-  // --- HANDLERS CHO BÀI THI (EXAM) ---
   const handleCreateExam = () => {
     setEditingExam(null);
     setIsExamModalOpen(true);
@@ -70,156 +94,137 @@ export default function ExamClientView({
     setIsExamModalOpen(true);
   };
 
-  // --- HANDLER CHO XÓA ĐỢT THI ---
   const handleDeleteClickBatch = (batch: ExamBatch) => {
     setBatchToDelete(batch);
     setIsConfirmModalOpen(true);
   };
 
-  const handleConfirmDeleteBatch = () => {
-    if (batchToDelete) {
-      console.log("Đang gọi API xóa đợt thi:", batchToDelete.id);
-
-      // Fake logic xóa UI: Lọc bỏ đợt thi vừa xóa khỏi danh sách
-      // setBatches(prev => prev.filter(b => b.id !== batchToDelete.id));
-
-      // Nếu đợt thi bị xóa đang được select, thì clear selection
+  const handleConfirmDeleteBatch = async () => {
+    if (!batchToDelete) return;
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await examService.deleteExamBatch(batchToDelete.id);
+      
+      setBatches(prev => prev.filter(b => b.id !== batchToDelete.id));
       if (selectedBatchId === batchToDelete.id) {
         setSelectedBatchId("");
       }
+    } catch (err) {
+      alert("Lỗi khi xóa đợt thi");
+    } finally {
+      setIsConfirmModalOpen(false);
+      setBatchToDelete(null);
     }
-    setIsConfirmModalOpen(false);
-    setBatchToDelete(null);
-  };
-
-  const handleCancelDeleteBatch = () => {
-    setIsConfirmModalOpen(false);
-    setBatchToDelete(null);
   };
 
   const handleDeleteExamClick = (exam: Exam) => {
-  setExamToDelete(exam);
-  setIsExamConfirmModalOpen(true);
-};
+    setExamToDelete(exam);
+    setIsExamConfirmModalOpen(true);
+  };
 
-const handleConfirmDeleteExam = () => {
-  if (examToDelete) {
-    console.log('Đang gọi API xóa bài thi:', examToDelete.id);
-    
-    // Cập nhật State: Lọc bỏ bài thi vừa xóa khỏi mảng
-    setExams(prev => prev.filter(ex => ex.id !== examToDelete.id));
-  }
-  
-  // Đóng modal và clear state
-  setIsExamConfirmModalOpen(false);
-  setExamToDelete(null);
-};
-
-const handleCancelDeleteExam = () => {
-  setIsExamConfirmModalOpen(false);
-  setExamToDelete(null);
-};
-  // =========================================================
-  // LOGIC SUBMIT: ĐỢT THI (EXAM BATCH)
-  // =========================================================
-  const handleBatchSubmit = (data: Partial<ExamBatch>) => {
-    if (data.id) {
-      // 1. Logic Cập nhật (Edit)
-      setBatches((prev) =>
-        prev.map((batch) =>
-          batch.id === data.id ? ({ ...batch, ...data } as ExamBatch) : batch,
-        ),
-      );
-      console.log("Đã cập nhật Đợt thi:", data.id);
-    } else {
-      // 2. Logic Tạo mới (Create)
-      const newBatch: ExamBatch = {
-        ...data,
-        id: `BATCH-${Math.floor(Math.random() * 10000)}`, // Fake ID
-      } as ExamBatch;
-
-      // Đẩy đợt thi mới lên đầu danh sách
-      setBatches((prev) => [newBatch, ...prev]);
-      console.log("Đã tạo mới Đợt thi:", newBatch.id);
+  const handleConfirmDeleteExam = async () => {
+    if (!examToDelete) return;
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await examService.deleteExam(examToDelete.id);
+      setExams(prev => prev.filter(ex => ex.id !== examToDelete.id));
+    } catch (err) {
+      alert("Lỗi khi xóa bài thi");
+    } finally {
+      setIsExamConfirmModalOpen(false);
+      examToDelete && setExamToDelete(null);
     }
-
-    // Đóng modal và dọn dẹp
-    setIsBatchModalOpen(false);
-    setEditingBatch(null);
   };
 
-  // =========================================================
-  // LOGIC SUBMIT: BÀI THI (EXAM)
-  // =========================================================
-  const handleExamSubmit = (data: Partial<Exam>) => {
-    if (data.id) {
-      // 1. Logic Cập nhật (Edit)
-      setExams((prev) =>
-        prev.map((exam) =>
-          exam.id === data.id ? ({ ...exam, ...data } as Exam) : exam,
-        ),
-      );
-      console.log("Đã cập nhật Bài thi:", data.id);
-    } else {
-      // 2. Logic Tạo mới (Create)
-      const newExam: Exam = {
-        ...data,
-        id: `EXAM-${Math.floor(Math.random() * 10000)}`, // Fake ID
-      } as Exam;
-
-      // Thêm bài thi mới vào danh sách
-      setExams((prev) => [...prev, newExam]);
-      console.log("Đã tạo mới Bài thi:", newExam.id);
+  const handleBatchSubmit = async (data: Partial<ExamBatch>) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      if (data.id) {
+        const updated = await examService.updateExamBatch(data.id, data);
+        setBatches(prev => prev.map(b => b.id === updated.id ? updated : b));
+      } else {
+        const created = await examService.createExamBatch(data);
+        setBatches(prev => [created, ...prev]);
+        setSelectedBatchId(created.id);
+      }
+      setIsBatchModalOpen(false);
+    } catch (err) {
+      alert("Lỗi khi lưu đợt thi");
     }
-
-    // Đóng modal và dọn dẹp
-    setIsExamModalOpen(false);
-    setEditingExam(null);
   };
 
-  const handleCancelBatch = () => {
-    setIsBatchModalOpen(false);
-    setEditingBatch(null);
-  };
+  const handleExamSubmit = async (data: Partial<Exam>) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      // Ensure score defaults and courseId
+      const submissionData = {
+        ...data,
+        totalScore: data.totalScore || 100,
+        passScore: data.passScore || 40
+      };
 
-  const handleCancelExam = () => {
-    setIsExamModalOpen(false);
-    setEditingExam(null);
+      console.log("POST /api/Exam Payload:", submissionData);
+
+      if (data.id) {
+        const updated = await examService.updateExam(data.id, submissionData);
+        setExams(prev => prev.map(e => e.id === updated.id ? updated : e));
+      } else {
+        const created = await examService.createExam(submissionData);
+        setExams(prev => [...prev, created]);
+      }
+      setIsExamModalOpen(false);
+    } catch (err: any) {
+      console.error("Exam submit error:", err);
+      const backendError = err.response?.data?.message || err.response?.data?.errors?.join(', ') || "Lỗi không xác định";
+      alert(`Lỗi khi lưu bài thi: ${backendError}`);
+    }
   };
 
   // --- LOGIC LỌC DỮ LIỆU ---
   const filteredBatches = useMemo(() => {
-    return initialBatches.filter((batch) => {
-      const matchTab =
-        activeTab === "all" ||
-        (activeTab === "active" && batch.status === "ACTIVE") ||
-        (activeTab === "upcoming" && batch.status === "UPCOMING") ||
-        (activeTab === "completed" && batch.status === "COMPLETED");
-
+    return batches.filter((batch) => {
+      const matchTab = activeTab === "all" || batch.status === activeTab;
       const query = searchQuery.toLowerCase();
       const matchSearch =
-        batch.batchName.toLowerCase().includes(query) ||
-        batch.courseId.toLowerCase().includes(query);
+        batch.batchName.toLowerCase().includes(query);
 
       return matchTab && matchSearch;
     });
-  }, [initialBatches, activeTab, searchQuery]);
+  }, [batches, activeTab, searchQuery]);
 
-  const isSelectedBatchVisible = filteredBatches.some(
-    (b) => b.id === selectedBatchId,
-  );
-  const currentBatchId = isSelectedBatchVisible
+  const currentBatchId = filteredBatches.some(b => b.id === selectedBatchId)
     ? selectedBatchId
-    : filteredBatches[0]?.id;
+    : filteredBatches[0]?.id || "";
 
-  const selectedBatch = initialBatches.find((b) => b.id === currentBatchId);
-  const currentExams = initialExams.filter(
-    (ex) => ex.examBatchId === currentBatchId,
-  );
+  const selectedBatch = batches.find((b) => b.id === currentBatchId);
+  const currentExams = exams
+    .filter((ex) => ex.examBatchId === currentBatchId)
+    .filter((ex) => selectedLicenseType === "all" || ex.licenseType === selectedLicenseType);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+        <p className="text-slate-500 font-medium">Đang tải dữ liệu kỳ thi...</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="flex flex-col space-y-6">
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-lg text-sm font-medium">
+            {error}
+          </div>
+        )}
+
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="relative w-full max-w-md">
@@ -234,7 +239,6 @@ const handleCancelDeleteExam = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto shrink-0">
-            {/* Nút điều hướng sang trang Duyệt đăng ký */}
             <Link 
               href="/training-manager/registrations"
               className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-all active:scale-95 w-full sm:w-auto whitespace-nowrap"
@@ -242,7 +246,6 @@ const handleCancelDeleteExam = () => {
               <ClipboardCheck className="w-4 h-4 text-blue-600" /> Duyệt đăng ký
             </Link>
 
-            {/* Nút Tạo đợt thi mới */}
             <button
               onClick={handleCreateBatch}
               className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 transition-all active:scale-95 w-full sm:w-auto whitespace-nowrap"
@@ -272,7 +275,7 @@ const handleCancelDeleteExam = () => {
         {/* Bảng Đợt Thi */}
         <ExamBatchTable
           batches={filteredBatches}
-          selectedId={currentBatchId || ""}
+          selectedId={currentBatchId}
           onSelect={setSelectedBatchId}
           onEditClick={handleEditBatch}
           onDeleteClick={handleDeleteClickBatch}
@@ -280,13 +283,14 @@ const handleCancelDeleteExam = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {/* Danh sách Bài Thi */}
             <ExamCardList
               batchName={selectedBatch?.batchName}
               exams={currentExams}
               onAddClick={handleCreateExam}
               onEditClick={handleEditExam}
               onDeleteClick={handleDeleteExamClick}
+              selectedLicenseType={selectedLicenseType}
+              onLicenseFilterChange={setSelectedLicenseType}
             />
           </div>
 
@@ -294,6 +298,8 @@ const handleCancelDeleteExam = () => {
             <BatchStats
               batchName={selectedBatch?.batchName}
               examCount={currentExams.length}
+              currentCandidates={selectedBatch?.currentCandidates}
+              maxCandidates={selectedBatch?.maxCandidates}
             />
           </div>
         </div>
@@ -302,17 +308,18 @@ const handleCancelDeleteExam = () => {
       {/* --- RENDER MODALS --- */}
       <ExamBatchModal
         isOpen={isBatchModalOpen}
-        onClose={handleCancelBatch}
+        onClose={() => setIsBatchModalOpen(false)}
         initialData={editingBatch}
-        onSubmit={handleBatchSubmit} // <-- GẮN VÀO ĐÂY
+        onSubmit={handleBatchSubmit}
       />
 
       <ExamModal
         isOpen={isExamModalOpen}
-        onClose={handleCancelExam}
+        onClose={() => setIsExamModalOpen(false)}
         batchContext={{
-          id: currentBatchId || "",
+          id: currentBatchId,
           name: selectedBatch?.batchName || "",
+          courseId: "", // Removing courseId from batch context as individual exams have their own courses
         }}
         initialData={editingExam}
         onSubmit={handleExamSubmit}
@@ -322,7 +329,7 @@ const handleCancelDeleteExam = () => {
         isOpen={isConfirmModalOpen}
         title="Xác nhận xóa đợt thi"
         message={`Bạn có chắc chắn muốn xóa đợt thi "${batchToDelete?.batchName}" không? Toàn bộ dữ liệu phòng thi và danh sách thí sinh thuộc đợt này sẽ bị xóa vĩnh viễn.`}
-        onCancel={handleCancelDeleteBatch}
+        onCancel={() => setIsConfirmModalOpen(false)}
         onConfirm={handleConfirmDeleteBatch}
       />
 
@@ -330,7 +337,7 @@ const handleCancelDeleteExam = () => {
         isOpen={isExamConfirmModalOpen}
         title="Xác nhận xóa kỳ thi"
         message={`Bạn có chắc chắn muốn xóa kỳ thi "${examToDelete?.examName}" không? Dữ liệu liên quan sẽ bị xóa vĩnh viễn.`}
-        onCancel={handleCancelDeleteExam}
+        onCancel={() => setIsExamConfirmModalOpen(false)}
         onConfirm={handleConfirmDeleteExam}
       />
     </>

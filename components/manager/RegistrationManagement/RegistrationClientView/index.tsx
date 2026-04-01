@@ -1,51 +1,97 @@
 // src/app/(manager)/training-manager/registrations/_components/RegistrationClientView/index.tsx
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { Download, CheckCircle2, Info, Verified, History } from 'lucide-react';
-import { RegistrationRecord } from '@/types/registration';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Download, CheckCircle2, Info, Verified, History, Loader2 } from 'lucide-react';
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { RegistrationRecord, ExamRegistrationStatus } from '@/types/registration';
+import { ExamBatch } from '@/types/exam';
+import { examService } from '@/services/examService';
+import { registrationService } from '@/services/registrationService';
 import RegistrationTable from '../RegistrationTable';
 
 interface Props {
-  initialData: RegistrationRecord[];
+  initialData?: RegistrationRecord[]; // Optional as we now fetch
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export default function RegistrationClientView({ initialData }: Props) {
+export default function RegistrationClientView({ initialData = [] }: Props) {
+  const { getToken } = useAuth();
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>(initialData);
+  const [batches, setBatches] = useState<ExamBatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // 1. FILTER STATES
-  const [courseFilter, setCourseFilter] = useState('Tất cả khóa học');
-  const [batchFilter, setBatchFilter] = useState('Tất cả đợt thi');
+  const [courseFilter, setCourseFilter] = useState('all');
+  const [batchFilter, setBatchFilter] = useState('all'); // This will store Batch ID
   const [statusFilter, setStatusFilter] = useState('Đang chờ duyệt');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 2. EXTRACT DYNAMIC OPTIONS (Tự động lấy danh sách Khóa/Đợt không trùng lặp từ data)
+  // 2. DATA FETCHING
+  const fetchBatches = useCallback(async () => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      const data = await examService.getAllExamBatches();
+      setBatches(data);
+      if (data.length > 0) {
+        setBatchFilter(data[0].id);
+      }
+    } catch (err) {
+      setError("Không thể tải danh sách đợt thi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    fetchBatches();
+  }, [fetchBatches]);
+
+  const fetchRegistrations = useCallback(async (batchId: string) => {
+    if (batchId === 'all') return;
+    setLoading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      const data = await registrationService.getRegistrationsByBatch(batchId);
+      setRegistrations(data);
+    } catch (err) {
+      setError("Lỗi khi tải danh sách đăng ký.");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    if (batchFilter !== 'all') {
+      fetchRegistrations(batchFilter);
+    }
+  }, [batchFilter, fetchRegistrations]);
+
+  // 3. EXTRACT DYNAMIC OPTIONS (Courses are derived from all batches)
   const uniqueCourses = useMemo(() => {
-    const courses = registrations.map(reg => reg.course);
+    const courses = batches.map(b => b.batchName.split(' - ')[0] || "Khóa học");
     return Array.from(new Set(courses));
-  }, [registrations]);
+  }, [batches]);
 
-  const uniqueBatches = useMemo(() => {
-    // Nếu có chọn khóa học, chỉ lấy đợt thi của khóa học đó. Nếu không, lấy tất cả.
-    const relevantRegs = courseFilter === 'Tất cả khóa học' 
-      ? registrations 
-      : registrations.filter(reg => reg.course === courseFilter);
-    const batches = relevantRegs.map(reg => reg.examBatch);
-    return Array.from(new Set(batches));
-  }, [registrations, courseFilter]);
+  const batchesInSelectedCourse = useMemo(() => {
+    if (courseFilter === 'all') return batches;
+    return batches.filter(b => b.batchName.startsWith(courseFilter));
+  }, [batches, courseFilter]);
 
-  // 3. LOGIC LỌC DỮ LIỆU ĐA CHIỀU
+  // 4. LOGIC LỌC DỮ LIỆU ĐA CHIỀU (Frontend filtering on fetched data)
   const filteredData = useMemo(() => {
     return registrations.filter(reg => {
-      const matchCourse = courseFilter === 'Tất cả khóa học' || reg.course === courseFilter;
-      const matchBatch = batchFilter === 'Tất cả đợt thi' || reg.examBatch === batchFilter;
       const matchStatus = statusFilter === 'Tất cả trạng thái' || reg.approvalStatus === statusFilter;
-      
-      return matchCourse && matchBatch && matchStatus;
+      return matchStatus;
     });
-  }, [registrations, courseFilter, batchFilter, statusFilter]);
+  }, [registrations, statusFilter]);
 
   // 4. LOGIC PHÂN TRANG
   const totalItems = filteredData.length;
@@ -56,32 +102,51 @@ export default function RegistrationClientView({ initialData }: Props) {
   const pendingCount = filteredData.filter(r => r.approvalStatus === 'Đang chờ duyệt').length;
 
   // --- HANDLERS DUYỆT / TỪ CHỐI ---
-  const handleApprove = (id: string) => {
-    setRegistrations(prev => prev.map(reg => 
-      reg.id === id ? { ...reg, approvalStatus: 'Đã duyệt' } : reg
-    ));
-  };
-
-  const handleReject = (id: string) => {
-    setRegistrations(prev => prev.map(reg => 
-      reg.id === id ? { ...reg, approvalStatus: 'Bị từ chối' } : reg
-    ));
-  };
-
-  const handleApproveAll = () => {
-    if (confirm("Bạn có chắc chắn muốn duyệt hàng loạt tất cả các hồ sơ hợp lệ đang chờ trong danh sách lọc này?")) {
-      // Chỉ duyệt những hồ sơ NẰM TRONG DANH SÁCH LỌC (filteredData) để an toàn
-      const eligibleIdsToApprove = filteredData
-        .filter(reg => reg.approvalStatus === 'Đang chờ duyệt' && reg.paymentStatus === 'Đã đóng' && reg.conditionStatus === 'Đủ giờ học')
-        .map(reg => reg.id);
-
+  // --- HANDLERS DUYỆT / TỪ CHỐI ---
+  const handleApprove = async (id: string) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await registrationService.updateStatus(id, ExamRegistrationStatus.Approved);
       setRegistrations(prev => prev.map(reg => 
-        eligibleIdsToApprove.includes(reg.id)
-          ? { ...reg, approvalStatus: 'Đã duyệt' }
-          : reg
+        reg.id === id ? { ...reg, approvalStatus: 'Đã duyệt', status: ExamRegistrationStatus.Approved } : reg
       ));
+    } catch (err) {
+      alert("Lỗi khi duyệt đăng ký.");
     }
   };
+
+  const handleReject = async (id: string) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await registrationService.updateStatus(id, ExamRegistrationStatus.Rejected);
+      setRegistrations(prev => prev.map(reg => 
+        reg.id === id ? { ...reg, approvalStatus: 'Bị từ chối', status: ExamRegistrationStatus.Rejected } : reg
+      ));
+    } catch (err) {
+      alert("Lỗi khi từ chối đăng ký.");
+    }
+  };
+
+  const handleApproveAll = async () => {
+    if (confirm("Bạn có chắc chắn muốn duyệt hàng loạt tất cả hồ sơ đang chờ trong danh sách này?")) {
+      const pendingIds = filteredData.filter(reg => reg.status === ExamRegistrationStatus.Pending).map(reg => reg.id);
+      if (pendingIds.length === 0) return;
+
+      try {
+        const token = await getToken();
+        setAuthToken(token);
+        await Promise.all(pendingIds.map(id => registrationService.updateStatus(id, ExamRegistrationStatus.Approved)));
+        fetchRegistrations(batchFilter); // Refresh data
+        alert("Đã duyệt thành công.");
+      } catch (err) {
+        alert("Lỗi khi duyệt hàng loạt.");
+      }
+    }
+  };
+
+  if (loading && batches.length === 0) return <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>;
 
   return (
     <div className="space-y-6">
@@ -114,12 +179,12 @@ export default function RegistrationClientView({ initialData }: Props) {
             value={courseFilter}
             onChange={(e) => { 
               setCourseFilter(e.target.value); 
-              setBatchFilter('Tất cả đợt thi'); // Reset batch khi đổi course
+              setBatchFilter('all'); 
               setCurrentPage(1); 
             }}
             className="bg-transparent border-none p-0 text-sm font-bold text-slate-800 focus:ring-0 cursor-pointer outline-none"
           >
-            <option value="Tất cả khóa học">Tất cả khóa học</option>
+            <option value="all">Tất cả khóa học</option>
             {uniqueCourses.map(course => (
               <option key={course} value={course}>{course}</option>
             ))}
@@ -134,9 +199,9 @@ export default function RegistrationClientView({ initialData }: Props) {
             onChange={(e) => { setBatchFilter(e.target.value); setCurrentPage(1); }}
             className="bg-transparent border-none p-0 text-sm font-bold text-slate-800 focus:ring-0 cursor-pointer outline-none"
           >
-            <option value="Tất cả đợt thi">Tất cả đợt thi</option>
-            {uniqueBatches.map(batch => (
-              <option key={batch} value={batch}>{batch}</option>
+            <option value="all" disabled>-- Chọn đợt thi --</option>
+            {batchesInSelectedCourse.map(batch => (
+              <option key={batch.id} value={batch.id}>{batch.batchName}</option>
             ))}
           </select>
         </div>

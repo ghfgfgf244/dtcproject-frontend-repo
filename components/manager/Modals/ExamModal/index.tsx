@@ -4,17 +4,30 @@ import React, { useState } from 'react';
 import styles from '@/components/manager/Modals/modal.module.css';
 import { X, Archive, BellRing, CheckCircle } from 'lucide-react';
 import { Exam, ExamType } from '@/types/exam';
+import { Course } from '@/types/course';
+import { courseService } from '@/services/courseService';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  batchContext: { id: string; name: string }; 
+  batchContext: { id: string; name: string; courseId: string }; 
   initialData?: Exam | null;
   onSubmit: (data: Partial<Exam>) => void;
 }
 
 export default function ExamModal({ isOpen, onClose, batchContext, initialData, onSubmit }: Props) {
   const [notify, setNotify] = useState(true);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [courseSearch, setCourseSearch] = useState('');
+
+  // Fetch courses on mount
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      const data = await courseService.getAvailableCourses();
+      setCourses(data);
+    };
+    if (isOpen) fetchCourses();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -27,10 +40,13 @@ export default function ExamModal({ isOpen, onClose, batchContext, initialData, 
     const examData: Partial<Exam> = {
       ...(initialData?.id ? { id: initialData.id } : {}), // Giữ lại ID nếu là Edit
       examBatchId: batchContext.id, // Lấy từ props
+      courseId: formData.get('courseId') as string, // Lấy từ form
       examName: formData.get('examName') as string,
       examType: formData.get('examType') as ExamType, 
       examDate: formData.get('examDate') as string,
       durationMinutes: Number(formData.get('durationMinutes')),
+      totalScore: initialData?.totalScore || 100,
+      passScore: initialData?.passScore || 40,
     };
 
     onSubmit(examData);
@@ -69,9 +85,25 @@ export default function ExamModal({ isOpen, onClose, batchContext, initialData, 
                 </div>
               </div>
 
+              <div className="space-y-1.5 flex-1">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Khóa học áp dụng <span className="text-red-500">*</span></label>
+                <select 
+                  required 
+                  name="courseId" 
+                  defaultValue={initialData?.courseId} 
+                  className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none cursor-pointer"
+                >
+                  <option value="">-- Chọn khóa học --</option>
+                  {courses.map(c => (
+                    <option key={c.id} value={c.id}>
+                      [{c.licenseType}] {c.courseName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tên Bài thi <span className="text-red-500">*</span></label>
-                {/* Thêm name và required */}
                 <input required name="examName" type="text" defaultValue={initialData?.examName} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none" placeholder="VD: Thi sát hạch Lý thuyết" />
               </div>
 

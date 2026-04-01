@@ -1,13 +1,18 @@
-import { mockCourses } from "@/lib/mockCourses";
+// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\app\(user)\courses\page.tsx
+
+import { courseService } from "@/services/courseService";
 import CourseGrid from "@/components/course/CourseGrid";
 import styles from "@/styles/courses-guest.module.css";
 
-export default function CoursesPage() {
+// This is a Server Component by default in Next.js 13+ App Router
+export default async function CoursesPage() {
+  const courses = await courseService.getAvailableCourses();
+
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.heroContent}>
-          <h1>Khóa học lại xe</h1>
+          <h1>Khóa học lái xe</h1>
           <p>
             Đăng ký tham gia các trung tâm đào tạo đáng tin cậy và xây dựng sự tự tin lái xe thực tế cho mọi hành trình.
           </p>
@@ -15,7 +20,13 @@ export default function CoursesPage() {
       </section>
 
       <div className={styles.listWrap}>
-        <CourseGrid courses={mockCourses} />
+        {courses.length > 0 ? (
+          <CourseGrid courses={courses} />
+        ) : (
+          <div className="text-center py-20 text-slate-500">
+            Hiện tại chưa có khóa học nào khả dụng. Vui lòng quay lại sau!
+          </div>
+        )}
       </div>
     </div>
   );
