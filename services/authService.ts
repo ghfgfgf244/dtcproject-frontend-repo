@@ -7,13 +7,13 @@ export const authService = {
   /**
    * Synchronize Clerk user data with the backend database.
    */
-  async syncUser(data: SyncUserRequest): Promise<AuthResponse | null> {
+  async syncUser(data: SyncUserRequest): Promise<AuthResponse> {
     try {
       const response = await api.post<{ data: AuthResponse }>("/Auth/sync", data);
       return response.data.data;
     } catch (error: any) {
       console.error("Failed to sync user with backend:", error.response?.data || error.message);
-      return null;
+      throw error;
     }
   },
 

@@ -13,36 +13,35 @@ import { setAuthToken } from "@/lib/api";
 export default function SyncUser() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { getToken } = useAuth();
-  const syncAttempted = useRef(false);
+  const lastSyncedClerkId = useRef<string | null>(null);
 
   useEffect(() => {
     const syncWithBackend = async () => {
-      if (!isLoaded || !isSignedIn || !user || syncAttempted.current) return;
+      if (!isLoaded || !isSignedIn || !user || lastSyncedClerkId.current === user.id) return;
 
       try {
-        // 1. Get Clerk JWT Token
         const token = await getToken();
-        
-        // 2. Set token in common headers
         setAuthToken(token);
 
-        // 3. Prepare sync data
+        const email = user.primaryEmailAddress?.emailAddress || "";
+        const fullName =
+          user.fullName ||
+          [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+          email.split("@")[0] ||
+          "DTC User";
+
         const syncData = {
           clerkId: user.id,
-          email: user.primaryEmailAddress?.emailAddress || "",
-          fullName: user.fullName || "",
+          email,
+          fullName,
           avatarUrl: user.imageUrl,
           phone: user.primaryPhoneNumber?.phoneNumber,
-          // These can be provided via Clerk Public Metadata if needed
           role: user.publicMetadata?.role as string,
           centerId: user.publicMetadata?.centerId as string,
         };
 
-        // 4. Call sync API
         await authService.syncUser(syncData);
-        
-        // Only attempt once per session/mount
-        syncAttempted.current = true;
+        lastSyncedClerkId.current = user.id;
         console.log("DTC: User synchronized successfully.");
       } catch (error) {
         console.error("DTC: Failed to synchronize user:", error);
@@ -51,6 +50,12 @@ export default function SyncUser() {
 
     syncWithBackend();
   }, [isLoaded, isSignedIn, user, getToken]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      lastSyncedClerkId.current = null;
+    }
+  }, [isSignedIn]);
 
   return null; // Silent component
 }
