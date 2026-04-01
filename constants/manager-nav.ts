@@ -18,6 +18,8 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Điều phối giảng viên', href: '/training-manager/assignments', icon: 'swap_horiz' },
       { label: 'Thông báo', href: '/training-manager/notifications', icon: 'notifications' },
       { label: 'Tài liệu cá nhân', href: '/training-manager/documents', icon: 'description' }, 
+      { label: 'Quản lý lộ trình', href: '/training-manager/roadmaps', icon: 'bar_chart' },
+      { label: 'Quản lý tài nguyên', href: '/training-manager/resources', icon: 'library_books' },
     ]
   },
   EnrollmentManager: {
@@ -28,9 +30,11 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Bài đăng tuyển sinh', href: '/enrollment-manager/posts', icon: 'post_add' },
       { label: 'Thống kê & Báo cáo', href: '/enrollment-manager/reports', icon: 'bar_chart' },
       { label: 'Thông báo', href: '/enrollment-manager/notifications', icon: 'notifications' },
+      { label: 'Quản lý cộng tác viên', href: '/enrollment-manager/collaborators', icon: 'group_add' },
       { label: 'Quản lý hồ sơ', href: '/enrollment-manager/profiles', icon: 'people_alt' },
       { label: 'Quản lý hoa hồng', href: '/enrollment-manager/commissions', icon: 'description' },
       { label: 'Tài liệu cá nhân', href: '/enrollment-manager/documents', icon: 'description' }, 
+      
     ]
   },
   Admin: {
