@@ -1,124 +1,159 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/admin-users.module.css";
-import { VenetianMask, LogOut, ShieldAlert } from "lucide-react"; // Import icon mới
+import { useUser, useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { userService, UserProfile } from "@/services/userService";
 
-type UserRole =
-  | "Học sinh"
-  | "Giáo viên"
-  | "Quản lý trung tâm"
-  | "Quản lý đào tạo";
-
-type UserItem = {
-  id: number;
-  name: string;
-  email: string;
-  avatar?: string;
-  role: UserRole;
-  status: "Active" | "Inactive";
-};
-
-const initialUsers: UserItem[] = [
-  { id: 1, name: "Alex Johnson", email: "alex.j@example.com", avatar: "/instructor-1.jpg", role: "Học sinh", status: "Active" },
-  { id: 2, name: "Sophia Martinez", email: "sophia.m@example.com", avatar: "/instructor-2.jpg", role: "Giáo viên", status: "Active" },
-  { id: 3, name: "Marcus Chen", email: "marcus.chen@example.com", avatar: "/instructor-3.jpg", role: "Quản lý trung tâm", status: "Inactive" },
-  { id: 4, name: "Elena Rossi", email: "elena.rossi@example.com", avatar: "/instructor-4.jpg", role: "Quản lý đào tạo", status: "Active" },
+// ===== ROLE MAP =====
+const UI_ROLES = [
+  { id: 1, name: "Quản trị hệ thống", backendKey: "Admin" },
+  { id: 2, name: "Quản lý đào tạo", backendKey: "TrainingManager" },
+  { id: 3, name: "Giáo viên", backendKey: "Instructor" },
+  { id: 4, name: "Quản lý tuyển sinh", backendKey: "EnrollmentManager" },
+  { id: 5, name: "Cộng tác viên", backendKey: "Collaborator" },
+  { id: 6, name: "Học viên", backendKey: "Student" },
 ];
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<UserItem[]>(initialUsers);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [draft, setDraft] = useState<Partial<UserItem>>({});
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createDraft, setCreateDraft] = useState<Partial<UserItem>>({ role: "Học sinh", status: "Active" });
+  const { user: clerkUser, isLoaded } = useUser();
+  const { getToken } = useAuth();
 
-  // STATE CHO TÍNH NĂNG LOGIN ẢO
-  const [impersonatedUser, setImpersonatedUser] = useState<UserItem | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleLoginAs = (user: UserItem) => {
-    if (confirm(`Bạn có muốn đăng nhập ảo với tư cách ${user.name} (${user.role}) không?`)) {
-      setImpersonatedUser(user);
-      // Logic thực tế: Lưu token/role vào localStorage và redirect
-      console.log("Đang giả lập quyền:", user.role);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftRole, setDraftRole] = useState<number>(6);
+
+  // ===== GET ROLE NAME =====
+  const getRoleDisplayName = (user: UserProfile) => {
+    const backendRole = user.roles?.[0] || user.roleName || "Student";
+    const roleObj = UI_ROLES.find(r => r.backendKey === backendRole);
+    return roleObj?.name || "Học viên";
+  };
+
+  // ===== INIT =====
+  useEffect(() => {
+    async function init() {
+      if (!isLoaded || !clerkUser) return;
+
+      try {
+        setLoading(true);
+        const token = await getToken();
+        setAuthToken(token);
+
+        const me = await userService.getMe();
+        setCurrentUser(me);
+
+        if (me?.roleName === "Admin") {
+          const allUsers = await userService.getAllUsers();
+          setUsers(allUsers);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
-  };
 
-  const stopImpersonating = () => {
-    setImpersonatedUser(null);
-  };
+    init();
+  }, [isLoaded, clerkUser, getToken]);
 
-  const editingUser = useMemo(() => users.find((user) => user.id === editingId), [users, editingId]);
-
-  const startEdit = (user: UserItem) => {
+  // ===== EDIT =====
+  const startEdit = (user: UserProfile) => {
     setEditingId(user.id);
-    setDraft({ ...user });
+
+    const backendRole = user.roles?.[0] || user.roleName || "Student";
+    const roleObj = UI_ROLES.find(r => r.backendKey === backendRole);
+    setDraftRole(roleObj?.id || 6);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setDraft({});
   };
 
-  const saveEdit = () => {
-    if (!editingUser) return;
-    setUsers((prev) => prev.map((user) => user.id === editingUser.id ? { ...user, ...draft } as UserItem : user));
-    cancelEdit();
+  const saveEdit = async (userId: string) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+
+      await userService.updateUserRoles(userId, [draftRole]);
+
+      const allUsers = await userService.getAllUsers();
+      setUsers(allUsers);
+
+      cancelEdit();
+    } catch {
+      alert("Lỗi khi cập nhật quyền!");
+    }
   };
 
-  const removeUser = (id: number) => {
-    setUsers((prev) => prev.filter((user) => user.id !== id));
+  // ===== TOGGLE STATUS =====
+  const toggleStatus = async (userId: string) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+
+      await userService.toggleUserStatus(userId);
+
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, isActive: !u.isActive } : u
+        )
+      );
+    } catch {
+      alert("Lỗi đổi trạng thái");
+    }
   };
 
-  const handleFile = (file: File | undefined, onDone: (value: string) => void) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => { if (typeof reader.result === "string") onDone(reader.result); };
-    reader.readAsDataURL(file);
+  // ===== DELETE =====
+  const deleteUser = async (id: string, name: string) => {
+    if (!confirm(`Xóa ${name}?`)) return;
+
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+
+      await userService.deleteUser(id);
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch {
+      alert("Lỗi xóa user");
+    }
   };
 
-  const handleCreate = () => {
-    if (!createDraft.name || !createDraft.email) return;
-    setUsers((prev) => [...prev, {
-      id: Math.max(0, ...prev.map((item) => item.id)) + 1,
-      name: createDraft.name ?? "User",
-      email: createDraft.email ?? "",
-      avatar: createDraft.avatar,
-      role: (createDraft.role as UserRole) ?? "Học sinh",
-      status: (createDraft.status as UserItem["status"]) ?? "Active",
-    }]);
-    setCreateOpen(false);
-    setCreateDraft({ role: "Học sinh", status: "Active" });
-  };
+  // ===== LOADING =====
+  if (loading || !isLoaded) {
+    return (
+      <div className={shellStyles.page}>
+        <div className={shellStyles.loadingContainer}>
+          <Loader2 className="animate-spin" size={40} />
+          <p>Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== GUARD =====
+  if (currentUser?.roleName !== "Admin") {
+    return (
+      <div className={shellStyles.page}>
+        <div className={shellStyles.content} style={{ textAlign: "center" }}>
+          <ShieldAlert size={50} color="red" />
+          <h2>Không có quyền truy cập</h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={shellStyles.page}>
-      {/* IMPERSONATION BANNER */}
-      {impersonatedUser && (
-        <div className="fixed top-0 left-0 w-full bg-amber-500 text-white py-2 px-6 flex justify-between items-center z-[9999] shadow-2xl animate-bounce-short">
-          <div className="flex items-center gap-3 text-sm font-black uppercase tracking-tighter">
-            <ShieldAlert className="w-5 h-5 animate-pulse" />
-            Đang Login Ảo: {impersonatedUser.name} ({impersonatedUser.role})
-          </div>
-          <button 
-            onClick={stopImpersonating}
-            className="bg-white text-amber-600 px-4 py-1 rounded-lg text-xs font-bold hover:bg-amber-50 transition-all flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" /> THOÁT GIẢ LẬP
-          </button>
-        </div>
-      )}
-
-      <section className={shellStyles.content} style={impersonatedUser ? { marginTop: '40px' } : {}}>
+      <section className={shellStyles.content}>
         <header className={styles.header}>
-          <div>
-            <h1>Danh sách người dùng</h1>
-            <p>Quản lý tài khoản, phân quyền và trạng thái hoạt động.</p>
-          </div>
-          <button className={styles.createBtn} onClick={() => setCreateOpen(true)}>
-            Tạo tài khoản
-          </button>
+          <h1>Danh sách người dùng</h1>
         </header>
 
         <div className={styles.card}>
@@ -133,57 +168,62 @@ export default function AdminUsersPage() {
 
           {users.map((user, index) => {
             const isEditing = editingId === user.id;
+
             return (
               <div key={user.id} className={styles.row}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
+                <span>{index + 1}</span>
+
                 <div className={styles.userCell}>
                   <div className={styles.avatar}>
-                    {user.avatar ? <img src={user.avatar} alt={user.name} /> : user.name[0]}
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} />
+                    ) : (
+                      user.fullName[0]
+                    )}
                   </div>
-                  {isEditing ? (
-                    <input className={styles.input} value={draft.name ?? ""} onChange={(e) => setDraft(p => ({ ...p, name: e.target.value }))} />
-                  ) : <strong>{user.name}</strong>}
+                  <strong>{user.fullName}</strong>
                 </div>
 
-                {isEditing ? (
-                  <input className={styles.input} value={draft.email ?? ""} onChange={(e) => setDraft(p => ({ ...p, email: e.target.value }))} />
-                ) : <span className={styles.email}>{user.email}</span>}
+                <span>{user.email}</span>
 
                 {isEditing ? (
-                  <select className={styles.select} value={draft.role} onChange={(e) => setDraft(p => ({ ...p, role: e.target.value as UserRole }))}>
-                    <option value="Học sinh">Học sinh</option>
-                    <option value="Giáo viên">Giáo viên</option>
-                    <option value="Quản lý trung tâm">Quản lý trung tâm</option>
-                    <option value="Quản lý đào tạo">Quản lý đào tạo</option>
+                  <select
+                    value={draftRole}
+                    onChange={(e) => setDraftRole(Number(e.target.value))}
+                  >
+                    {UI_ROLES.map(r => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
                   </select>
-                ) : <span className={styles.role}>{user.role}</span>}
+                ) : (
+                  <span>{getRoleDisplayName(user)}</span>
+                )}
 
-                {isEditing ? (
-                  <select className={styles.select} value={draft.status} onChange={(e) => setDraft(p => ({ ...p, status: e.target.value as UserItem["status"] }))}>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                ) : <span className={`${styles.status} ${user.status === "Active" ? styles.active : styles.inactive}`}>{user.status}</span>}
+                <span
+                  className={`${styles.status} ${
+                    user.isActive ? styles.active : styles.inactive
+                  }`}
+                  onClick={() => toggleStatus(user.id)}
+                >
+                  {user.isActive ? "Active" : "Inactive"}
+                </span>
 
                 <div className={styles.actions}>
                   {isEditing ? (
                     <>
-                      <button className={styles.cancelBtn} onClick={cancelEdit}>Hủy</button>
-                      <button className={styles.saveBtn} onClick={saveEdit}>Lưu</button>
+                      <button onClick={cancelEdit}>Hủy</button>
+                      <button onClick={() => saveEdit(user.id)}>Lưu</button>
                     </>
                   ) : (
                     <>
-                      {/* NÚT LOGIN ẢO */}
-                      {/* <button 
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 border border-blue-200"
-                        onClick={() => handleLoginAs(user)}
-                        title="Đăng nhập với tư cách user này"
+                      <button onClick={() => startEdit(user)}>Sửa</button>
+                      <button
+                        onClick={() => deleteUser(user.id, user.fullName)}
                       >
-                        <VenetianMask className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase">Login</span>
-                      </button> */}
-                      <button className={styles.editBtn} onClick={() => startEdit(user)}>Sửa</button>
-                      <button className={styles.deleteBtn} onClick={() => removeUser(user.id)}>Xóa</button>
+                        Xóa
+                      </button>
                     </>
                   )}
                 </div>
@@ -192,41 +232,6 @@ export default function AdminUsersPage() {
           })}
         </div>
       </section>
-
-      {/* MODAL CREATE (Giữ nguyên) */}
-      {createOpen && (
-        <div className={styles.modalOverlay} onClick={() => setCreateOpen(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Tạo tài khoản</h3>
-              <button onClick={() => setCreateOpen(false)}>✕</button>
-            </div>
-            <div className={styles.modalGrid}>
-              <div className={styles.modalField}>
-                <span>Họ tên</span>
-                <input className={styles.input} value={createDraft.name ?? ""} onChange={(e) => setCreateDraft(p => ({ ...p, name: e.target.value }))} />
-              </div>
-              <div className={styles.modalField}>
-                <span>Email</span>
-                <input className={styles.input} value={createDraft.email ?? ""} onChange={(e) => setCreateDraft(p => ({ ...p, email: e.target.value }))} />
-              </div>
-              <div className={styles.modalField}>
-                <span>Chức vụ</span>
-                <select className={styles.select} value={createDraft.role} onChange={(e) => setCreateDraft(p => ({ ...p, role: e.target.value as UserRole }))}>
-                  <option value="Học sinh">Học sinh</option>
-                  <option value="Giáo viên">Giáo viên</option>
-                  <option value="Quản lý trung tâm">Quản lý trung tâm</option>
-                  <option value="Quản lý đào tạo">Quản lý đào tạo</option>
-                </select>
-              </div>
-            </div>
-            <div className={styles.modalActions}>
-              <button className={styles.cancelBtn} onClick={() => setCreateOpen(false)}>Hủy</button>
-              <button className={styles.saveBtn} onClick={handleCreate}>Lưu</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
