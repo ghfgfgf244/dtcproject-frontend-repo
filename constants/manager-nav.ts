@@ -18,6 +18,8 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Điều phối giảng viên', href: '/training-manager/assignments', icon: 'swap_horiz' },
       { label: 'Thông báo', href: '/training-manager/notifications', icon: 'notifications' },
       { label: 'Tài liệu cá nhân', href: '/training-manager/documents', icon: 'description' }, 
+      { label: 'Quản lý lộ trình', href: '/training-manager/roadmaps', icon: 'bar_chart' },
+      { label: 'Quản lý tài nguyên', href: '/training-manager/resources', icon: 'library_books' },
     ]
   },
   EnrollmentManager: {
@@ -26,11 +28,14 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Trang chủ', href: '/enrollment-manager/dashboard', icon: 'dashboard' },
       { label: 'Kỳ tuyển sinh', href: '/enrollment-manager/terms', icon: 'calendar_view_month' },
       { label: 'Bài đăng tuyển sinh', href: '/enrollment-manager/posts', icon: 'post_add' },
+      { label: 'Duyệt đăng ký', href: '/enrollment-manager/registrations', icon: 'how_to_reg' },
       { label: 'Thống kê & Báo cáo', href: '/enrollment-manager/reports', icon: 'bar_chart' },
       { label: 'Thông báo', href: '/enrollment-manager/notifications', icon: 'notifications' },
+      { label: 'Quản lý cộng tác viên', href: '/enrollment-manager/collaborators', icon: 'group_add' },
       { label: 'Quản lý hồ sơ', href: '/enrollment-manager/profiles', icon: 'people_alt' },
       { label: 'Quản lý hoa hồng', href: '/enrollment-manager/commissions', icon: 'description' },
       { label: 'Tài liệu cá nhân', href: '/enrollment-manager/documents', icon: 'description' }, 
+      
     ]
   },
   Admin: {
@@ -39,10 +44,7 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Tổng quan', href: '/admin/dashboard', icon: 'pie_chart' },
       { label: 'Quản lý trung tâm', href: '/admin/centers', icon: 'domain' },
       { label: 'Quản lý người dùng', href: '/admin/users', icon: 'manage_accounts' },
-      { label: 'Duyệt kỳ thi', href: '/admin/exam-approvals', icon: 'verified' },
       { label: 'Duyệt khóa học', href: '/admin/courses', icon: 'auto_stories' },
-      { label: 'Tài chính', href: '/admin/financials', icon: 'account_balance' },
-      { label: 'Cài đặt', href: '/admin/settings', icon: 'settings' },
       { label: 'Thông báo', href: '/admin/notifications', icon: 'notifications' },
     ]
   }

@@ -8,7 +8,10 @@ import { setAuthToken } from '@/lib/api';
 import { CourseRecord, LicenseType, CourseStatus, Course } from '@/types/course';
 import CourseTable from '../CourseTable';
 import CourseModal, { CourseSubmitData } from '../../Modals/CourseModal';
+import ConfirmModal from '@/components/ui/confirm-modal'; // Đảm bảo đường dẫn này đúng
 import { courseService } from '@/services/courseService';
+
+const ITEMS_PER_PAGE = 5;
 
 export default function CourseClientView() {
   const router = useRouter();
@@ -29,7 +32,10 @@ export default function CourseClientView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<CourseRecord | null>(null);
 
-  // Mapping function
+  // --- NEW: States cho Confirm Delete ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+const [courseToDelete, setCourseToDelete] = useState<CourseRecord | null>(null);
+
   const mapCourseToRecord = (course: Course): CourseRecord => ({
     id: course.id,
     name: course.courseName,
@@ -39,7 +45,6 @@ export default function CourseClientView() {
     status: course.isActive ? 'Hoạt động' : 'Ngừng hoạt động'
   });
 
-  // Fetch data
   const fetchCourses = async () => {
     setLoading(true);
     try {
@@ -58,7 +63,6 @@ export default function CourseClientView() {
     fetchCourses();
   }, []);
 
-  // Logic Lọc & Phân trang
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
       const matchSearch = course.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -82,7 +86,6 @@ export default function CourseClientView() {
     setSearchTerm(''); setLicenseFilter('Tất cả'); setStatusFilter('Tất cả'); setCurrentPage(1);
   };
 
-  // Handler CRUD
   const handleCreateCourse = () => {
     setEditingCourse(null);
     setIsModalOpen(true);
@@ -93,18 +96,34 @@ export default function CourseClientView() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteCourse = async (courseId: string) => {
-    if (confirm("Bạn có chắc chắn muốn ngừng hoạt động khóa học này?")) {
-      try {
-        const token = await getToken();
-        setAuthToken(token);
-        await courseService.deactivateCourse(courseId);
-        await fetchCourses(); // Refresh
-      } catch (err) {
-        alert("Lỗi khi ngừng hoạt động khóa học.");
-      }
-    }
+  // --- UPDATED: Delete Logic ---
+  const handleOpenDelete = (course: CourseRecord) => {
+    setCourseToDelete(course);
+    setIsDeleteModalOpen(true);
   };
+
+  const handleConfirmDelete = async () => {
+  if (!courseToDelete) return;
+  
+  try {
+    const token = await getToken();
+    setAuthToken(token);
+    
+    // 1. Gọi API xóa
+    await courseService.deactivateCourse(courseToDelete.id);
+    
+    // 2. CẬP NHẬT STATE UI (Quan trọng: Phải lọc bỏ thằng vừa xóa ra khỏi mảng 'courses')
+    setCourses((prevCourses) => prevCourses.filter(c => c.id !== courseToDelete.id));
+    
+    // 3. Đóng modal
+    setIsDeleteModalOpen(false);
+    setCourseToDelete(null);
+    
+    console.log("Xóa thành công và cập nhật UI");
+  } catch (err) {
+    alert("Lỗi khi ngừng hoạt động khóa học.");
+  }
+};
 
   const handleSubmit = async (data: CourseSubmitData) => {
     try {
@@ -112,13 +131,12 @@ export default function CourseClientView() {
       setAuthToken(token);
       
       const licenseMapping: Record<string, number> = { 'A1': 1, 'B1': 3, 'B2': 4, 'C': 6 };
-      
       const payload = {
         centerId: data.centerId,
         courseName: data.name,
         licenseType: licenseMapping[data.licenseType] || 1,
-        durationInWeeks: 12, // Default or add to modal
-        maxStudents: 30, // Default or add to modal
+        durationInWeeks: 12,
+        maxStudents: 30,
         description: data.description,
         price: Number(data.price),
         isActive: data.status === 'Hoạt động'
@@ -153,7 +171,7 @@ export default function CourseClientView() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Quản lý Khóa học</h1>
-          <p className="text-slate-500 text-sm mt-1">Cấu hình và theo dõi các chương trình đào tạo của trung tâm.</p>
+          <p className="text-slate-500 text-sm mt-1">Cấu hình và theo dõi các chương trình đào tạo.</p>
         </div>
         <button 
           onClick={handleCreateCourse}
@@ -163,7 +181,6 @@ export default function CourseClientView() {
         </button>
       </div>
 
-      {/* Cụm Filters */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="md:col-span-5 relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -222,18 +239,25 @@ export default function CourseClientView() {
         onPageChange={setCurrentPage}
         onView={(course) => router.push(`/training-manager/courses/${course.id}`)}
         onEdit={handleEditCourse}
-        onDelete={(course) => handleDeleteCourse(course.id)}
+        onDelete={handleOpenDelete} // Sử dụng hàm mở modal mới
       />
 
-      {/* RENDER MODAL */}
+      {/* RENDER MODAL CREATE/EDIT */}
       <CourseModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         initialData={editingCourse} 
         onSubmit={handleSubmit}
       />
+
+      {/* NEW: RENDER CONFIRM MODAL DELETE */}
+      <ConfirmModal
+      isOpen={isDeleteModalOpen}
+      title="Xác nhận ngừng hoạt động"
+      message={`Bạn có chắc chắn muốn ngừng hoạt động khóa học "${courseToDelete?.name}"?`}
+      onConfirm={handleConfirmDelete} // Gọi hàm C ở trên
+      onCancel={() => setIsDeleteModalOpen(false)}
+    />
     </div>
   );
 }
-
-const ITEMS_PER_PAGE = 5;
