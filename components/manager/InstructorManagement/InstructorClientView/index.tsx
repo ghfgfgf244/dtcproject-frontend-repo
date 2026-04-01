@@ -18,7 +18,7 @@ interface Props {
 
 export default function InstructorClientView({ initialData }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const [instructors, setInstructors] = useState<Instructor[]>(initialData);
   // Khởi tạo state bộ lọc bằng tiếng Việt
   const [licenseFilter, setLicenseFilter] = useState<string>("Tất cả");
@@ -37,6 +37,42 @@ export default function InstructorClientView({ initialData }: Props) {
     setEditingInstructor(null);
     setIsModalOpen(true);
   };
+
+
+const handleSubmit = (data: InstructorFormData) => {
+  if (data.id) {
+    // Logic Cập nhật (Edit)
+    setInstructors((prev) =>
+      prev.map((ins) =>
+        ins.id === data.id
+          ? {
+              ...ins,
+              name: data.fullName,
+              email: data.email,
+              phone: data.phone,
+              status: data.isActive ? "Active" : "Inactive",
+              licenses: data.licenses,
+            }
+          : ins
+      )
+    );
+  } else {
+    // Logic Thêm mới (Create)
+    const newInstructor: Instructor = {
+      id: Date.now().toString(),
+      code: `GV-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      avatar: "",
+      licenses: data.licenses,
+      classesWeekly: 0,
+      status: data.isActive ? "Active" : "Inactive",
+    };
+    setInstructors((prev) => [newInstructor, ...prev]);
+  }
+  setIsModalOpen(false); // Đóng modal sau khi xong
+};
 
   const handleEdit = (instructorData: Instructor) => {
     const formData: InstructorFormData = {
@@ -90,16 +126,18 @@ export default function InstructorClientView({ initialData }: Props) {
     // TODO: Gọi API update status ở đây
   };
   // Logic Lọc (Real-time Filter) - Đã cập nhật để map Tiếng Việt với Tiếng Anh
+  // Logic Lọc (Real-time Filter)
   const filteredInstructors = useMemo(() => {
-    return initialData.filter((ins) => {
-      // 1. Tìm kiếm (Tên, Email hoặc Code)
+    return instructors.filter((ins) => {
+      // QUAN TRỌNG: Lọc từ state 'instructors'
+      // 1. Tìm kiếm (Tên, Email hoặc Mã)
       const q = searchQuery.toLowerCase();
       const matchSearch =
         ins.name.toLowerCase().includes(q) ||
         ins.email.toLowerCase().includes(q) ||
         ins.code.toLowerCase().includes(q);
 
-      // 2. Lọc Trạng thái (Map giao diện Tiếng Việt -> Data Tiếng Anh)
+      // 2. Lọc Trạng thái (Map Tiếng Việt trên Select -> Type InstructorStatus)
       const matchStatus =
         statusFilter === "Tất cả" ||
         (statusFilter === "Hoạt động" && ins.status === "Active") ||
@@ -112,7 +150,7 @@ export default function InstructorClientView({ initialData }: Props) {
 
       return matchSearch && matchStatus && matchLicense;
     });
-  }, [initialData, searchQuery, licenseFilter, statusFilter]);
+  }, [instructors, searchQuery, licenseFilter, statusFilter]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -196,14 +234,13 @@ export default function InstructorClientView({ initialData }: Props) {
       />
 
       {/* Gắn Modal */}
+      {/* Gắn Modal */}
+
       <InstructorModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={editingInstructor}
-        onSubmit={(data) => {
-          console.log("Submit data ready for API:", data);
-          setIsModalOpen(false);
-        }}
+        onSubmit={handleSubmit}
       />
       <ConfirmModal
         isOpen={isConfirmModalOpen}

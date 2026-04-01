@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Edit3, Loader2 } from 'lucide-react';
+import { CheckCircle2, Edit3, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
 import { NotificationRecord, SystemAlert, NotificationType } from '@/types/notification';
@@ -24,6 +24,8 @@ const TABS = [
   { id: 'Registration', label: 'Đăng ký' }
 ];
 
+const ITEMS_PER_PAGE = 10; // Cấu hình số lượng item mỗi trang
+
 export default function NotificationClientView({ initialNotifications = [], alerts = [] }: Props) {
   const router = useRouter();
   const { getToken } = useAuth();
@@ -32,9 +34,13 @@ export default function NotificationClientView({ initialNotifications = [], aler
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingData, setEditingData] = useState<NotificationRecord | null>(null);
+  const [currentPage, setCurrentPage] = useState(1); // State trang hiện tại
 
-  // DATA FETCHING
+  // RESET trang khi đổi tab
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
@@ -53,14 +59,22 @@ export default function NotificationClientView({ initialNotifications = [], aler
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // 1. Logic lọc
   const filteredNotifications = useMemo(() => {
     return notifications.filter(notif => {
       return activeTab === 'All' || notif.type === activeTab;
     });
   }, [notifications, activeTab]);
 
+  // 2. Logic phân trang (Tính toán sau khi lọc)
+  const totalPages = Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE);
+  
+  const paginatedNotifications = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredNotifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredNotifications, currentPage]);
+
   const handleCreate = () => {
-    setEditingData(null);
     setIsModalOpen(true);
   };
 
@@ -78,20 +92,13 @@ export default function NotificationClientView({ initialNotifications = [], aler
     }
   };
 
-  // 3. Cập nhật hàm xử lý click để chuyển trang
   const handleViewDetail = (id: string) => {
-    // Điều hướng tương đối: Thêm ID vào sau URL hiện tại 
-    // VD: Đang ở /training-manager/notifications -> sẽ nhảy sang /training-manager/notifications/[id]
     router.push(`notifications/${id}`); 
   };
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 relative">
-      
-      {/* Cột Trái: Nội dung chính */}
       <div className="flex-1 space-y-6 min-w-0">
-        
-        {/* Thanh Tabs & Nút bấm Hành động */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
             {TABS.map(tab => (
@@ -124,21 +131,62 @@ export default function NotificationClientView({ initialNotifications = [], aler
           </div>
         </div>
 
-      {/* Component Danh sách */}
         {loading ? (
           <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>
         ) : (
-          <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-            <NotificationList 
-              notifications={filteredNotifications} 
-              onViewDetail={handleViewDetail} 
-            />
+          <div className="space-y-4">
+            <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+              <NotificationList 
+                notifications={paginatedNotifications} // Sử dụng list đã phân trang
+                onViewDetail={handleViewDetail} 
+              />
+            </div>
+
+            {/* UI ĐIỀU HƯỚNG PHÂN TRANG */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                <div className="text-xs text-slate-500 font-medium">
+                  Hiển thị {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredNotifications.length)} trên tổng số {filteredNotifications.length}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => prev - 1)}
+                    className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
+                          currentPage === page 
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                          : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
-
       </div>
       
-      {/* Modal Soạn thông báo */}
       <NotificationModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -158,7 +206,6 @@ export default function NotificationClientView({ initialNotifications = [], aler
           }
         }}
       />
-      
     </div>
   );
 }
