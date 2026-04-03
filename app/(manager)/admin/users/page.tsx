@@ -32,7 +32,7 @@ export default function AdminUsersPage() {
   // ===== GET ROLE NAME =====
   const getRoleDisplayName = (user: UserProfile) => {
     const backendRole = user.roles?.[0] || user.roleName || "Student";
-    const roleObj = UI_ROLES.find(r => r.backendKey === backendRole);
+    const roleObj = UI_ROLES.find((r) => r.backendKey === backendRole);
     return roleObj?.name || "Học viên";
   };
 
@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
     setEditingId(user.id);
 
     const backendRole = user.roles?.[0] || user.roleName || "Student";
-    const roleObj = UI_ROLES.find(r => r.backendKey === backendRole);
+    const roleObj = UI_ROLES.find((r) => r.backendKey === backendRole);
     setDraftRole(roleObj?.id || 6);
   };
 
@@ -76,12 +76,21 @@ export default function AdminUsersPage() {
     setEditingId(null);
   };
 
-  const saveEdit = async (userId: string) => {
+  const saveEdit = async (user: UserProfile) => {
+    const backendRole = user.roles?.[0] || user.roleName || "Student";
+    const roleObj = UI_ROLES.find((r) => r.backendKey === backendRole);
+    const currentRoleId = roleObj?.id || 6;
+
+    if (draftRole === currentRoleId) {
+      cancelEdit();
+      return;
+    }
+
     try {
       const token = await getToken();
       setAuthToken(token);
 
-      await userService.updateUserRoles(userId, [draftRole]);
+      await userService.updateUserRoles(user.id, [draftRole]);
 
       const allUsers = await userService.getAllUsers();
       setUsers(allUsers);
@@ -100,10 +109,10 @@ export default function AdminUsersPage() {
 
       await userService.toggleUserStatus(userId);
 
-      setUsers(prev =>
-        prev.map(u =>
-          u.id === userId ? { ...u, isActive: !u.isActive } : u
-        )
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, isActive: !u.isActive } : u,
+        ),
       );
     } catch {
       alert("Lỗi đổi trạng thái");
@@ -119,7 +128,7 @@ export default function AdminUsersPage() {
       setAuthToken(token);
 
       await userService.deleteUser(id);
-      setUsers(prev => prev.filter(u => u.id !== id));
+      setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch {
       alert("Lỗi xóa user");
     }
@@ -191,7 +200,7 @@ export default function AdminUsersPage() {
                     value={draftRole}
                     onChange={(e) => setDraftRole(Number(e.target.value))}
                   >
-                    {UI_ROLES.map(r => (
+                    {UI_ROLES.map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.name}
                       </option>
@@ -214,7 +223,7 @@ export default function AdminUsersPage() {
                   {isEditing ? (
                     <>
                       <button onClick={cancelEdit}>Hủy</button>
-                      <button onClick={() => saveEdit(user.id)}>Lưu</button>
+                      <button onClick={() => saveEdit(user)}>Lưu</button>
                     </>
                   ) : (
                     <>

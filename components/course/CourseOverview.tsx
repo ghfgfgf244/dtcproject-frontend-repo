@@ -1,41 +1,51 @@
 import styles from "@/styles/mycourse.module.css";
 
-export default function CourseOverview() {
+interface CourseOverviewProps {
+  courseName: string;
+  description: string;
+  centerName: string;
+  startDate?: string;
+  endDate?: string;
+  imageUrl?: string;
+}
+
+export default function CourseOverview({
+  courseName,
+  description,
+  centerName,
+  startDate,
+  endDate,
+  imageUrl = "https://images.unsplash.com/photo-1511919884226-fd3cad34687c"
+}: CourseOverviewProps) {
   return (
     <div className={styles.card}>
       <div className={styles.courseOverview}>
         <img
-          src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c"
+          src={imageUrl}
           className={styles.courseImage}
+          alt={courseName}
         />
 
-        <div className={styles.courseInfo}
-        >
-          <h3>Course Overview</h3>
+        <div className={styles.courseInfo}>
+          <h3>Tổng quan khóa học</h3>
           <p className={styles.courseDesc}>
-            Khóa học đào tạo lái xe B2 bao gồm lý thuyết + thực hành + thi tốt nghiệp
+            {description}
           </p>
 
           <div className={styles.infoGrid}>
             <div>
-              <span>Instructor</span>
-              <p>Nguyen Van A</p>
+              <span>Tên khóa học</span>
+              <p>{courseName}</p>
             </div>
 
             <div>
-              <span>Training Center</span>
-              <p>Nha Trang Training Center</p>
-            </div>
-            
-
-            <div>
-              <span>Duration</span>
-              <p>20 Aug 2023 - 20 Dec 2023</p>
+              <span>Trung tâm đào tạo</span>
+              <p>{centerName}</p>
             </div>
 
             <div>
-              <span>Total Students</span>
-              <p>24 Enrolled</p>
+              <span>Thời gian học</span>
+              <p>{startDate && endDate ? `${startDate} - ${endDate}` : "Chưa xác định"}</p>
             </div>
           </div>
         </div>

@@ -9,9 +9,19 @@ interface PageProps {
 
 export default async function CourseDetail({ params }: PageProps) {
   const { id } = await params;
+  console.log(`DTC: [Server] Rendering course detail for ID: ${id}`);
 
-  // Fetch real data from the API
-  const course = await courseService.getCourseById(id);
+  let course = null;
+  try {
+    course = await courseService.getCourseById(id);
+    if (course) {
+      console.log(`DTC: [Server] Found course: ${course.courseName}`);
+    } else {
+      console.warn(`DTC: [Server] Course ${id} not found.`);
+    }
+  } catch (err: any) {
+    console.error(`DTC: [Server] Critical error fetching course ${id}:`, err.message || err);
+  }
 
   if (!course) {
     return (

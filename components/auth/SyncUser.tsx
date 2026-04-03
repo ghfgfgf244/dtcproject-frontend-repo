@@ -42,9 +42,10 @@ export default function SyncUser() {
 
         await authService.syncUser(syncData);
         lastSyncedClerkId.current = user.id;
-        console.log("DTC: User synchronized successfully.");
-      } catch (error) {
-        console.error("DTC: Failed to synchronize user:", error);
+        console.log(`DTC: [Auth] User synchronized successfully (ID: ${user.id})`);
+      } catch (error: any) {
+        // Downgrade to warn for debugging the next-devtools overlay
+        console.warn(`DTC: [Auth] Failed to synchronize user ${user.id}:`, error.message || error);
       }
     };
 

@@ -75,23 +75,45 @@
 
 .todayButton {
   border: none;
-  background: #eef2f7;
-  color: #1c2a44;
-  padding: 8px 14px;
-  border-radius: 10px;
+  background: #f0f3f9;
+  color: #17213a;
+  padding: 10px 24px;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.todayButton:hover {
+  background: #e5ebf5;
+  transform: translateY(-1px);
 }
 
 .addButton {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   border: none;
   background: #1ca7ec;
   color: #ffffff;
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(28, 167, 236, 0.2);
+}
+
+.addButton:hover {
+  background: #0f78b5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(28, 167, 236, 0.3);
+}
+
+.addButton svg {
+  width: 20px;
+  height: 20px;
 }
 
 .section {
@@ -111,6 +133,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
+}
+
+.emptyGroup {
+  color: #8a96ab;
+  font-size: 13px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  width: 100%;
 }
 
 .card {

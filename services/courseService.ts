@@ -60,10 +60,11 @@ export const courseService = {
    */
   async getCourseById(id: string): Promise<Course | null> {
     try {
+      console.log(`DTC: [API] Đang lấy chi tiết khóa học cho ID: ${id}`);
       const response = await api.get<{ data: Course }>(`/Course/${id}`);
       return response.data.data;
-    } catch (error) {
-      console.error(`Failed to fetch course details for ID ${id}:`, error);
+    } catch (error: any) {
+      console.error(`DTC: [API] Thất bại khi lấy khóa học ${id}:`, error.response?.status || "Error", error.message);
       return null;
     }
   },

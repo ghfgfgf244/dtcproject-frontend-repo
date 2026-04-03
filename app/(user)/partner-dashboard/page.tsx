@@ -118,19 +118,24 @@ export default function PartnerDashboardPage() {
   };
 
   const handleGenerateCode = async () => {
-    const customCode = prompt("Enter your desired referral code (e.g. PARTNER-2026):");
-    if (!customCode) return;
-    
     try {
       setGenerating(true);
+      
+      // Generate a random 8-character alphanumeric code
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let randomCode = "";
+      for (let i = 0; i < 8; i++) {
+        randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
       const token = await getToken();
       setAuthToken(token);
-      await collaboratorService.generateReferralCode(customCode.trim().toUpperCase());
+      await collaboratorService.generateReferralCode(randomCode);
       
       // Refresh token data
       const newToken = await collaboratorService.getMyReferralCode();
       setTokenData(newToken);
-      alert("Mã giới thiệu đã được tạo thành công!");
+      alert(`Mã giới thiệu "${randomCode}" đã được tạo thành công!`);
     } catch (error: any) {
       const msg = error.response?.data?.message || "Lỗi khi tạo mã giới thiệu.";
       alert(msg);

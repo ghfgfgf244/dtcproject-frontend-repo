@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { ExamRegistrationStatus, RegistrationRecord } from "@/types/registration";
+import { ExamRegistrationStatus, RegistrationRecord, RegistrationResponse } from "@/types/registration";
 
 // Define the standard unified API response structure
 interface ApiResponse<T> {
@@ -82,5 +82,35 @@ export const registrationService = {
       examBatchId,
       studentIds
     });
+  },
+
+  /**
+   * Fetch authenticated student's course registrations.
+   */
+  getMyRegistrations: async (): Promise<RegistrationResponse[]> => {
+    try {
+      const response = await api.get<{ data: RegistrationResponse[] }>("/CourseRegistration/me");
+      return response.data.data || [];
+    } catch (error) {
+      console.error("Failed to fetch my registrations:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Register a new course with required documents
+   * @param formData FormData containing courseId, notes, referralCode, and optional files (Photo, IdFront, IdBack)
+   */
+  registerCourse: async (formData: FormData): Promise<void> => {
+    try {
+      await api.post("/CourseRegistration", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    } catch (error) {
+      console.error("Failed to register course:", error);
+      throw error;
+    }
   }
 };

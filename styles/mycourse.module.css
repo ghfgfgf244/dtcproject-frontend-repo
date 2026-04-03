@@ -221,3 +221,48 @@
     grid-template-columns: 1fr;
   }
 }
+
+.noDataBox {
+  background: #ffffff;
+  padding: 3rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #e6edf5;
+}
+
+.noDataIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.noDataTitle {
+  margin-bottom: 0.5rem;
+  font-size: 20px;
+  color: #17213a;
+  font-weight: 700;
+}
+
+.noDataDesc {
+  color: #6c7a96;
+  margin-bottom: 2rem;
+  font-size: 14px;
+}
+
+.noDataButton {
+  background: #1ca7ec;
+  color: #ffffff;
+  padding: 10px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.noDataButton:hover {
+  background: #0f78b5;
+}

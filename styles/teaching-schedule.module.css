@@ -33,6 +33,14 @@
   color: #1c2a44;
 }
 
+.rangeInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1c2a44;
+  font-size: 14px;
+}
+
 .navButton {
   border: none;
   background: #ffffff;

@@ -1,26 +1,43 @@
-import Link from "next/link";
 import styles from "@/styles/mycourse.module.css";
 
-export default function AttendanceHistory() {
+interface AttendanceItem {
+  id: string;
+  sessionDate?: string;
+  subjectName?: string;
+  isPresent: boolean;
+  checkedAt: string;
+}
+
+interface AttendanceHistoryProps {
+  attendances: AttendanceItem[];
+}
+
+export default function AttendanceHistory({ attendances }: AttendanceHistoryProps) {
   return (
     <div className={styles.card}>
-      <h3>Attendance History</h3>
+      <h3>Lịch sử điểm danh</h3>
 
-      <div className={styles.attendanceItem}>
-        20 Aug 2023 <span className={styles.present}>Present</span>
-      </div>
+      {attendances.length === 0 ? (
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Chưa có dữ liệu điểm danh.</p>
+      ) : (
+        attendances.map((item) => (
+          <div key={item.id} className={styles.attendanceItem}>
+            <div>
+              <p style={{ fontWeight: 500 }}>{item.subjectName || "Buổi học"}</p>
+              <small>{item.sessionDate ? new Date(item.sessionDate).toLocaleDateString('vi-VN') : new Date(item.checkedAt).toLocaleDateString('vi-VN')}</small>
+            </div>
+            <span className={item.isPresent ? styles.present : styles.absent}>
+              {item.isPresent ? "Có mặt" : "Vắng mặt"}
+            </span>
+          </div>
+        ))
+      )}
 
-      <div className={styles.attendanceItem}>
-        18 Aug 2023 <span className={styles.present}>Present</span>
-      </div>
-
-      <div className={styles.attendanceItem}>
-        15 Aug 2023 <span className={styles.absent}>Absent</span>
-      </div>
-
-      <Link href="/attendance" className={styles.viewLink}>
-        Xem chi tiết
-      </Link>
+      {attendances.length > 0 && (
+        <p style={{ marginTop: "1rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+          * Hiển thị tối đa 3 buổi học gần nhất.
+        </p>
+      )}
     </div>
   );
 }

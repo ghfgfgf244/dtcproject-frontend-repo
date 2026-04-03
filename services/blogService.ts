@@ -4,16 +4,18 @@ export interface Blog {
   id: string;
   title: string;
   avatar?: string;
-  categoryId: number;
+  categoryId: string;
   summary?: string;
   content: string;
   status: boolean;
   createdAt: string;
+  authorName: string;
+  authorAvatar?: string;
 }
 
 export interface CreateBlogRequest {
   title: string;
-  categoryId: number;
+  categoryId: string;
   content: string;
   summary?: string;
   avatar?: string;
@@ -21,13 +23,35 @@ export interface CreateBlogRequest {
 
 export interface UpdateBlogRequest {
   title?: string;
-  categoryId?: number;
+  categoryId?: string;
   content?: string;
   summary?: string;
   avatar?: string;
 }
 
+// Default category for homepage posts (seeded: "Tin dao tao")
+const DEFAULT_CATEGORY_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1";
+
 export const blogService = {
+  /**
+   * Create a new blog post.
+   */
+  async create(content: string, title: string, avatar?: string): Promise<Blog | null> {
+    try {
+      const response = await api.post<{ data: Blog }>("/Blog", {
+        title,
+        categoryId: DEFAULT_CATEGORY_ID,
+        content,
+        avatar,
+        summary: title,
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error("Failed to create blog:", error);
+      throw error;
+    }
+  },
+
   /**
    * Fetch all blogs.
    */
