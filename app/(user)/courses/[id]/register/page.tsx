@@ -65,21 +65,6 @@ export default function RegisterPage() {
     }
   };
 
-  const uploadRequiredDocuments = async () => {
-    const uploadTasks = [];
-    
-    // Ensure token is fresh for uploads
-    const token = await getToken();
-    setAuthToken(token);
-
-    if (docs.photo.file) uploadTasks.push(documentService.uploadDocument(docs.photo.file));
-    if (docs.idFront.file) uploadTasks.push(documentService.uploadDocument(docs.idFront.file));
-    if (docs.idBack.file) uploadTasks.push(documentService.uploadDocument(docs.idBack.file));
-
-    if (uploadTasks.length > 0) {
-      await Promise.all(uploadTasks);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,20 +78,24 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      // 1. Upload documents first
-      await uploadRequiredDocuments();
-
-      // 2. Ensure token is fresh for registration
+      // 1. Ensure token is fresh for registration
       const token = await getToken();
       setAuthToken(token);
 
-      // 3. Submit registration
-      await registrationService.registerCourse({
-        courseId: course.id,
-        totalFee: course.price,
-        notes: notes,
-        referralCode: referralCode
-      });
+      // 2. Build FormData
+      const formData = new FormData();
+      formData.append("CourseId", course.id);
+      formData.append("TotalFee", course.price.toString());
+      if (notes) formData.append("Notes", notes);
+      if (referralCode) formData.append("ReferralCode", referralCode);
+
+      // Append files if they exist
+      if (docs.photo.file) formData.append("Photo", docs.photo.file);
+      if (docs.idFront.file) formData.append("IdFront", docs.idFront.file);
+      if (docs.idBack.file) formData.append("IdBack", docs.idBack.file);
+
+      // 3. Submit registration package
+      await registrationService.registerCourse(formData);
 
       alert("Đăng ký thành công!");
       router.push("/courses");

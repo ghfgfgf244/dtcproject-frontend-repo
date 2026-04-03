@@ -1,14 +1,5 @@
-import {
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
-
-import Footer from "@/components/ui/Footer";
 import Header from "@/components/ui/header";
-
+import FooterWrapper from "@/components/ui/FooterWrapper";
 
 export default function UserLayout({
   children,
@@ -17,18 +8,14 @@ export default function UserLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col">
-
       {/* HEADER */}
-        <Header />
+      <Header />
 
       {/* PAGE CONTENT */}
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
-      {/* FOOTER */}
-      {/* <Footer /> */}
-
+      {/* FOOTER - only on landing page (/) */}
+      <FooterWrapper />
     </div>
   );
 }

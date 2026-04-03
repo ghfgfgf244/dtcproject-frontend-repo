@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import styles from "@/styles/feed.module.css";
+import RichTextEditor from "./rich-text-editor";
+import { CldUploadWidget } from "next-cloudinary";
 
 type PostModalProps = {
   open: boolean;
@@ -9,7 +11,7 @@ type PostModalProps = {
   submitLabel: string;
   initialContent?: string;
   onClose: () => void;
-  onSubmit: (content: string) => void;
+  onSubmit: (content: string, image?: string) => void;
 };
 
 export default function PostModal({
@@ -21,10 +23,12 @@ export default function PostModal({
   onSubmit,
 }: PostModalProps) {
   const [content, setContent] = useState(initialContent);
+  const [image, setImage] = useState<string | undefined>();
 
   useEffect(() => {
     if (open) {
       setContent(initialContent);
+      setImage(undefined);
     }
   }, [open, initialContent]);
 
@@ -46,22 +50,40 @@ export default function PostModal({
         <div className={styles.postProfile}>
           <div className={styles.avatar}>A</div>
           <div>
-            <p className={styles.profileName}>Alex Driver</p>
+            <p className={styles.profileName}>Tạo nội dung</p>
             <span className={styles.profileVisibility}>Công khai</span>
           </div>
         </div>
 
-        <textarea
-          className={styles.postTextarea}
-          placeholder="Chia sẻ kinh nghiệm lái xe của bạn..."
+        <RichTextEditor
           value={content}
-          onChange={(event) => setContent(event.target.value)}
+          onChange={setContent}
+          placeholder="Chia sẻ kinh nghiệm lái xe của bạn..."
         />
+
+        {image && (
+          <div style={{ marginTop: 10, fontSize: "0.9rem", color: "green" }}>
+            Đã tải ảnh đính kèm thành công!
+          </div>
+        )}
 
         <div className={styles.postOptions}>
           <span>Thêm vào bài viết</span>
           <div className={styles.optionIcons}>
-            <button title="Ảnh">📷</button>
+            <CldUploadWidget
+              uploadPreset="ml_default"
+              onSuccess={(result) => {
+                if (result.event === "success") {
+                  setImage((result.info as any).secure_url);
+                }
+              }}
+            >
+              {({ open }) => (
+                <button title="Ảnh" onClick={() => open()}>
+                  📷
+                </button>
+              )}
+            </CldUploadWidget>
             <button title="Biểu cảm">🙂</button>
             <button title="Vị trí">📍</button>
           </div>
@@ -69,7 +91,7 @@ export default function PostModal({
 
         <button
           className={styles.submitPost}
-          onClick={() => onSubmit(content)}
+          onClick={() => onSubmit(content, image)}
         >
           {submitLabel}
         </button>

@@ -1,0 +1,25 @@
+.quill {
+  margin-top: 10px;
+  background-color: var(--card);
+  border-radius: var(--radius);
+}
+
+.ql-toolbar {
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  border-color: var(--border) !important;
+}
+
+.ql-container {
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+  border-color: var(--border) !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+}
+
+.ql-editor {
+  min-height: 150px;
+  max-height: 300px;
+  overflow-y: auto;
+}

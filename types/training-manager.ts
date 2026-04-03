@@ -31,6 +31,7 @@ export interface ClassDTO {
   courseId: string;
   courseName?: string; 
   className: string;
+  classType: 'Theory' | 'Practice';
   startDate: string;
   endDate: string;
   studentCount?: number;
@@ -41,7 +42,7 @@ export interface ClassScheduleUpdateDTO {
   instructorId: string;
   startTime: string;
   endTime: string;
-  location: string;
+  addressId: number;
 }
 
 // 3.6.3 Exam Management

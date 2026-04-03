@@ -1,50 +1,75 @@
 "use client";
 
-import { useState } from "react";
-import PostCard from "./post-card";
+import { useEffect, useState, useCallback } from "react";
+import { blogService, Blog } from "@/services/blogService";
+import PostCard, { PostData } from "./post-card";
+import styles from "@/styles/feed.module.css";
 
-const initialPosts = [
-  {
-    id: 1,
-    author: "Training Manager",
-    avatar: "https://i.pravatar.cc/40",
-    time: "2 hours ago",
-    content: "New B2 driving exam schedule has been released.",
-    image: "/CourseImage.jpg",
-  },
-  {
-    id: 2,
-    author: "Instructor Nam",
-    avatar: "https://i.pravatar.cc/41",
-    time: "5 hours ago",
-    content: "Remember to practice parallel parking before the exam!",
-  },
-];
-
-export default function PostList() {
-  const [posts, setPosts] = useState(initialPosts);
-
-  const handleDelete = (id: number) => {
-    setPosts((prev) => prev.filter((post) => post.id !== id));
+function mapBlogToPost(blog: Blog): PostData {
+  return {
+    id: blog.id,
+    author: blog.authorName || "Tác giả",
+    avatar: blog.authorAvatar,
+    time: blog.createdAt,
+    content: blog.content,
+    image: blog.avatar,
+    title: blog.title,
   };
+}
 
-  const handleEdit = (id: number, content: string) => {
-    setPosts((prev) =>
-      prev.map((post) =>
-        post.id === id ? { ...post, content } : post
-      )
+export default function PostList({ refreshKey }: { refreshKey?: number }) {
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch all blogs including unpublished so creator sees their own drafts
+      const blogs = await blogService.getAll(false);
+      setPosts(blogs.map(mapBlogToPost));
+    } catch {
+      setError("Không thể tải bài viết. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts, refreshKey]);
+
+  if (loading) {
+    return (
+      <div className={styles.loadingState}>
+        <div className={styles.loadingSpinner} />
+        <p>Đang tải bài viết...</p>
+      </div>
     );
-  };
+  }
+
+  if (error) {
+    return (
+      <div className={styles.errorState}>
+        <p>{error}</p>
+        <button onClick={fetchPosts}>Thử lại</button>
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p>Chưa có bài viết nào. Hãy là người đầu tiên đăng bài! 🎉</p>
+      </div>
+    );
+  }
 
   return (
     <div>
       {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          onDelete={() => handleDelete(post.id)}
-          onEdit={(content) => handleEdit(post.id, content)}
-        />
+        <PostCard key={post.id} post={post} />
       ))}
     </div>
   );

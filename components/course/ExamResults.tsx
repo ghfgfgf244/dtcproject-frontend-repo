@@ -1,29 +1,44 @@
-import Link from "next/link";
 import styles from "@/styles/mycourse.module.css";
 
-export default function ExamResults() {
+interface ExamResultItem {
+  examType: string;
+  score: number;
+  totalScore: number;
+}
+
+interface ExamResultsProps {
+  results: ExamResultItem[];
+}
+
+export default function ExamResults({ results }: ExamResultsProps) {
+  const getScore = (type: string) => {
+    const res = results.find(r => r.examType === type);
+    if (!res) return "Chưa có điểm";
+    return `${res.score} / ${res.totalScore}`;
+  };
+
   return (
     <div className={styles.card}>
-      <h3>Exam Results</h3>
+      <h3>Kết quả sát hạch</h3>
 
       <div className={styles.examPass}>
-        THEORY EXAM
-        <span>27 / 30</span>
+        KẾT QUẢ LÝ THUYẾT
+        <span>{getScore('Theory')}</span>
       </div>
 
       <div className={styles.examPass}>
-        SIMULATION EXAM
-        <span>35 / 50</span>
+        KẾT QUẢ MÔ PHỎNG
+        <span>{getScore('Simulation')}</span>
       </div>
 
       <div className={styles.examPass}>
-        PRACTICAL EXAM
-        <span>90 / 100</span>
+        KẾT QUẢ THỰC HÀNH
+        <span>{getScore('Practice')}</span>
       </div>
 
-      <Link href="/report" className={styles.viewLink}>
-        Xem chi tiết
-      </Link>
+      <p style={{ marginTop: "1rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+        * Hiển thị điểm số cao nhất đạt được trong mỗi hạng mục.
+      </p>
     </div>
   );
 }

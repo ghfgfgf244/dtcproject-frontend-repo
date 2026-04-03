@@ -1,47 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Loader2, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/teaching-schedule.module.css";
+import { scheduleService, ClassSchedule } from "@/services/scheduleService";
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
 
-const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-/* ===== TYPE ===== */
-type Session = {
-  time: string;
-  classId?: string;
-  room: string;
-  muted?: boolean;
-};
-
-type SessionValue = Session | "closed" | null;
-
-/* ===== DATA ===== */
-const schedule: {
-  morning: Record<number, SessionValue>;
-  afternoon: Record<number, SessionValue>;
-} = {
-  morning: {
-    19: { time: "08:00 - 10:00", classId: "B2-2026-03", room: "Room 102" },
-    20: null,
-    21: { time: "09:00 - 11:30", classId: "B2-2026-03", room: "Room 102" },
-    22: { time: "08:00 - 10:00", classId: "B2-2026-03", room: "Room 105" },
-    23: { time: "09:00 - 11:00", classId: "B2-2026-03", room: "Exam Center" },
-    24: "closed",
-    25: "closed",
-  },
-  afternoon: {
-    19: { time: "14:00 - 15:30", classId: "B2-2026-03", room: "Vehicle A2" },
-    20: { time: "13:00 - 15:00", classId: "B2-2026-03", room: "Room 104" },
-    21: { time: "14:00 - 16:00", classId: "B2-2026-03", room: "Track B" },
-    22: { time: "Administrative", room: "Administrative", muted: true },
-    23: { time: "14:00 - 17:00", classId: "B2-2026-03", room: "Area 4" },
-    24: "closed",
-    25: "closed",
-  },
-};
+const dayLabels = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 
 /* ===== UTIL ===== */
 function startOfWeek(date: Date) {
@@ -61,12 +30,32 @@ function addDays(date: Date, offset: number) {
 function formatRange(start: Date) {
   const end = addDays(start, 6);
   const opts: Intl.DateTimeFormatOptions = { month: "long", day: "numeric" };
-  return `${start.toLocaleDateString("en-US", opts)} - ${end.toLocaleDateString("en-US", opts)}`;
+  return `${start.toLocaleDateString("vi-VN", opts)} - ${end.toLocaleDateString("vi-VN", opts)}`;
 }
 
-/* ===== COMPONENT ===== */
 export default function TeachingSchedulePage() {
+  const { getToken } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [rawSchedules, setRawSchedules] = useState<ClassSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ===== FETCH DATA =====
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const token = await getToken();
+        setAuthToken(token);
+        const data = await scheduleService.getTeachingSchedule();
+        setRawSchedules(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [getToken]);
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -79,35 +68,64 @@ export default function TeachingSchedulePage() {
     });
   }, [weekStart]);
 
-  const renderSession = (session: SessionValue) => {
-    if (session === "closed") {
-      return <div className={styles.closed}>Closed</div>;
+  // Organize schedules by date and time of day
+  const organizedSchedules = useMemo(() => {
+    const map: Record<string, { morning: ClassSchedule[]; afternoon: ClassSchedule[]; evening: ClassSchedule[] }> = {};
+    
+    rawSchedules.forEach(s => {
+      const dateKey = new Date(s.startTime).toDateString();
+      if (!map[dateKey]) {
+        map[dateKey] = { morning: [], afternoon: [], evening: [] };
+      }
+      
+      const hour = new Date(s.startTime).getHours();
+      if (hour < 12) map[dateKey].morning.push(s);
+      else if (hour < 18) map[dateKey].afternoon.push(s);
+      else map[dateKey].evening.push(s);
+    });
+    
+    return map;
+  }, [rawSchedules]);
+
+  const renderSlots = (slots: ClassSchedule[]) => {
+    if (!slots.length) {
+      return <div className={styles.noSession}>Không có tiết dạy</div>;
     }
 
-    if (!session) {
-      return <div className={styles.noSession}>No Sessions</div>;
-    }
-
-    return (
-      <div className={`${styles.sessionCard} ${session.muted ? styles.muted : ""}`}>
-        <div className={styles.sessionTime}>{session.time}</div>
+    return slots.map(slot => (
+      <Link
+        key={slot.id}
+        href={`/teaching-schedule/class/${slot.classId}?scheduleId=${slot.id}`}
+        className={styles.sessionCard}
+        style={{ textDecoration: "none", display: "block" }}
+      >
+        <div className={styles.sessionTime}>
+          {new Date(slot.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })} - 
+          {new Date(slot.endTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+        </div>
 
         <div className={styles.sessionTitle}>
-          {session.classId ? (
-            <Link href={`/teaching-schedule/class/${session.classId}`}>
-              Class {session.classId}
-            </Link>
-          ) : (
-            "Administrative"
-          )}
+          {slot.className}
         </div>
 
         <div className={styles.tagRow}>
-          <span className={styles.tag}>{session.room}</span>
+          <span className={styles.tag}>{slot.location || slot.addressName}</span>
+        </div>
+      </Link>
+    ));
+  };
+
+  if (loading) {
+    return (
+      <div className={shellStyles.page}>
+        <Sidebar activeKey="teaching-schedule" />
+        <div className={shellStyles.loadingContainer}>
+          <Loader2 className="animate-spin" size={40} />
+          <p>Đang tải lịch dạy...</p>
         </div>
       </div>
     );
-  };
+  }
 
   return (
     <div className={shellStyles.page}>
@@ -117,8 +135,8 @@ export default function TeachingSchedulePage() {
         <div className={styles.content}>
           <header className={styles.header}>
             <div>
-              <h1>Teaching Schedule</h1>
-              <p>Manage your weekly driving sessions and classroom lectures.</p>
+              <h1>Lịch dạy của tôi</h1>
+              <p>Quản lý các buổi thực hành và bài giảng lý thuyết trong tuần.</p>
             </div>
 
             <div className={styles.rangeControl}>
@@ -127,26 +145,28 @@ export default function TeachingSchedulePage() {
                 className={styles.navButton}
                 onClick={() => setWeekStart(addDays(weekStart, -7))}
               >
-                ◀
+                <ChevronLeft size={20} />
               </button>
 
-              <span>{formatRange(weekStart)}</span>
+              <div className={styles.rangeInfo}>
+                <CalendarIcon size={18} />
+                <span>{formatRange(weekStart)}</span>
+              </div>
 
               <button
                 type="button"
                 className={styles.navButton}
                 onClick={() => setWeekStart(addDays(weekStart, 7))}
               >
-                ▶
+                <ChevronRight size={20} />
               </button>
             </div>
           </header>
 
           <div className={styles.weekGrid}>
             {weekDays.map((day) => {
-              const key = day.date.getDate();
-              const morning = schedule.morning[key];
-              const afternoon = schedule.afternoon[key];
+              const dateKey = day.date.toDateString();
+              const dayData = organizedSchedules[dateKey] || { morning: [], afternoon: [], evening: [] };
 
               return (
                 <div
@@ -155,18 +175,23 @@ export default function TeachingSchedulePage() {
                 >
                   <div className={styles.dayHeader}>
                     <span>{day.day}</span>
-                    <strong>{key}</strong>
-                    {day.isToday && <span className={styles.today}>Today</span>}
+                    <strong>{day.date.getDate()}</strong>
+                    {day.isToday && <span className={styles.today}>Hôm nay</span>}
                   </div>
 
                   <div className={styles.sessionBlock}>
-                    <div className={styles.sessionLabel}>Morning</div>
-                    {renderSession(morning)}
+                    <div className={styles.sessionLabel}>Sáng</div>
+                    {renderSlots(dayData.morning)}
                   </div>
 
                   <div className={styles.sessionBlock}>
-                    <div className={styles.sessionLabel}>Afternoon</div>
-                    {renderSession(afternoon)}
+                    <div className={styles.sessionLabel}>Chiều</div>
+                    {renderSlots(dayData.afternoon)}
+                  </div>
+
+                  <div className={styles.sessionBlock}>
+                    <div className={styles.sessionLabel}>Tối</div>
+                    {renderSlots(dayData.evening)}
                   </div>
                 </div>
               );
@@ -176,4 +201,4 @@ export default function TeachingSchedulePage() {
       </section>
     </div>
   );
-}
+}

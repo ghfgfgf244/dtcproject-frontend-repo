@@ -1,77 +1,179 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  Loader2, Search, GraduationCap, Save, X, CheckCircle2, XCircle,
+  Clock, MapPin, Navigation,
+} from "lucide-react";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/student-directory.module.css";
-
-const classes = ["B2-2024-03", "B2-2024-05", "B2-2024-08"];
-
-const students = [
-  {
-    id: "DM-2024-001",
-    name: "Alexander Wright",
-    email: "alex.wright@example.com",
-    attendance: 95,
-    status: "Present",
-  },
-  {
-    id: "DM-2024-042",
-    name: "Sophia Martinez",
-    email: "sophia.m@example.com",
-    attendance: 88,
-    status: "Present",
-  },
-  {
-    id: "DM-2024-015",
-    name: "Marcus Chen",
-    email: "marcus.chen@example.com",
-    attendance: 72,
-    status: "Absent",
-  },
-  {
-    id: "DM-2024-089",
-    name: "Elena Rossi",
-    email: "elena.rossi@example.com",
-    attendance: 100,
-    status: "Present",
-  },
-  {
-    id: "DM-2024-112",
-    name: "Jordan Brooks",
-    email: "jordan.b@example.com",
-    attendance: 45,
-    status: "Absent",
-  },
-  {
-    id: "DM-2024-007",
-    name: "Liam O'Connor",
-    email: "liam.oconnor@example.com",
-    attendance: 92,
-    status: "Present",
-  },
-];
+import { classService, Class, ClassStudent } from "@/services/classService";
+import { drivingService } from "@/services/drivingService";
+import { attendanceService, AttendanceRecord } from "@/services/attendanceService";
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 export default function StudentDirectoryPage() {
-  const [selectedClass, setSelectedClass] = useState(classes[0]);
+  const { classId } = useParams() as { classId: string };
+  const searchParams = useSearchParams();
+  const scheduleId = searchParams.get("scheduleId") ?? undefined;
+
+  const router = useRouter();
+  const { getToken } = useAuth();
+
+  const [currentClass, setCurrentClass] = useState<Class | null>(null);
+  const [allMyClasses, setAllMyClasses] = useState<Class[]>([]);
+  const [students, setStudents] = useState<ClassStudent[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingAttendance, setSavingAttendance] = useState<Record<string, boolean>>({});
+
   const [query, setQuery] = useState("");
   const [openRow, setOpenRow] = useState<string | null>(null);
-  const [kmData, setKmData] = useState<Record<string, { morning: number; evening: number }>>(
-    () =>
-      students.reduce((acc, student) => {
-        acc[student.id] = { morning: 0, evening: 0 };
-        return acc;
-      }, {} as Record<string, { morning: number; evening: number }>)
+
+  // Staging area for distance addition
+  const [addingKm, setAddingKm] = useState<Record<string, { morning: number; evening: number }>>({});
+  const [isSaving, setIsSaving] = useState<Record<string, boolean>>({});
+
+  // ===== FETCH DATA =====
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const token = await getToken();
+        setAuthToken(token);
+
+        const [classData, studentData, teachingClasses] = await Promise.all([
+          classService.getClassDetail(classId),
+          classService.getClassStudents(classId),
+          classService.getTeachingClasses(),
+        ]);
+
+        setCurrentClass(classData);
+        setStudents(studentData);
+        setAllMyClasses(teachingClasses);
+
+        // Load attendance for the specific schedule if provided
+        if (scheduleId) {
+          const att = await attendanceService.getBySchedule(scheduleId);
+          setAttendance(att);
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Không thể tải dữ liệu lớp học.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [classId, scheduleId, getToken]);
+
+  // Helper: get attendance status for a student
+  const getAttendanceStatus = useCallback(
+    (studentId: string): boolean | null => {
+      const record = attendance.find((a) => a.studentId === studentId);
+      return record ? record.isPresent : null;
+    },
+    [attendance]
   );
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
+
+  // Toggle attendance for a student
+  const handleToggleAttendance = async (studentId: string) => {
+    if (!scheduleId) {
+      toast.error("Không xác định được tiết học. Hãy vào từ trang lịch dạy.");
+      return;
+    }
+
+    const current = getAttendanceStatus(studentId);
+    const newStatus = current === null ? true : !current; // default first click = present
+
+    setSavingAttendance((prev) => ({ ...prev, [studentId]: true }));
+    try {
+      await attendanceService.mark(scheduleId, studentId, newStatus);
+
+      // Update local state
+      setAttendance((prev) => {
+        const existing = prev.find((a) => a.studentId === studentId);
+        if (existing) {
+          return prev.map((a) =>
+            a.studentId === studentId ? { ...a, isPresent: newStatus } : a
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            classScheduleId: scheduleId,
+            studentId,
+            studentName: students.find((s) => s.id === studentId)?.fullName ?? "",
+            isPresent: newStatus,
+            checkedAt: new Date().toISOString(),
+          },
+        ];
+      });
+
+      toast.success(newStatus ? "Đã đánh dấu có mặt ✅" : "Đã đánh dấu vắng mặt ❌");
+    } catch {
+      toast.error("Không thể lưu điểm danh. Vui lòng thử lại.");
+    } finally {
+      setSavingAttendance((prev) => ({ ...prev, [studentId]: false }));
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return students;
     return students.filter((student) =>
-      `${student.id} ${student.name} ${student.email}`.toLowerCase().includes(q)
+      `${student.fullName} ${student.email} ${student.id}`.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, students]);
+
+  const handleSaveDistance = async (studentId: string, recordId?: string) => {
+    if (!recordId) {
+      toast.error("Không tìm thấy bản ghi quãng đường của học viên này.");
+      return;
+    }
+
+    const km = addingKm[studentId] || { morning: 0, evening: 0 };
+    if (km.morning === 0 && km.evening === 0) return;
+
+    try {
+      setIsSaving((prev) => ({ ...prev, [studentId]: true }));
+      await drivingService.recordActualDistance(recordId, km.morning, km.evening);
+
+      const updatedStudents = await classService.getClassStudents(classId);
+      setStudents(updatedStudents);
+      setAddingKm((prev) => ({ ...prev, [studentId]: { morning: 0, evening: 0 } }));
+      toast.success("Đã ghi nhận quãng đường thành công!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi lưu quãng đường.");
+    } finally {
+      setIsSaving((prev) => ({ ...prev, [studentId]: false }));
+    }
+  };
+
+  const isPractical = currentClass?.classType === "Practice";
+
+  // Attendance summary
+  const presentCount = attendance.filter((a) => a.isPresent).length;
+  const absentCount = attendance.filter((a) => !a.isPresent).length;
+  const notMarkedCount = students.length - attendance.length;
+
+  if (loading) {
+    return (
+      <div className={shellStyles.page}>
+        <Sidebar activeKey="teaching-schedule" />
+        <div className={shellStyles.loadingContainer}>
+          <Loader2 className="animate-spin" size={40} />
+          <p>Đang tải danh sách học viên...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={shellStyles.page}>
@@ -79,35 +181,67 @@ export default function StudentDirectoryPage() {
 
       <section className={shellStyles.content}>
         <header className={styles.header}>
-          <h1>Student Directory</h1>
-          <p>
-            Monitor attendance, progress metrics, and academic standing for the
-            current academic cycle.
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <GraduationCap className={styles.headerIcon} />
+            <div>
+              <h1>Danh sách học viên</h1>
+              <p>
+                Lớp {currentClass?.className}
+                {isPractical ? " · Thực hành" : " · Lý thuyết"}
+                {scheduleId && " · Điểm danh theo tiết học"}
+              </p>
+            </div>
+          </div>
+
+          {/* Attendance summary chips */}
+          {scheduleId && (
+            <div className={styles.attendanceSummary}>
+              <span className={styles.presentChip}>✅ Có mặt: {presentCount}</span>
+              <span className={styles.absentChip}>❌ Vắng: {absentCount}</span>
+              <span className={styles.pendingChip}>⏳ Chưa điểm danh: {notMarkedCount}</span>
+            </div>
+          )}
         </header>
 
         <div className={styles.card}>
           <div className={styles.toolbar}>
             <div className={styles.classControl}>
-              <span className={styles.classLabel}>Class</span>
+              <span className={styles.classLabel}>Chuyển lớp học</span>
               <select
                 className={styles.classSelect}
-                value={selectedClass}
-                onChange={(event) => setSelectedClass(event.target.value)}
+                value={classId}
+                onChange={(e) =>
+                  router.push(
+                    `/teaching-schedule/class/${e.target.value}${scheduleId ? `?scheduleId=${scheduleId}` : ""}`
+                  )
+                }
               >
-                {classes.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
+                {allMyClasses.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.className} ({item.classType === "Practice" ? "Thực hành" : "Lý thuyết"})
                   </option>
                 ))}
               </select>
             </div>
-            <span className={styles.countBadge}>42 students</span>
+
+            <div className={styles.metaRow}>
+              <span className={styles.countBadge}>{students.length} học viên</span>
+              <span className={styles.typeBadge}>
+                {isPractical ? "Lớp Thực hành" : "Lớp Lý thuyết"}
+              </span>
+              {!scheduleId && (
+                <span className={styles.noScheduleWarning}>
+                  ⚠️ Vào từ lịch dạy để điểm danh theo tiết
+                </span>
+              )}
+            </div>
+
             <div className={styles.searchBox}>
+              <Search size={16} color="#8b98b2" />
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Quick search students..."
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tìm kiếm học viên..."
               />
             </div>
           </div>
@@ -115,54 +249,78 @@ export default function StudentDirectoryPage() {
           <div className={styles.table}>
             <div className={`${styles.row} ${styles.head}`}>
               <span>STT</span>
-              <span>Avatar</span>
-              <span>Student ID</span>
-              <span>Full Name</span>
+              <span>HV</span>
+              <span>Họ và Tên</span>
               <span>Email</span>
-              <span>Attendance</span>
-              <span>Status</span>
-              <span></span>
+              {scheduleId && <span>Điểm danh</span>}
+              <span>Trạng thái</span>
+              <span>Chi tiết</span>
             </div>
 
             {filtered.map((student, index) => {
-              const km = kmData[student.id] ?? { morning: 0, evening: 0 };
               const isOpen = openRow === student.id;
+              const staging = addingKm[student.id] || { morning: 0, evening: 0 };
+              const attStatus = getAttendanceStatus(student.id);
+              const isSavingAtt = savingAttendance[student.id];
+
               return (
                 <div key={student.id} className={styles.rowGroup}>
                   <div className={styles.row}>
                     <span>{String(index + 1).padStart(2, "0")}</span>
-                    <span className={styles.avatar}>{student.name[0]}</span>
-                    <span className={styles.studentId}>{student.id}</span>
-                    <span className={styles.studentName}>{student.name}</span>
+                    <span className={styles.avatar}>
+                      {student.avatarUrl ? (
+                        <img src={student.avatarUrl} alt="" className={styles.avatarImg} />
+                      ) : (
+                        student.fullName[0]
+                      )}
+                    </span>
+                    <span className={styles.studentName}>{student.fullName}</span>
                     <span className={styles.email}>{student.email}</span>
-                    <span className={styles.attendance}>
-                      <span className={styles.attendanceBar}>
-                        <span
-                          className={`${styles.attendanceFill} ${
-                            student.attendance < 60 ? styles.attendanceLow : ""
+
+                    {/* ── Attendance Toggle ── */}
+                    {scheduleId && (
+                      <span>
+                        <button
+                          className={`${styles.attendanceToggle} ${
+                            attStatus === true
+                              ? styles.togglePresent
+                              : attStatus === false
+                              ? styles.toggleAbsent
+                              : styles.togglePending
                           }`}
-                          style={{ width: `${student.attendance}%` }}
-                        />
+                          onClick={() => handleToggleAttendance(student.id)}
+                          disabled={isSavingAtt}
+                          title={
+                            attStatus === null
+                              ? "Chưa điểm danh – click để đánh dấu có mặt"
+                              : attStatus
+                              ? "Có mặt – click để đổi sang vắng"
+                              : "Vắng – click để đổi sang có mặt"
+                          }
+                        >
+                          {isSavingAtt ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : attStatus === true ? (
+                            <><CheckCircle2 size={14} /> Có mặt</>
+                          ) : attStatus === false ? (
+                            <><XCircle size={14} /> Vắng</>
+                          ) : (
+                            <><Clock size={14} /> Chưa điểm</>
+                          )}
+                        </button>
                       </span>
-                      <strong>{student.attendance}%</strong>
-                    </span>
+                    )}
+
                     <span
-                      className={`${styles.statusPill} ${
-                        student.status === "Present"
-                          ? styles.present
-                          : styles.absent
-                      }`}
+                      className={`${styles.statusPill} ${student.isActive ? styles.present : styles.absent}`}
                     >
-                      {student.status}
+                      {student.isActive ? "Hoạt động" : "Tạm khóa"}
                     </span>
+
                     <button
                       type="button"
                       className={styles.expandBtn}
-                      onClick={() =>
-                        setOpenRow((prev) =>
-                          prev === student.id ? null : student.id
-                        )
-                      }
+                      onClick={() => setOpenRow((prev) => (prev === student.id ? null : student.id))}
                     >
                       {isOpen ? "▾" : "▸"}
                     </button>
@@ -170,149 +328,127 @@ export default function StudentDirectoryPage() {
 
                   {isOpen && (
                     <div className={styles.dropdown}>
-                      <div className={styles.kmRow}>
-                        <span>km buổi sáng ({km.morning}/710)</span>
-                        <div className={styles.progressTrack}>
-                          <div
-                            className={styles.progressFill}
-                            style={{ width: `${(km.morning / 710) * 100}%` }}
-                          />
+                      <div className={styles.detailGrid}>
+                        <div className={styles.infoSection}>
+                          <h3>Thông tin liên hệ</h3>
+                          <p>Số điện thoại: {student.phone || "N/A"}</p>
+                          <p>Email: {student.email}</p>
                         </div>
-                        <div className={styles.kmControls}>
-                          <button
-                            onClick={() =>
-                              setKmData((prev) => ({
-                                ...prev,
-                                [student.id]: {
-                                  ...prev[student.id],
-                                  morning: Math.max(
-                                    0,
-                                    prev[student.id].morning - 1
-                                  ),
-                                },
-                              }))
-                            }
-                          >
-                            -
-                          </button>
-                          <strong>{km.morning}</strong>
-                          <button
-                            onClick={() =>
-                              setKmData((prev) => ({
-                                ...prev,
-                                [student.id]: {
-                                  ...prev[student.id],
-                                  morning: Math.min(
-                                    710,
-                                    prev[student.id].morning + 1
-                                  ),
-                                },
-                              }))
-                            }
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
 
-                      <div className={styles.kmRow}>
-                        <span>km buổi tối ({km.evening}/100)</span>
-                        <div className={styles.progressTrack}>
-                          <div
-                            className={styles.progressFill}
-                            style={{ width: `${(km.evening / 100) * 100}%` }}
-                          />
-                        </div>
-                        <div className={styles.kmControls}>
-                          <button
-                            onClick={() =>
-                              setKmData((prev) => ({
-                                ...prev,
-                                [student.id]: {
-                                  ...prev[student.id],
-                                  evening: Math.max(
-                                    0,
-                                    prev[student.id].evening - 1
-                                  ),
-                                },
-                              }))
-                            }
-                          >
-                            -
-                          </button>
-                          <strong>{km.evening}</strong>
-                          <button
-                            onClick={() =>
-                              setKmData((prev) => ({
-                                ...prev,
-                                [student.id]: {
-                                  ...prev[student.id],
-                                  evening: Math.min(
-                                    100,
-                                    prev[student.id].evening + 1
-                                  ),
-                                },
-                              }))
-                            }
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
+                        {isPractical && (
+                          <div className={styles.progressSection}>
+                            <h3>Tiến độ quãng đường</h3>
+                            <div className={styles.kmRow}>
+                              <div className={styles.kmLabel}>
+                                <strong>Buổi sáng:</strong> {student.morningDistanceKm}/
+                                {student.maxMorningDistanceKm} km
+                              </div>
+                              <div className={styles.progressTrack}>
+                                <div
+                                  className={styles.progressFill}
+                                  style={{
+                                    width: `${
+                                      (student.morningDistanceKm /
+                                        (student.maxMorningDistanceKm || 1)) *
+                                      100
+                                    }%`,
+                                  }}
+                                />
+                              </div>
+                              <div className={styles.accumulateInput}>
+                                <span>Cộng thêm:</span>
+                                <input
+                                  type="number"
+                                  value={staging.morning}
+                                  onChange={(e) =>
+                                    setAddingKm((prev) => ({
+                                      ...prev,
+                                      [student.id]: {
+                                        ...staging,
+                                        morning: parseFloat(e.target.value) || 0,
+                                      },
+                                    }))
+                                  }
+                                />
+                                <span>km</span>
+                              </div>
+                            </div>
 
-                      <div className={styles.kmFooter}>
-                        {saved[student.id] && (
-                          <span className={styles.savedTag}>Đã lưu</span>
+                            <div className={styles.kmRow}>
+                              <div className={styles.kmLabel}>
+                                <strong>Buổi tối:</strong> {student.eveningDistanceKm}/
+                                {student.maxEveningDistanceKm} km
+                              </div>
+                              <div className={styles.progressTrack}>
+                                <div
+                                  className={styles.progressFill}
+                                  style={{
+                                    width: `${
+                                      (student.eveningDistanceKm /
+                                        (student.maxEveningDistanceKm || 1)) *
+                                      100
+                                    }%`,
+                                  }}
+                                />
+                              </div>
+                              <div className={styles.accumulateInput}>
+                                <span>Cộng thêm:</span>
+                                <input
+                                  type="number"
+                                  value={staging.evening}
+                                  onChange={(e) =>
+                                    setAddingKm((prev) => ({
+                                      ...prev,
+                                      [student.id]: {
+                                        ...staging,
+                                        evening: parseFloat(e.target.value) || 0,
+                                      },
+                                    }))
+                                  }
+                                />
+                                <span>km</span>
+                              </div>
+                            </div>
+
+                            <div className={styles.kmFooter}>
+                              <button
+                                className={styles.cancelBtn}
+                                onClick={() =>
+                                  setAddingKm((prev) => ({
+                                    ...prev,
+                                    [student.id]: { morning: 0, evening: 0 },
+                                  }))
+                                }
+                                disabled={isSaving[student.id]}
+                              >
+                                <X size={14} /> Hủy nhập
+                              </button>
+                              <button
+                                className={styles.saveBtn}
+                                onClick={() =>
+                                  handleSaveDistance(student.id, student.distanceRecordId)
+                                }
+                                disabled={
+                                  isSaving[student.id] ||
+                                  (staging.morning === 0 && staging.evening === 0)
+                                }
+                              >
+                                {isSaving[student.id] ? (
+                                  <Loader2 className="animate-spin" size={14} />
+                                ) : (
+                                  <Save size={14} />
+                                )}
+                                Lưu quãng đường
+                              </button>
+                            </div>
+                          </div>
                         )}
-                        <button
-                          className={styles.cancelBtn}
-                          onClick={() =>
-                            setKmData((prev) => ({
-                              ...prev,
-                              [student.id]: { morning: 0, evening: 0 },
-                            }))
-                          }
-                        >
-                          Hủy
-                        </button>
-                        <button
-                          className={styles.saveBtn}
-                          onClick={() =>
-                            setSaved((prev) => ({
-                              ...prev,
-                              [student.id]: true,
-                            }))
-                          }
-                        >
-                          Lưu
-                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               );
             })}
-          </div>
-
-          <div className={styles.footer}>
-            <span>Showing 1-{filtered.length} of 42 students</span>
-            <div className={styles.pagination}>
-              <button type="button" className={styles.pageButton}>
-                <span aria-hidden>◀</span>
-              </button>
-              <button type="button" className={styles.pageButtonActive}>
-                1
-              </button>
-              <button type="button" className={styles.pageButton}>
-                2
-              </button>
-              <button type="button" className={styles.pageButton}>
-                3
-              </button>
-              <button type="button" className={styles.pageButton}>
-                <span aria-hidden>▶</span>
-              </button>
-            </div>
           </div>
         </div>
       </section>

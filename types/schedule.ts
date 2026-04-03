@@ -9,7 +9,9 @@ export interface ClassScheduleDTO {
   instructorName: string; // Users.FullName (Instructor)
   startTime: string; // ClassSchedules.StartTime (ISO String)
   endTime: string; // ClassSchedules.EndTime (ISO String)
-  location: string; // ClassSchedules.Location
+  addressId: number; // ClassSchedules.AddressId
+  addressName: string; // Mongo Addresses.AddressName
+  location: string; // Alias of addressName for legacy UI
   category: SessionCategory; // Logic mapping từ ClassName hoặc Course
   equipment?: string; // Thông tin bổ sung (Xe/Thiết bị)
 }

@@ -1,156 +1,175 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/attendance-report.module.css";
-
-const sessions = [
-  {
-    date: "Oct 24, 2023",
-    title: "Practice: Night Driving",
-    subtitle: "Instructor: Sarah Miller",
-    time: "19:00 - 20:30",
-    status: "Pending",
-    action: "View Notes",
-  },
-  {
-    date: "Oct 22, 2023",
-    title: "Practice: Basic Maneuvering",
-    subtitle: "Instructor: James Wilson",
-    time: "14:00 - 15:30",
-    status: "Present",
-    action: "View Notes",
-  },
-  {
-    date: "Oct 20, 2023",
-    title: "Theory: Traffic Laws",
-    subtitle: "Classroom 402",
-    time: "09:00 - 11:00",
-    status: "Absent",
-    action: "Justify",
-  },
-  {
-    date: "Oct 18, 2023",
-    title: "Practice: City Parking",
-    subtitle: "Instructor: James Wilson",
-    time: "14:00 - 15:30",
-    status: "Present",
-    action: "View Notes",
-  },
-  {
-    date: "Oct 15, 2023",
-    title: "Theory: Vehicle Maintenance",
-    subtitle: "Classroom 402",
-    time: "10:00 - 12:00",
-    status: "Present",
-    action: "View Notes",
-  },
-];
+import { setAuthToken } from "@/lib/api";
+import api from "@/lib/api";
+import { attendanceService, StudentAttendanceReport } from "@/services/attendanceService";
+import NoCourseRegistered from "@/components/course/NoCourseRegistered";
 
 export default function AttendanceReportPage() {
+  const { isLoaded, getToken } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [report, setReport] = useState<StudentAttendanceReport | null>(null);
+  const [registration, setRegistration] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!isLoaded) return;
+      try {
+        setLoading(true);
+        const token = await getToken();
+        setAuthToken(token);
+
+        // 1. Check registration status first
+        const regResponse = await api.get("/CourseRegistration/me");
+        const registrations = regResponse.data.data || [];
+        const activeReg = registrations.find((r: any) => r.status === 2 || r.status === "Approved");
+        
+        if (activeReg) {
+          setRegistration(activeReg);
+          // 2. Fetch attendance report only if course is approved
+          const data = await attendanceService.getMyAttendanceReport();
+          setReport(data);
+        } else {
+          setRegistration(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch attendance data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [isLoaded]);
+
+  if (loading) {
+    return (
+      <div className={shellStyles.page}>
+        <Sidebar activeKey="attendance" />
+        <section className={shellStyles.content}>
+          <div style={{ textAlign: 'center', padding: '4rem', color: '#6c7a96' }}>
+            Đang tải dữ liệu...
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "Present": return "Có mặt";
+      case "Absent": return "Vắng mặt";
+      default: return "Chưa điểm danh";
+    }
+  };
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "Present": return styles.statusPresent;
+      case "Absent": return styles.statusAbsent;
+      default: return styles.statusPending;
+    }
+  };
+
+  const rate = report?.summary?.attendanceRate || 0;
+
   return (
     <div className={shellStyles.page}>
       <Sidebar activeKey="attendance" />
 
       <section className={shellStyles.content}>
         <header className={styles.header}>
-          <h1>Attendance Report</h1>
+          <h1>Báo cáo điểm danh</h1>
           <p>
-            Detailed overview of your driving course participation and progress.
+            Tổng quan chi tiết về sự tham gia và lộ trình học tập của bạn tại trung tâm.
           </p>
         </header>
 
-        <div className={styles.summaryCard}>
-          <div className={styles.rateBlock}>
-            <div className={styles.rateRing}>
-              <div className={styles.rateInner}>
-                <strong>80%</strong>
-                <span>Rate</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryItem}>
-              <span>Total Sessions</span>
-              <strong>20</strong>
-            </div>
-            <div className={styles.summaryItem}>
-              <span>Present</span>
-              <strong className={styles.present}>16</strong>
-            </div>
-            <div className={styles.summaryItem}>
-              <span>Absent</span>
-              <strong className={styles.absent}>4</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.tableCard}>
-          <div className={styles.tableHeader}>
-            <h2>Session History</h2>
-            <div className={styles.tableActions}>
-              <button type="button" className={styles.iconButton}>
-                Filter
-              </button>
-              <button type="button" className={styles.exportButton}>
-                Export
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.table}>
-            <div className={`${styles.row} ${styles.head}`}>
-              <span>Date</span>
-              <span>Lesson Name</span>
-              <span>Time</span>
-              <span>Status</span>
-              <span>Actions</span>
-            </div>
-
-            {sessions.map((item) => (
-              <div key={item.date} className={styles.row}>
-                <span className={styles.date}>{item.date}</span>
-                <span className={styles.lesson}>
-                  <strong>{item.title}</strong>
-                  <small>{item.subtitle}</small>
-                </span>
-                <span className={styles.time}>{item.time}</span>
-                <span
-                  className={`${styles.status} ${
-                    item.status === "Present"
-                      ? styles.statusPresent
-                      : item.status === "Absent"
-                        ? styles.statusAbsent
-                        : styles.statusPending
-                  }`}
+        {!registration ? (
+          <NoCourseRegistered 
+            title="Bạn chưa tham gia khóa học nào"
+            description="Báo cáo điểm điểm danh sẽ được hiển thị sau khi bạn đăng ký và tham gia vào một khóa đào tạo chính thức."
+          />
+        ) : (
+          <>
+            <div className={styles.summaryCard}>
+              <div className={styles.rateBlock}>
+                <div 
+                  className={styles.rateRing}
+                  style={{ background: `conic-gradient(#1ca7ec 0 ${rate}%, #e9eff7 ${rate}% 100%)` }}
                 >
-                  {item.status}
-                </span>
-                <span className={styles.action}>{item.action}</span>
+                  <div className={styles.rateInner}>
+                    <strong>{rate}%</strong>
+                    <span>Tỉ lệ</span>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
 
-          <div className={styles.tableFooter}>
-            <span>Showing 5 of 20 sessions</span>
-            <div className={styles.pagination}>
-              <button type="button" className={styles.pageButton}>
-                <span aria-hidden>←</span>
-              </button>
-              <button type="button" className={styles.pageButtonActive}>
-                1
-              </button>
-              <button type="button" className={styles.pageButton}>
-                2
-              </button>
-              <button type="button" className={styles.pageButton}>
-                3
-              </button>
-              <button type="button" className={styles.pageButton}>
-                <span aria-hidden>→</span>
-              </button>
+              <div className={styles.summaryGrid}>
+                <div className={styles.summaryItem}>
+                  <span>Tổng số buổi học</span>
+                  <strong>{report?.summary?.totalSessions || 0}</strong>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span>Số buổi có mặt</span>
+                  <strong className={styles.present}>{report?.summary?.presentCount || 0}</strong>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span>Số buổi vắng</span>
+                  <strong className={styles.absent}>{report?.summary?.absentCount || 0}</strong>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+
+            <div className={styles.tableCard}>
+              <div className={styles.tableHeader}>
+                <h2>Lịch sử buổi học</h2>
+                <div className={styles.tableActions}>
+                  <button type="button" className={styles.exportButton}>
+                    Xuất báo cáo
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.table}>
+                <div className={`${styles.row} ${styles.head}`}>
+                  <span>Ngày học</span>
+                  <span>Tên bài học / Giáo viên</span>
+                  <span>Thời gian</span>
+                  <span>Trạng thái</span>
+                  <span>Ghi chú</span>
+                </div>
+
+                {report?.sessions && report.sessions.length > 0 ? (
+                  report.sessions.map((item) => (
+                    <div key={item.scheduleId} className={styles.row}>
+                      <span className={styles.date}>
+                        {new Date(item.date).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </span>
+                      <span className={styles.lesson}>
+                        <strong>{item.lessonName}</strong>
+                        <small>GV: {item.instructorName}</small>
+                      </span>
+                      <span className={styles.time}>{item.startTime} - {item.endTime}</span>
+                      <span className={`${styles.status} ${getStatusClass(item.status)}`}>
+                        {getStatusLabel(item.status)}
+                      </span>
+                      <span className={styles.action}>Xem chi tiết</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.emptyGroup} style={{ padding: '2rem', textAlign: 'center', gridColumn: 'span 5', color: '#8b98b2' }}>
+                    Chưa có lịch sử học tập nào để hiển thị.
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

@@ -1,35 +1,86 @@
-.header {
+.metaRow {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end;
 }
 
-.header h1 {
-  font-size: 28px;
-  margin: 0;
+.typeBadge {
+  background: #fff0f0;
+  color: #c53030;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.typeBadge[data-type="Practice"] {
+  background: #ebf8ff;
+  color: #2b6cb0;
+}
+
+.headerIcon {
+  color: #1ca7ec;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+}
+
+.infoSection h3, .progressSection h3 {
+  font-size: 14px;
+  margin-bottom: 12px;
   color: #17213a;
 }
 
-.header p {
-  margin: 0;
+.infoSection p {
+  font-size: 13px;
   color: #6c7a96;
-  font-size: 14px;
+  margin: 4px 0;
 }
 
-.card {
-  background: #f4f6f8;
-  border-radius: 18px;
-  padding: 18px;
-  border: 1px solid #edf1f6;
+.kmLabel {
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
-.toolbar {
+.accumulateInput {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.accumulateInput input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #e6edf5;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1c2a44;
+}
+
+.saveBtn:disabled, .cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saveBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .classControl {
@@ -348,4 +399,99 @@
   .row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ─── Attendance Toggle Button ─────────────────────────────────────────────── */
+
+.attendanceToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.attendanceToggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.togglePresent {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.togglePresent:hover:not(:disabled) {
+  background: #bbf7d0;
+}
+
+.toggleAbsent {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.toggleAbsent:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.togglePending {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.togglePending:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+/* ─── Attendance Summary Chips ──────────────────────────────────────────────── */
+
+.attendanceSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.presentChip {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.absentChip {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pendingChip {
+  background: #fef9c3;
+  color: #92400e;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ─── No Schedule Warning ───────────────────────────────────────────────────── */
+
+.noScheduleWarning {
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 8px;
 }

@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import Footer from "@/components/ui/Footer";
 import SyncUser from "@/components/auth/SyncUser";
+import RoleRedirect from "@/components/auth/RoleRedirect";
+import { Toaster } from "react-hot-toast";
 import "../styles/globals.css";
 import "../styles/clerk.css";
 
@@ -72,6 +74,9 @@ export default function RootLayout({
         >
           {/* Sync Clerk user with local backend on login */}
           <SyncUser />
+          {/* Role-based redirection after login */}
+          <RoleRedirect />
+          <Toaster position="top-right" reverseOrder={false} />
 
           {/* MAIN CONTENT */}
           <main className="flex-1">{children}</main>
