@@ -1,47 +1,170 @@
-import { NotificationRecord, NotificationDetailRecord, SystemAlert } from "@/types/notification";
+import { NotificationRecord, NotificationDetailRecord, SystemAlert, BellNotification, UserRole } from "@/types/notification";
+
 export const MOCK_NOTIFICATIONS: NotificationRecord[] = [
   {
     id: "notif-1",
     title: "Yêu cầu Đánh giá Tuân thủ Quý 3",
-    timeAgo: "2 phút trước",
     message: "Tất cả nhân sự đào tạo bắt buộc phải hoàn thành bài đánh giá An toàn và Toàn vẹn Q3 2023 trước Thứ Sáu...",
-    category: "System",
-    status: "unread",
-    actionText: "Làm bài ngay"
+    content: "Chi tiết: Tất cả nhân sự đào tạo bắt buộc phải hoàn thành bài đánh giá An toàn và Toàn vẹn Q3 2023 trước Thứ Sáu...",
+    type: "System",
+    typeLabel: "Thông báo hệ thống",
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    timeAgo: "2 phút trước"
   },
   {
     id: "notif-2",
     title: "Học viên mới: Khóa B2 Nâng cao",
-    timeAgo: "2 giờ trước",
     message: "Học viên Trần Văn Nam vừa hoàn tất thủ tục đăng ký và nộp đủ học phí cho khóa thực hành đường đèo.",
-    category: "Enrollment",
-    status: "unread",
-    actionText: "Xem hồ sơ"
+    content: "Chi tiết: Học viên Trần Văn Nam vừa hoàn tất thủ tục đăng ký và nộp đủ học phí cho khóa thực hành đường đèo.",
+    type: "Registration",
+    typeLabel: "Đăng ký khóa học",
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    timeAgo: "2 giờ trước"
   },
   {
     id: "notif-3",
     title: "Phát hiện trùng lịch giảng dạy",
-    timeAgo: "45 phút trước",
     message: "Phòng lý thuyết 402 đang bị trùng lịch giữa lớp 'Luật Giao thông' và 'Cấu tạo xe' vào sáng thứ Sáu.",
-    category: "Schedule",
-    status: "read",
-    actionText: "Xử lý ngay"
+    content: "Chi tiết: Phòng lý thuyết 402 đang bị trùng lịch giữa lớp 'Luật Giao thông' và 'Cấu tạo xe' vào sáng thứ Sáu.",
+    type: "Class",
+    typeLabel: "Thông báo lớp học",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "45 phút trước"
   },
   {
     id: "notif-4",
     title: "Đã có điểm thi: Khóa A1 (Đợt 1)",
-    timeAgo: "5 giờ trước",
     message: "Kết quả bài thi sát hạch lý thuyết A1 tổ chức vào thứ Hai đã được cập nhật lên hệ thống chính.",
-    category: "Exams",
-    status: "read",
+    content: "Kết quả bài thi sát hạch lý thuyết A1 tổ chức vào thứ Hai đã được cập nhật lên hệ thống chính.",
+    type: "Exam",
+    typeLabel: "Thông báo kỳ thi",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "5 giờ trước"
   },
   {
     id: "notif-5",
     title: "Tài liệu mới được tải lên",
-    timeAgo: "Hôm qua",
     message: "File PDF 'Hướng dẫn Sử dụng Camera Cabin 2024' vừa được thêm vào kho tài liệu dùng chung.",
-    category: "Document",
-    status: "read",
+    content: "File PDF 'Hướng dẫn Sử dụng Camera Cabin 2024' vừa được thêm vào kho tài liệu dùng chung.",
+    type: "System",
+    typeLabel: "Thông báo hệ thống",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "Hôm qua"
+  },
+  {
+    id: "notif-6",
+    title: "Cập nhật Chính sách Bảo mật",
+    message: "Chính sách bảo mật dữ liệu học viên vừa được cập nhật theo Nghị định mới.",
+    content: "Chính sách bảo mật dữ liệu học viên vừa được cập nhật theo Nghị định mới.",
+    type: "System",
+    typeLabel: "Thông báo hệ thống",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "Hôm qua"
+  },
+  {
+    id: "notif-7",
+    title: "Lịch thi sát hạch tháng 11",
+    message: "Lịch thi dự kiến cho các khóa B2-K22 và C-K15 đã được phê duyệt.",
+    content: "Lịch thi dự kiến cho các khóa B2-K22 và C-K15 đã được phê duyệt.",
+    type: "Exam",
+    typeLabel: "Thông báo kỳ thi",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "2 ngày trước"
+  },
+  {
+    id: "notif-8",
+    title: "Bảo trì hệ thống DAT",
+    message: "Hệ thống giám sát hành trình sẽ bảo trì vào 0h00 Chủ nhật tới.",
+    content: "Hệ thống giám sát hành trình sẽ bảo trì vào 0h00 Chủ nhật tới.",
+    type: "System",
+    typeLabel: "Thông báo hệ thống",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "3 ngày trước"
+  },
+  {
+    id: "notif-9",
+    title: "Khen thưởng Giảng viên xuất sắc",
+    message: "Chúc mừng Thầy Nguyễn Văn A đã đạt tỷ lệ học viên đỗ 100% trong tháng 9.",
+    content: "Chúc mừng Thầy Nguyễn Văn A đã đạt tỷ lệ học viên đỗ 100% trong tháng 9.",
+    type: "System",
+    typeLabel: "Thông báo hệ thống",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "3 ngày trước"
+  },
+  {
+    id: "notif-10",
+    title: "Thông báo Nghỉ lễ",
+    message: "Trung tâm sẽ nghỉ lễ vào ngày 20/10, học viên thực hành sẽ được sắp xếp bù.",
+    content: "Trung tâm sẽ nghỉ lễ vào ngày 20/10, học viên thực hành sẽ được sắp xếp bù.",
+    type: "System",
+    typeLabel: "Thông báo hệ thống",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "4 ngày trước"
+  },
+  {
+    id: "notif-11",
+    title: "Học viên hoàn thành khóa học",
+    message: "Có 25 học viên vừa hoàn thành bài kiểm tra cuối khóa hạng B1.",
+    content: "Có 25 học viên vừa hoàn thành bài kiểm tra cuối khóa hạng B1.",
+    type: "Registration",
+    typeLabel: "Đăng ký khóa học",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "5 ngày trước"
+  },
+  {
+    id: "notif-12",
+    title: "Cảnh báo quá hạn nộp hồ sơ",
+    message: "Còn 10 học viên chưa nộp đủ ảnh chân dung cho hồ sơ thi sát hạch.",
+    content: "Còn 10 học viên chưa nộp đủ ảnh chân dung cho hồ sơ thi sát hạch.",
+    type: "Registration",
+    typeLabel: "Đăng ký khóa học",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "1 tuần trước"
+  },
+  {
+    id: "notif-13",
+    title: "Cập nhật ứng dụng di động",
+    message: "Phiên bản mới của DTC Mobile App đã có mặt trên iOS và Android.",
+    content: "Phiên bản mới của DTC Mobile App đã có mặt trên iOS và Android.",
+    type: "System",
+    typeLabel: "Thông báo hệ thống",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "1 tuần trước"
+  },
+  {
+    id: "notif-14",
+    title: "Thông báo thu học phí đợt 2",
+    message: "Đề nghị các học viên khóa C-K18 hoàn thành học phí trước ngày 15/11.",
+    content: "Đề nghị các học viên khóa C-K18 hoàn thành học phí trước ngày 15/11.",
+    type: "Registration",
+    typeLabel: "Đăng ký khóa học",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "2 tuần trước"
+  },
+  {
+    id: "notif-15",
+    title: "Lễ bế giảng khóa B2-K21",
+    message: "Buổi lễ bế giảng sẽ diễn ra vào sáng Thứ 7 tuần này tại Hội trường lớn.",
+    content: "Buổi lễ bế giảng sẽ diễn ra vào sáng Thứ 7 tuần này tại Hội trường lớn.",
+    type: "Class",
+    typeLabel: "Thông báo lớp học",
+    isRead: true,
+    createdAt: new Date().toISOString(),
+    timeAgo: "2 tuần trước"
   }
 ];
 
@@ -59,8 +182,6 @@ export const MOCK_ALERTS: SystemAlert[] = [
     type: "warning"
   }
 ];
-
-import { BellNotification, UserRole } from "@/types/notification";
 
 // Data cho Training Manager
 const TRAINING_NOTIFICATIONS: BellNotification[] = [
@@ -93,88 +214,18 @@ export const getNotificationsByRole = (role: UserRole): BellNotification[] => {
 
 export const MOCK_NOTIFICATION_DETAILS: Record<string, NotificationDetailRecord> = {
   "notif-1": {
-    id: "notif-1-3444-4e20",
-    tag: "CẢNH BÁO HỆ THỐNG",
-    title: "Yêu cầu Đánh giá Tuân thủ Quý 3",
-    type: "Bắt buộc tuân thủ",
-    content: [
-      "Tất cả nhân sự đào tạo bắt buộc phải hoàn thành bài đánh giá An toàn và Toàn vẹn Q3 2024 trước Thứ Sáu, ngày 27 tháng 10. Bài đánh giá này bao gồm các bản cập nhật mới nhất về quy trình đào tạo thực hành lái xe và tiêu chuẩn tuân thủ của Sở GTVT.",
-      "Vui lòng đảm bảo tất cả hồ sơ học viên của khóa hiện tại được chốt trước khi bắt đầu bài đánh giá. Việc không hoàn thành đúng thời hạn có thể dẫn đến việc tạm thời bị đình chỉ lịch phân công giảng dạy.",
-      "Nếu bạn có thắc mắc về quy trình mới, vui lòng tham khảo tài liệu trong Trung tâm Trợ giúp hoặc liên hệ trực tiếp với Phòng Đào tạo."
-    ],
-    centerId: "CTR-81e728d-9d3b",
-    isDeleted: false,
-    createdAt: "12 Thg 10, 2024 • 09:42 SA",
-    createdBy: { id: "AD-1a2b3c", name: "Hệ thống Tự động", initials: "SYS" },
-    updatedAt: "12 Thg 10, 2024 • 09:42 SA",
-    updatedBy: { id: "AD-1a2b3c", name: "Hệ thống Tự động", initials: "SYS" }
+    ...MOCK_NOTIFICATIONS[0],
   },
   "notif-2": {
-    id: "notif-2-5555-9a8b",
-    tag: "THÔNG BÁO TUYỂN SINH",
-    title: "Học viên mới: Khóa B2 Nâng cao",
-    type: "Ghi danh mới",
-    content: [
-      "Hệ thống vừa ghi nhận một hồ sơ đăng ký thành công cho Khóa học B2 Nâng cao (Thực hành đường đèo và sa hình phức tạp).",
-      "Thông tin học viên: Trần Văn Nam (SĐT: 0987.xxx.xxx). Học viên đã hoàn thành thanh toán 100% học phí qua cổng thanh toán VNPay.",
-      "Vui lòng bộ phận Đào tạo tiến hành sắp xếp Giảng viên hướng dẫn thực hành và gửi thông báo lịch học dự kiến cho học viên trong vòng 24h tới."
-    ],
-    centerId: "CTR-81e728d-9d3b",
-    isDeleted: false,
-    createdAt: "14 Thg 10, 2024 • 08:15 SA",
-    createdBy: { id: "EN-5e6f7g", name: "Nguyễn Thị Mai", initials: "NM" },
-    updatedAt: "14 Thg 10, 2024 • 08:20 SA",
-    updatedBy: { id: "EN-5e6f7g", name: "Nguyễn Thị Mai", initials: "NM" }
+    ...MOCK_NOTIFICATIONS[1],
   },
   "notif-3": {
-    id: "notif-3-7777-1c2d",
-    tag: "QUẢN LÝ LỊCH TRÌNH",
-    title: "Phát hiện trùng lịch giảng dạy",
-    type: "Lỗi xếp lịch",
-    content: [
-      "Hệ thống tự động quét và phát hiện có sự cố trùng lặp phòng học tại Cơ sở 1.",
-      "Chi tiết sự cố: Phòng lý thuyết 402 đang được gán đồng thời cho lớp 'Luật Giao thông đường bộ' (Giảng viên: Lê Hữu B) và lớp 'Cấu tạo & Sửa chữa xe cơ bản' (Giảng viên: Trần Văn C) vào ca 08:00 - 10:00 sáng Thứ Sáu tuần này.",
-      "Yêu cầu Quản lý Đào tạo vào phân hệ Xếp lịch để điều chỉnh lại phòng học hoặc thời gian tránh gây ảnh hưởng đến học viên."
-    ],
-    centerId: "CTR-81e728d-9d3b",
-    isDeleted: false,
-    createdAt: "14 Thg 10, 2024 • 10:30 SA",
-    createdBy: { id: "SYS-AUTO", name: "Auto Scheduler", initials: "BOT" },
-    updatedAt: "14 Thg 10, 2024 • 10:30 SA",
-    updatedBy: { id: "SYS-AUTO", name: "Auto Scheduler", initials: "BOT" }
+    ...MOCK_NOTIFICATIONS[2],
   },
   "notif-4": {
-    id: "notif-4-8888-3e4f",
-    tag: "QUẢN LÝ THI CỬ",
-    title: "Đã có điểm thi: Khóa A1 (Đợt 1)",
-    type: "Cập nhật kết quả",
-    content: [
-      "Phòng Khảo thí thông báo: Kết quả bài thi sát hạch lý thuyết Hạng A1 (Đợt 1 - Tháng 10) tổ chức vào thứ Hai vừa qua đã được chấm xong và cập nhật thành công lên hệ thống.",
-      "Tỷ lệ đỗ đạt 92%. Có 3 học viên vắng mặt không lý do. Danh sách chi tiết đã được đính kèm trong phân hệ 'Quản lý Điểm thi'.",
-      "Giảng viên phụ trách vui lòng kiểm tra và thông báo lịch thi lại (nếu có) cho các học viên chưa đạt."
-    ],
-    centerId: "CTR-81e728d-9d3b",
-    isDeleted: false,
-    createdAt: "13 Thg 10, 2024 • 16:45 CH",
-    createdBy: { id: "EX-9h0i1j", name: "Phạm Văn Khảo", initials: "PK" },
-    updatedAt: "13 Thg 10, 2024 • 17:00 CH",
-    updatedBy: { id: "EX-9h0i1j", name: "Phạm Văn Khảo", initials: "PK" }
+    ...MOCK_NOTIFICATIONS[3],
   },
   "notif-5": {
-    id: "notif-5-9999-5g6h",
-    tag: "QUẢN LÝ TÀI LIỆU",
-    title: "Tài liệu mới được tải lên",
-    type: "Tài liệu nội bộ",
-    content: [
-      "Kho tài liệu đào tạo vừa được bổ sung ấn phẩm mới: 'Hướng dẫn Sử dụng Camera Cabin và Thiết bị DAT (Phiên bản 2024)'.",
-      "Tài liệu này bao gồm các quy định mới nhất của Bộ GTVT về việc ghi nhận quãng đường học thực hành và cách xử lý khi thiết bị mất tín hiệu.",
-      "Đề nghị toàn thể Giảng viên thực hành tải về và nghiên cứu kỹ trước kỳ giảng dạy tháng tới."
-    ],
-    centerId: "CTR-81e728d-9d3b",
-    isDeleted: false,
-    createdAt: "11 Thg 10, 2024 • 08:00 SA",
-    createdBy: { id: "TR-2k3l4m", name: "Đào Tạo Vụ", initials: "DV" },
-    updatedAt: "11 Thg 10, 2024 • 08:00 SA",
-    updatedBy: { id: "TR-2k3l4m", name: "Đào Tạo Vụ", initials: "DV" }
+    ...MOCK_NOTIFICATIONS[4],
   }
 };

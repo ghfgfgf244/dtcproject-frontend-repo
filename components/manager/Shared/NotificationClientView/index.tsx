@@ -14,6 +14,7 @@ import NotificationModal from '@/components/manager/Modals/NotificationModal';
 interface Props {
   initialNotifications?: NotificationRecord[];
   alerts?: SystemAlert[];
+  isAdmin?: boolean;
 }
 
 const TABS = [
@@ -24,9 +25,13 @@ const TABS = [
   { id: 'Registration', label: 'Đăng ký' }
 ];
 
-const ITEMS_PER_PAGE = 10; // Cấu hình số lượng item mỗi trang
+const ITEMS_PER_PAGE = 10;
 
-export default function NotificationClientView({ initialNotifications = [], alerts = [] }: Props) {
+export default function NotificationClientView({
+  initialNotifications = [],
+  alerts = [],
+  isAdmin = false
+}: Props) {
   const router = useRouter();
   const { getToken } = useAuth();
 
@@ -34,7 +39,7 @@ export default function NotificationClientView({ initialNotifications = [], aler
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1); // State trang hiện tại
+  const [currentPage, setCurrentPage] = useState(1);
 
   // RESET trang khi đổi tab
   useEffect(() => {
@@ -46,14 +51,28 @@ export default function NotificationClientView({ initialNotifications = [], aler
     try {
       const token = await getToken();
       setAuthToken(token);
-      const data = await notificationService.getMyNotifications();
-      setNotifications(data);
+      let data: NotificationRecord[] = [];
+
+      if (isAdmin) {
+        data = await notificationService.getAllAdminNotifications();
+      } else {
+        data = await notificationService.getMyNotifications();
+      }
+
+      // Fallback to initialNotifications if API returns empty for testing/demo
+      if (data.length === 0 && initialNotifications.length > 0) {
+        setNotifications(initialNotifications);
+      } else {
+        setNotifications(data);
+      }
     } catch (err) {
       console.error("Error fetching notifications:", err);
+      // Fallback on error too
+      if (initialNotifications.length > 0) setNotifications(initialNotifications);
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, isAdmin, initialNotifications]);
 
   useEffect(() => {
     fetchNotifications();
@@ -62,13 +81,16 @@ export default function NotificationClientView({ initialNotifications = [], aler
   // 1. Logic lọc
   const filteredNotifications = useMemo(() => {
     return notifications.filter(notif => {
+      // Ẩn thông báo chào mừng (Type 4) nếu là Admin quản lý
+      if (isAdmin && notif.type === 'Welcome') return false;
+
       return activeTab === 'All' || notif.type === activeTab;
     });
-  }, [notifications, activeTab]);
+  }, [notifications, activeTab, isAdmin]);
 
   // 2. Logic phân trang (Tính toán sau khi lọc)
   const totalPages = Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE);
-  
+
   const paginatedNotifications = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredNotifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -93,7 +115,7 @@ export default function NotificationClientView({ initialNotifications = [], aler
   };
 
   const handleViewDetail = (id: string) => {
-    router.push(`notifications/${id}`); 
+    router.push(`notifications/${id}`);
   };
 
   return (
@@ -102,27 +124,26 @@ export default function NotificationClientView({ initialNotifications = [], aler
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
             {TABS.map(tab => (
-              <button 
+              <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-1.5 text-xs rounded transition-all whitespace-nowrap ${
-                  activeTab === tab.id ? 'font-bold bg-blue-600 text-white' : 'font-medium text-slate-600 hover:bg-slate-50'
-                }`}
+                className={`px-4 py-1.5 text-xs rounded transition-all whitespace-nowrap ${activeTab === tab.id ? 'font-bold bg-blue-600 text-white' : 'font-medium text-slate-600 hover:bg-slate-50'
+                  }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
-          
+
           <div className="flex items-center gap-3 shrink-0">
-            <button 
+            <button
               onClick={handleMarkAllAsRead}
               className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-600 hover:underline px-2 py-1 transition-colors"
             >
               <CheckCircle2 className="w-4 h-4" /> Đã đọc tất cả
             </button>
-            
-            <button 
+
+            <button
               onClick={handleCreate}
               className="flex items-center gap-2 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-all shadow-sm active:scale-95"
             >
@@ -136,9 +157,9 @@ export default function NotificationClientView({ initialNotifications = [], aler
         ) : (
           <div className="space-y-4">
             <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-              <NotificationList 
+              <NotificationList
                 notifications={paginatedNotifications} // Sử dụng list đã phân trang
-                onViewDetail={handleViewDetail} 
+                onViewDetail={handleViewDetail}
               />
             </div>
 
@@ -156,17 +177,16 @@ export default function NotificationClientView({ initialNotifications = [], aler
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  
+
                   <div className="flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
-                          currentPage === page 
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${currentPage === page
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
                           : 'text-slate-600 hover:bg-slate-50 border border-transparent'
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>
@@ -186,8 +206,8 @@ export default function NotificationClientView({ initialNotifications = [], aler
           </div>
         )}
       </div>
-      
-      <NotificationModal 
+
+      <NotificationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={async (data) => {

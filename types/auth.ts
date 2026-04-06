@@ -15,4 +15,5 @@ export interface AuthResponse {
   email: string;
   fullName: string;
   token: string;
+  role: string;  // e.g. "Student", "Instructor", "Admin"...
 }

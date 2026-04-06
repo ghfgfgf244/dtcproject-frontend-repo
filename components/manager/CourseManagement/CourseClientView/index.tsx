@@ -1,263 +1,310 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, Plus, Filter, XCircle, Loader2 } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
-import { setAuthToken } from '@/lib/api';
-import { CourseRecord, LicenseType, CourseStatus, Course } from '@/types/course';
-import CourseTable from '../CourseTable';
-import CourseModal, { CourseSubmitData } from '../../Modals/CourseModal';
-import ConfirmModal from '@/components/ui/confirm-modal'; // Đảm bảo đường dẫn này đúng
-import { courseService } from '@/services/courseService';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { PlusCircle, Search, Loader2, X, Info, GraduationCap, Calendar, Users, CreditCard, ShieldCheck, ShieldAlert, BarChart3, Save } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { courseService } from "@/services/courseService";
+import { Course } from "@/types/course";
+import toast from "react-hot-toast";
 
-const ITEMS_PER_PAGE = 5;
+import CourseStats from "../CourseStats";
+import CourseTable from "../CourseTable";
+import CourseModal, { CourseSubmitData } from "../../Modals/CourseModal";
+
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+
+interface DetailModalProps {
+  course: Course;
+  onClose: () => void;
+}
+
+function CourseDetailModal({ course, onClose }: DetailModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-700">
+          <div className="flex items-center gap-3 text-white">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md">
+              <Info className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-lg leading-none uppercase tracking-tight">Chi tiết khóa học</h3>
+              <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mt-1">ID: {course.id}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 mb-2">
+                  <GraduationCap className="w-3.5 h-3.5" /> Tên khóa học
+                </label>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-xl font-black text-slate-900 leading-tight block uppercase">{course.courseName}</span>
+                  <span className="inline-flex mt-3 items-center px-3 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-black uppercase tracking-wider">
+                    Hạng {course.licenseType}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 mb-2">
+                  <CreditCard className="w-3.5 h-3.5" /> Học phí niêm yết
+                </label>
+                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 group">
+                  <span className="text-2xl font-black text-emerald-700">
+                    {course.price.toLocaleString("vi-VN")}
+                    <span className="text-xs ml-1 font-bold text-emerald-400 tracking-tighter uppercase">VND</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col justify-center text-center">
+                <Calendar className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
+                <span className="text-2xl font-black text-indigo-900 leading-none">{course.durationInWeeks}</span>
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mt-1">Tuần đào tạo</span>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 flex flex-col justify-center text-center">
+                <Users className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                <span className="text-2xl font-black text-purple-900 leading-none">{course.maxStudents}</span>
+                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mt-1">Học viên tối đa</span>
+              </div>
+              <div className="col-span-2 p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${course.isActive ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-500"}`}>
+                    {course.isActive ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Trạng thái</span>
+                    <span className={`text-sm font-black uppercase ${course.isActive ? "text-emerald-700" : "text-red-700"}`}>
+                      {course.isActive ? "Đang hoạt động" : "Tạm dừng"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 mb-2">
+                <BarChart3 className="w-3.5 h-3.5" /> Mô tả khóa học
+             </label>
+             <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 text-sm text-slate-600 leading-relaxed font-medium italic">
+               "{course.description || "Chưa có mô tả chi tiết cho khóa học này."}"
+             </div>
+          </div>
+        </div>
+
+        <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-600 hover:bg-slate-100 transition-colors uppercase tracking-wider shadow-sm"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main View ────────────────────────────────────────────────────────────────
 
 export default function CourseClientView() {
-  const router = useRouter();
   const { getToken } = useAuth();
-
-  // States for API Data
-  const [courses, setCourses] = useState<CourseRecord[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [detailTarget, setDetailTarget] = useState<Course | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Course | null>(null);
 
-  // States Filter & Pagination
-  const [searchTerm, setSearchTerm] = useState('');
-  const [licenseFilter, setLicenseFilter] = useState<LicenseType | 'Tất cả'>('Tất cả');
-  const [statusFilter, setStatusFilter] = useState<CourseStatus | 'Tất cả'>('Tất cả');
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // States Quản lý Modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<CourseRecord | null>(null);
-
-  // --- NEW: States cho Confirm Delete ---
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-const [courseToDelete, setCourseToDelete] = useState<CourseRecord | null>(null);
-
-  const mapCourseToRecord = (course: Course): CourseRecord => ({
-    id: course.id,
-    name: course.courseName,
-    description: course.description,
-    licenseType: course.licenseType as LicenseType,
-    price: course.price,
-    status: course.isActive ? 'Hoạt động' : 'Ngừng hoạt động'
-  });
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
       const token = await getToken();
       setAuthToken(token);
       const data = await courseService.getAllAdminCourses();
-      setCourses(data.map(mapCourseToRecord));
-    } catch (err) {
-      setError("Không thể tải danh sách khóa học.");
+      setCourses(data);
+    } catch {
+      toast.error("Không thể tải danh sách khóa học.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  useEffect(() => { fetchCourses(); }, [fetchCourses]);
 
-  const filteredCourses = useMemo(() => {
-    return courses.filter(course => {
-      const matchSearch = course.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchLicense = licenseFilter === 'Tất cả' || course.licenseType === licenseFilter;
-      const matchStatus = statusFilter === 'Tất cả' || course.status === statusFilter;
-      return matchSearch && matchLicense && matchStatus;
-    });
-  }, [courses, searchTerm, licenseFilter, statusFilter]);
-
-  const totalItems = filteredCourses.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const paginatedCourses = filteredCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  const handleFilterChange = (type: 'license' | 'status', value: string) => {
-    if (type === 'license') setLicenseFilter(value as LicenseType | 'Tất cả');
-    if (type === 'status') setStatusFilter(value as CourseStatus | 'Tất cả');
-    setCurrentPage(1);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm(''); setLicenseFilter('Tất cả'); setStatusFilter('Tất cả'); setCurrentPage(1);
-  };
-
-  const handleCreateCourse = () => {
-    setEditingCourse(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEditCourse = (course: CourseRecord) => {
-    setEditingCourse(course);
-    setIsModalOpen(true);
-  };
-
-  // --- UPDATED: Delete Logic ---
-  const handleOpenDelete = (course: CourseRecord) => {
-    setCourseToDelete(course);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-  if (!courseToDelete) return;
-  
-  try {
-    const token = await getToken();
-    setAuthToken(token);
-    
-    // 1. Gọi API xóa
-    await courseService.deactivateCourse(courseToDelete.id);
-    
-    // 2. CẬP NHẬT STATE UI (Quan trọng: Phải lọc bỏ thằng vừa xóa ra khỏi mảng 'courses')
-    setCourses((prevCourses) => prevCourses.filter(c => c.id !== courseToDelete.id));
-    
-    // 3. Đóng modal
-    setIsDeleteModalOpen(false);
-    setCourseToDelete(null);
-    
-    console.log("Xóa thành công và cập nhật UI");
-  } catch (err) {
-    alert("Lỗi khi ngừng hoạt động khóa học.");
-  }
-};
-
-  const handleSubmit = async (data: CourseSubmitData) => {
+  const handleSave = async (data: CourseSubmitData) => {
+    setActionLoading(true);
     try {
       const token = await getToken();
       setAuthToken(token);
       
-      const licenseMapping: Record<string, number> = { 'A1': 1, 'B1': 3, 'B2': 4, 'C': 6 };
-      const payload = {
-        centerId: data.centerId,
-        courseName: data.name,
-        licenseType: licenseMapping[data.licenseType] || 1,
-        durationInWeeks: 12,
-        maxStudents: 30,
-        description: data.description,
-        price: Number(data.price),
-        isActive: data.status === 'Hoạt động'
-      };
-
       if (data.id) {
-        await courseService.updateCourse(data.id, {
-          courseName: payload.courseName,
-          description: payload.description,
-          price: payload.price,
-          isActive: payload.isActive
-        });
+        await courseService.updateCourse(data.id, data);
+        toast.success("Cập nhật khóa học thành công.");
       } else {
-        await courseService.createCourse(payload);
+        await courseService.createCourse(data);
+        toast.success("Thêm khóa học thành công.");
       }
       
-      setIsModalOpen(false);
+      setModalOpen(false);
+      setEditTarget(null);
       await fetchCourses();
-    } catch (err) {
-      alert("Lỗi khi lưu khóa học.");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Lưu thất bại.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-    </div>
-  );
+  const handleDelete = async (course: Course) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa khóa học "${course.courseName}"?`)) return;
+    
+    setActionLoading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await courseService.deactivateCourse(course.id);
+      toast.success("Đã xóa khóa học.");
+      await fetchCourses();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Xóa thất bại.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const filtered = useMemo(() => {
+    return courses.filter(c => 
+      c.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.licenseType.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [courses, searchQuery]);
+
+  const stats = useMemo(() => {
+    return {
+      total: courses.length,
+      active: courses.filter(c => c.isActive).length,
+      suspended: courses.filter(c => !c.isActive).length,
+    };
+  }, [courses]);
+
+  const handleToggleStatus = async (course: Course) => {
+     setActionLoading(true);
+     try {
+       const token = await getToken();
+       setAuthToken(token);
+       
+       if (course.isActive) {
+         await courseService.deactivateCourse(course.id);
+         toast.success("Đã tạm dừng khóa học.");
+       } else {
+         await courseService.updateCourse(course.id, { isActive: true });
+         toast.success("Đã kích hoạt khóa học.");
+       }
+       await fetchCourses();
+     } catch (error: any) {
+       toast.error(error.response?.data?.message || "Thao tác thất bại.");
+     } finally {
+       setActionLoading(false);
+     }
+  };
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Quản lý Khóa học</h1>
-          <p className="text-slate-500 text-sm mt-1">Cấu hình và theo dõi các chương trình đào tạo.</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+        <div className="flex items-center gap-4">
+           <div className="w-1.5 h-10 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)]" />
+           <div>
+              <h2 className="text-3xl font-black tracking-tighter text-slate-900 leading-none uppercase">
+                Quản lý Khóa đào tạo
+              </h2>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1.5 opacity-80">
+                Danh mục chương trình học & trạng thái vận hành
+              </p>
+           </div>
         </div>
         <button 
-          onClick={handleCreateCourse}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
+          onClick={() => {
+            setEditTarget(null);
+            setModalOpen(true);
+          }}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
         >
-          <Plus className="w-5 h-5" /> Thêm Khóa học
+          <PlusCircle className="w-5 h-5" />
+          Thêm khóa học mới
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="md:col-span-5 relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Tìm theo tên khóa học..." 
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="md:col-span-3 flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-          <select 
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none"
-            value={licenseFilter}
-            onChange={(e) => handleFilterChange('license', e.target.value)}
-          >
-            <option value="Tất cả">Tất cả hạng bằng</option>
-            <option value="A1">Hạng A1</option>
-            <option value="B1">Hạng B1</option>
-            <option value="B2">Hạng B2</option>
-            <option value="C">Hạng C</option>
-          </select>
+      <CourseStats stats={stats} loading={loading} />
+
+      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100 overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/30">
+          <div className="relative max-w-md w-full group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 w-5 h-5 transition-colors" />
+            <input 
+              type="text" 
+              placeholder="Tìm theo tên khóa học hoặc hạng bằng..."
+              className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="px-4 py-2 bg-slate-100 rounded-xl text-[11px] font-black text-slate-500 uppercase tracking-widest">
+              {filtered.length} Kết quả
+            </div>
+          </div>
         </div>
 
-        <div className="md:col-span-3">
-          <select 
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none"
-            value={statusFilter}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
-          >
-            <option value="Tất cả">Tất cả trạng thái</option>
-            <option value="Hoạt động">Hoạt động</option>
-            <option value="Ngừng hoạt động">Ngừng hoạt động</option>
-          </select>
-        </div>
-
-        <div className="md:col-span-1 flex items-center justify-end">
-          <button 
-            onClick={clearFilters}
-            className={`p-2 rounded-lg transition-colors ${searchTerm !== '' || licenseFilter !== 'Tất cả' || statusFilter !== 'Tất cả' ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-slate-300'}`}
-          >
-            <XCircle className="w-5 h-5" />
-          </button>
+        <div className="relative">
+           {actionLoading && (
+              <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1px] flex items-center justify-center">
+                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              </div>
+           )}
+           <CourseTable 
+             data={filtered} 
+             loading={loading} 
+             onToggleStatus={handleToggleStatus}
+             onViewDetail={(c) => setDetailTarget(c)}
+             onEdit={(c) => {
+               setEditTarget(c);
+               setModalOpen(true);
+             }}
+             onDelete={handleDelete}
+           />
         </div>
       </div>
 
-      <CourseTable 
-        courses={paginatedCourses}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        itemsPerPage={ITEMS_PER_PAGE}
-        onPageChange={setCurrentPage}
-        onView={(course) => router.push(`/training-manager/courses/${course.id}`)}
-        onEdit={handleEditCourse}
-        onDelete={handleOpenDelete} // Sử dụng hàm mở modal mới
-      />
+      {detailTarget && (
+        <CourseDetailModal 
+          course={detailTarget} 
+          onClose={() => setDetailTarget(null)} 
+        />
+      )}
 
-      {/* RENDER MODAL CREATE/EDIT */}
       <CourseModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        initialData={editingCourse} 
-        onSubmit={handleSubmit}
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditTarget(null);
+        }}
+        initialData={editTarget}
+        onSubmit={handleSave}
       />
-
-      {/* NEW: RENDER CONFIRM MODAL DELETE */}
-      <ConfirmModal
-      isOpen={isDeleteModalOpen}
-      title="Xác nhận ngừng hoạt động"
-      message={`Bạn có chắc chắn muốn ngừng hoạt động khóa học "${courseToDelete?.name}"?`}
-      onConfirm={handleConfirmDelete} // Gọi hàm C ở trên
-      onCancel={() => setIsDeleteModalOpen(false)}
-    />
     </div>
   );
 }

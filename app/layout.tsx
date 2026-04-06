@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Footer from "@/components/ui/Footer";
 import SyncUser from "@/components/auth/SyncUser";
 import RoleRedirect from "@/components/auth/RoleRedirect";
+import { UserRoleProvider } from "@/contexts/UserRoleContext";
 import { Toaster } from "react-hot-toast";
 import "../styles/globals.css";
 import "../styles/clerk.css";
@@ -31,6 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
+      dynamic
       appearance={{
         variables: {
           colorPrimary: "#6b6545",
@@ -72,17 +74,19 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
         >
-          {/* Sync Clerk user with local backend on login */}
-          <SyncUser />
-          {/* Role-based redirection after login */}
-          <RoleRedirect />
-          <Toaster position="top-right" reverseOrder={false} />
+          <UserRoleProvider>
+            {/* Sync Clerk user with local backend on login */}
+            <SyncUser />
+            {/* Role-based redirection after login */}
+            <RoleRedirect />
+            <Toaster position="top-right" reverseOrder={false} />
 
-          {/* MAIN CONTENT */}
-          <main className="flex-1">{children}</main>
+            {/* MAIN CONTENT */}
+            <main className="flex-1">{children}</main>
 
-          {/* FOOTER */}
-          {/* <Footer /> */}
+            {/* FOOTER */}
+            {/* <Footer /> */}
+          </UserRoleProvider>
         </body>
       </html>
     </ClerkProvider>

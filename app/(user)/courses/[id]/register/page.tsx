@@ -30,9 +30,9 @@ export default function RegisterPage() {
 
   // Document states
   const [docs, setDocs] = useState<{
-    photo: { file: File | null; status: 'idle' | 'uploading' | 'success' | 'error' };
-    idFront: { file: File | null; status: 'idle' | 'uploading' | 'success' | 'error' };
-    idBack: { file: File | null; status: 'idle' | 'uploading' | 'success' | 'error' };
+    photo: { file: File | null; existingUrl?: string; status: 'idle' | 'loading' | 'success' | 'error' };
+    idFront: { file: File | null; existingUrl?: string; status: 'idle' | 'loading' | 'success' | 'error' };
+    idBack: { file: File | null; existingUrl?: string; status: 'idle' | 'loading' | 'success' | 'error' };
   }>({
     photo: { file: null, status: 'idle' },
     idFront: { file: null, status: 'idle' },
@@ -42,12 +42,32 @@ export default function RegisterPage() {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        // Set token for the initial fetch - many courses might be public, but let's be safe
         const token = await getToken();
         setAuthToken(token);
 
         const data = await courseService.getCourseById(courseId);
         setCourse(data);
+
+        // Fetch existing documents to pre-fill
+        const myDocs = await documentService.getMyDocuments();
+        
+        // Helper to find latest doc by keyword
+        const findDoc = (keywords: string[]) => {
+          return myDocs
+            .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())
+            .find(d => keywords.some(k => d.fileName.toLowerCase().includes(k.toLowerCase())));
+        };
+
+        const existingPhoto = findDoc(['photo', 'avatar', 'profile', 'chân dung']);
+        const existingFront = findDoc(['front', 'mặt trước', 'id_front', 'truoc']);
+        const existingBack = findDoc(['back', 'mặt sau', 'id_back', 'sau']);
+
+        setDocs(prev => ({
+          photo: { ...prev.photo, existingUrl: existingPhoto?.fileUrl, status: existingPhoto ? 'success' : 'idle' },
+          idFront: { ...prev.idFront, existingUrl: existingFront?.fileUrl, status: existingFront ? 'success' : 'idle' },
+          idBack: { ...prev.idBack, existingUrl: existingBack?.fileUrl, status: existingBack ? 'success' : 'idle' },
+        }));
+
       } catch (err: any) {
         console.error("Fetch error:", err);
         setError("Không thể tải thông tin khóa học. Vui lòng kiểm tra kết nối mạng.");
@@ -61,7 +81,10 @@ export default function RegisterPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: keyof typeof docs) => {
     const file = e.target.files?.[0];
     if (file) {
-      setDocs(prev => ({ ...prev, [type]: { file, status: 'idle' } }));
+      setDocs(prev => ({ 
+        ...prev, 
+        [type]: { ...prev[type], file, status: 'success' } 
+      }));
     }
   };
 
@@ -76,6 +99,18 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     setError(null);
+
+    // Document Validation
+    const missing = [];
+    if (!docs.photo.file && !docs.photo.existingUrl) missing.push("Ảnh chân dung");
+    if (!docs.idFront.file && !docs.idFront.existingUrl) missing.push("CCCD mặt trước");
+    if (!docs.idBack.file && !docs.idBack.existingUrl) missing.push("CCCD mặt sau");
+
+    if (missing.length > 0) {
+      setError(`Vui lòng cung cấp đầy đủ: ${missing.join(", ")}`);
+      setSubmitting(false);
+      return;
+    }
 
     try {
       // 1. Ensure token is fresh for registration
@@ -203,9 +238,18 @@ export default function RegisterPage() {
             {/* Upload Grids */}
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-slate-600">Ảnh chân dung (3x4)</span>
-              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-50 relative overflow-hidden">
-                {docs.photo.file ? (
-                  <span className="text-sky-600 font-medium text-xs break-all px-2">{docs.photo.file.name}</span>
+              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden group">
+                {(docs.photo.file || docs.photo.existingUrl) ? (
+                  <div className="w-full h-full relative">
+                    <img 
+                      src={docs.photo.file ? URL.createObjectURL(docs.photo.file) : docs.photo.existingUrl} 
+                      className="w-full h-full object-contain"
+                      alt="Profile preview"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold bg-sky-600 px-3 py-1 rounded-full">Thay đổi ảnh</span>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <span className="text-2xl mb-1">📸</span>
@@ -218,9 +262,18 @@ export default function RegisterPage() {
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-slate-600">CCCD/CMND (Mặt trước)</span>
-              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-50 relative overflow-hidden">
-                 {docs.idFront.file ? (
-                  <span className="text-sky-600 font-medium text-xs break-all px-2">{docs.idFront.file.name}</span>
+              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden group">
+                 {(docs.idFront.file || docs.idFront.existingUrl) ? (
+                  <div className="w-full h-full relative">
+                    <img 
+                      src={docs.idFront.file ? URL.createObjectURL(docs.idFront.file) : docs.idFront.existingUrl} 
+                      className="w-full h-full object-contain"
+                      alt="ID Front preview"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold bg-sky-600 px-3 py-1 rounded-full">Thay đổi ảnh</span>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <span className="text-2xl mb-1">🪪</span>
@@ -233,9 +286,18 @@ export default function RegisterPage() {
 
             <div className="flex flex-col gap-2 md:col-span-2 md:w-1/2">
               <span className="text-sm font-medium text-slate-600">CCCD/CMND (Mặt sau)</span>
-              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-50 relative overflow-hidden">
-                 {docs.idBack.file ? (
-                  <span className="text-sky-600 font-medium text-xs break-all px-2">{docs.idBack.file.name}</span>
+              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden group">
+                 {(docs.idBack.file || docs.idBack.existingUrl) ? (
+                  <div className="w-full h-full relative">
+                    <img 
+                      src={docs.idBack.file ? URL.createObjectURL(docs.idBack.file) : docs.idBack.existingUrl} 
+                      className="w-full h-full object-contain"
+                      alt="ID Back preview"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold bg-sky-600 px-3 py-1 rounded-full">Thay đổi ảnh</span>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <span className="text-2xl mb-1">🪪</span>

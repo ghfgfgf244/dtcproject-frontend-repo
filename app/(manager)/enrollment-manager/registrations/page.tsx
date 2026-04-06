@@ -23,11 +23,7 @@ export default function RegistrationsPage() {
           <Breadcrumbs items={breadcrumbsItems} />
         </div>
 
-        <CourseRegistrationClientView 
-          initialRegistrations={MOCK_REGISTRATIONS}
-          stats={MOCK_REGISTRATION_STATS}
-          recentActivities={MOCK_RECENT_ACTIVITIES}
-        />
+        <CourseRegistrationClientView />
       </div>
     </div>
   );

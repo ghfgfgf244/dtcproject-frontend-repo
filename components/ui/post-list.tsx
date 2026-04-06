@@ -17,28 +17,42 @@ function mapBlogToPost(blog: Blog): PostData {
   };
 }
 
-export default function PostList({ refreshKey }: { refreshKey?: number }) {
+export default function PostList({ 
+  refreshKey, 
+  initialPosts,
+  onlyPublished = false
+}: { 
+  refreshKey?: number, 
+  initialPosts?: Blog[],
+  onlyPublished?: boolean
+}) {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPosts = useCallback(async () => {
+    if (initialPosts) {
+      setPosts(initialPosts.map(mapBlogToPost));
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      // Fetch all blogs including unpublished so creator sees their own drafts
-      const blogs = await blogService.getAll(false);
+      // Fetch blogs based on the onlyPublished prop
+      const blogs = await blogService.getAll(onlyPublished);
       setPosts(blogs.map(mapBlogToPost));
     } catch {
       setError("Không thể tải bài viết. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [initialPosts]);
 
   useEffect(() => {
     fetchPosts();
-  }, [fetchPosts, refreshKey]);
+  }, [fetchPosts, refreshKey, initialPosts]);
 
   if (loading) {
     return (

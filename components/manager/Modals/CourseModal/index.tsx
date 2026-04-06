@@ -4,36 +4,51 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, ShieldCheck, ChevronDown, Loader2 } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { setAuthToken } from '@/lib/api';
-import { CourseRecord } from '@/types/course';
+import { Course } from '@/types/course';
 import { centerService, Center } from '@/services/centerService';
 
 export interface CourseSubmitData {
   id?: string;
   centerId: string;
-  name: string;
-  licenseType: string;
-  price: string | number;
+  courseName: string;
+  licenseType: number; // Send as number (ExamLevel Enum)
+  price: number;
   description: string;
-  status: string;
+  durationInWeeks: number;
+  maxStudents: number;
+  isActive: boolean;
 }
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  initialData: CourseRecord | null;
+  initialData: Course | null;
   onSubmit: (data: CourseSubmitData) => void;
 }
+
+// License Type mapping (String from API -> Number for Enum)
+const LICENSE_TYPE_MAP: Record<string, number> = {
+  "A1": 1,
+  "A": 2,
+  "B1": 3,
+  "B": 4, // B2 maps to B
+  "B2": 4,
+  "C1": 5,
+  "C": 6
+};
 
 export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: Props) {
   const { getToken } = useAuth();
   const [centers, setCenters] = useState<Center[]>([]);
   const [loadingCenters, setLoadingCenters] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CourseSubmitData>({
     centerId: '',
-    name: '',
-    licenseType: '',
-    price: '',
+    courseName: '',
+    licenseType: 1,
+    price: 0,
     description: '',
+    durationInWeeks: 12,
+    maxStudents: 30,
     isActive: true
   });
 
@@ -44,7 +59,7 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
         try {
           const token = await getToken();
           setAuthToken(token);
-          const data = await centerService.getAllCenters();
+          const data = await centerService.getAll();
           setCenters(data);
         } catch (error) {
           console.error("Failed to fetch centers", error);
@@ -59,20 +74,24 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
   useEffect(() => {
     if (initialData) {
       setFormData({
-        centerId: '', // Ideally we should have centerId in CourseRecord or fetch it
-        name: initialData.name,
-        licenseType: initialData.licenseType,
-        price: initialData.price.toString(),
+        centerId: initialData.centerId || '',
+        courseName: initialData.courseName,
+        licenseType: LICENSE_TYPE_MAP[initialData.licenseType] || 1,
+        price: initialData.price,
         description: initialData.description,
-        isActive: initialData.status === 'Hoạt động'
+        durationInWeeks: initialData.durationInWeeks,
+        maxStudents: initialData.maxStudents,
+        isActive: initialData.isActive
       });
     } else {
       setFormData({
         centerId: '',
-        name: '',
-        licenseType: '',
-        price: '',
+        courseName: '',
+        licenseType: 1,
+        price: 0,
         description: '',
+        durationInWeeks: 12,
+        maxStudents: 30,
         isActive: true
       });
     }
@@ -84,17 +103,14 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
     e.preventDefault();
     onSubmit({
       ...formData,
-      id: initialData?.id || undefined, // Giữ ID nếu là Edit
-      status: formData.isActive ? 'Hoạt động' : 'Ngừng hoạt động'
+      id: initialData?.id || undefined
     });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]">
-      {/* Modal Content */}
       <div className="w-full max-w-xl bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
-        {/* Modal Header */}
         <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-transparent flex items-center justify-between">
           <div>
             <h2 className="text-xl font-black text-slate-900">
@@ -107,10 +123,8 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
           </button>
         </div>
 
-        {/* Modal Body (Form) */}
         <form id="courseForm" onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[70vh] custom-scrollbar">
           
-          {/* Cơ sở đào tạo */}
           <div className="space-y-2">
             <label className="block text-sm font-bold text-slate-700">
               Cơ sở đào tạo <span className="text-red-500">*</span>
@@ -136,7 +150,6 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
             </div>
           </div>
 
-          {/* Tên khóa học */}
           <div className="space-y-2">
             <label className="block text-sm font-bold text-slate-700">
               Tên khóa học <span className="text-red-500">*</span>
@@ -146,13 +159,12 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
               required
               placeholder="VD: Khóa đào tạo Lái xe B2 Tiêu chuẩn" 
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all placeholder:text-slate-400 font-medium text-slate-900" 
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              value={formData.courseName}
+              onChange={(e) => setFormData({...formData, courseName: e.target.value})}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Hạng bằng */}
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700">
                 Hạng bằng <span className="text-red-500">*</span>
@@ -162,19 +174,18 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none appearance-none font-medium text-slate-700" 
                   required
                   value={formData.licenseType}
-                  onChange={(e) => setFormData({...formData, licenseType: e.target.value})}
+                  onChange={(e) => setFormData({...formData, licenseType: parseInt(e.target.value)})}
                 >
                   <option value="" disabled>Chọn hạng bằng</option>
-                  <option value="A1">A1 - Mô tô</option>
-                  <option value="B1">B1 - Số tự động</option>
-                  <option value="B2">B2 - Số sàn</option>
-                  <option value="C">C - Xe tải</option>
+                  <option value="1">A1 - Mô tô</option>
+                  <option value="3">B1 - Số tự động</option>
+                  <option value="4">B2 - Số sàn (Hạng B)</option>
+                  <option value="6">C - Xe tải</option>
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
             </div>
 
-            {/* Học phí */}
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700">
                 Học phí (VNĐ) <span className="text-red-500">*</span>
@@ -188,14 +199,41 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                   placeholder="0" 
                   className="w-full pl-4 pr-16 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none font-medium text-slate-900" 
                   value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  onChange={(e) => setFormData({...formData, price: parseInt(e.target.value) || 0})}
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">VNĐ</span>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-slate-700">
+                Thời lượng (Tuần) <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="number"
+                min="1" 
+                required
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none font-medium text-slate-900" 
+                value={formData.durationInWeeks}
+                onChange={(e) => setFormData({...formData, durationInWeeks: parseInt(e.target.value) || 0})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-slate-700">
+                Học viên tối đa <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="number"
+                min="1" 
+                required
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none font-medium text-slate-900" 
+                value={formData.maxStudents}
+                onChange={(e) => setFormData({...formData, maxStudents: parseInt(e.target.value) || 0})}
+              />
+            </div>
           </div>
 
-          {/* Mô tả */}
           <div className="space-y-2">
             <label className="block text-sm font-bold text-slate-700">Mô tả</label>
             <textarea 
@@ -207,7 +245,6 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
             ></textarea>
           </div>
 
-          {/* Trạng thái hoạt động (Toggle) */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-blue-50/50 border border-blue-100">
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-6 h-6 text-blue-600" />
@@ -228,7 +265,6 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
           </div>
         </form>
 
-        {/* Modal Footer */}
         <div className="p-6 border-t border-slate-100 bg-slate-50 flex flex-col-reverse sm:flex-row gap-3 justify-end rounded-b-xl">
           <button 
             type="button" 

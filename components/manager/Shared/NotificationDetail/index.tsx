@@ -7,9 +7,10 @@ import { NotificationDetailRecord } from '@/types/notification';
 
 interface Props {
   data: NotificationDetailRecord;
+  showActions?: boolean;
 }
 
-export default function NotificationDetail({ data }: Props) {
+export default function NotificationDetail({ data, showActions = true }: Props) {
   const router = useRouter();
 
   if (!data) {
@@ -111,14 +112,16 @@ export default function NotificationDetail({ data }: Props) {
             </div>
 
             {/* Các Nút Hành Động */}
-            <div className="pt-6 border-t border-slate-100">
-              <button className="w-full py-2.5 mb-3 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
-                <Download className="w-4 h-4" /> Xuất dữ liệu
-              </button>
-              <button className="w-full py-2.5 flex items-center justify-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                <Archive className="w-4 h-4" /> Lưu trữ thông báo
-              </button>
-            </div>
+            {showActions && (
+              <div className="pt-6 border-t border-slate-100">
+                <button className="w-full py-2.5 mb-3 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                  <Download className="w-4 h-4" /> Xuất dữ liệu
+                </button>
+                <button className="w-full py-2.5 flex items-center justify-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                  <Archive className="w-4 h-4" /> Lưu trữ thông báo
+                </button>
+              </div>
+            )}
           </div>
 
         </div>

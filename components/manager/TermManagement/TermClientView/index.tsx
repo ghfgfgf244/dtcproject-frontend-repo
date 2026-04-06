@@ -1,24 +1,27 @@
 // src/app/(manager)/enrollment-manager/terms/_components/TermClientView/index.tsx
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { Plus, Filter, CalendarCheck2 } from 'lucide-react';
-import { TermRecord, TermStatus } from '@/types/term';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Plus, Filter, CalendarCheck2, Loader2 } from 'lucide-react';
+import { TermRecord } from '@/types/term';
+import { termService } from '@/services/termService';
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { toast } from 'react-hot-toast';
 
 import TermTable from '../TermTable';
 import TermModal from '../../Modals/TermModal';
-import ConfirmModal from '@/components/ui/confirm-modal'; // Giả sử đây là đường dẫn dùng chung của dự án
+import ConfirmModal from '@/components/ui/confirm-modal';
 
 interface Props {
-  initialTerms: TermRecord[];
+  initialTerms?: TermRecord[];
 }
 
-export default function TermClientView({ initialTerms }: Props) {
-  // 1. Quản lý dữ liệu chính (để cập nhật UI khi xóa)
-  const [terms, setTerms] = useState<TermRecord[]>(initialTerms);
+export default function TermClientView({ initialTerms = [] }: Props) {
+  const { getToken } = useAuth();
+  const [terms, setTerms] = useState<TermRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 2. States cho Filter
-  const [statusFilter, setStatusFilter] = useState<TermStatus | 'All'>('All');
   const [courseFilter, setCourseFilter] = useState<string>('All');
   
   // 3. States cho Modals
@@ -27,17 +30,35 @@ export default function TermClientView({ initialTerms }: Props) {
   
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [termToDelete, setTermToDelete] = useState<TermRecord | null>(null);
-  
+
+  const fetchTerms = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      const data = await termService.getAllTerms();
+      setTerms(data);
+    } catch (err) {
+      console.error("Error fetching terms:", err);
+      toast.error("Không thể tải danh sách học kỳ.");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    fetchTerms();
+  }, [fetchTerms]);
+
   // 4. Lọc dữ liệu
   const filteredTerms = useMemo(() => {
     return terms.filter(term => {
-      const matchStatus = statusFilter === 'All' || term.status === statusFilter;
       const matchCourse = courseFilter === 'All' || term.courseName.includes(courseFilter);
-      return matchStatus && matchCourse;
+      return matchCourse;
     });
-  }, [terms, statusFilter, courseFilter]);
+  }, [terms, courseFilter]);
 
-  const activeCount = terms.filter(t => t.status === 'Active').length;
+  const activeCount = terms.filter(t => t.isActive).length;
 
   // --- HANDLERS ---
   const handleOpenDelete = (term: TermRecord) => {
@@ -45,12 +66,80 @@ export default function TermClientView({ initialTerms }: Props) {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (termToDelete) {
-      // Thực tế sẽ gọi API ở đây: await termService.delete(termToDelete.id)
-      setTerms(prev => prev.filter(t => t.id !== termToDelete.id));
-      setIsDeleteModalOpen(false);
-      setTermToDelete(null);
+      try {
+        const token = await getToken();
+        setAuthToken(token);
+        await termService.deleteTerm(termToDelete.id);
+        toast.success("Đã xóa học kỳ thành công!");
+        fetchTerms();
+      } catch (err: any) {
+        toast.error(err.message || "Lỗi khi xóa học kỳ.");
+      } finally {
+        setIsDeleteModalOpen(false);
+        setTermToDelete(null);
+      }
+    }
+  };
+
+  // Handle Save (Create or Update)
+  const handleSave = async (data: Partial<TermRecord>) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+
+      if (editingTerm) {
+        // Update
+        const updated = await termService.updateTerm(editingTerm.id, {
+          termName: data.name,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          maxStudents: data.maxStudents,
+          isActive: data.isActive
+        });
+        if (updated) {
+          toast.success("Cập nhật học kỳ thành công!");
+          fetchTerms();
+        }
+      } else {
+        // Create
+        const created = await termService.createTerm({
+          courseId: data.courseId!,
+          termName: data.name!,
+          startDate: data.startDate!,
+          endDate: data.endDate!,
+          maxStudents: data.maxStudents!
+        });
+        if (created) {
+          toast.success("Tạo học kỳ mới thành công!");
+          fetchTerms();
+        }
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error("Error saving term:", err);
+      toast.error(err.message || "Lỗi khi lưu thông tin học kỳ.");
+    }
+  };
+
+  const handleToggleStatus = async (term: TermRecord) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      
+      const newStatus = !term.isActive;
+      const updated = await termService.updateTerm(term.id, {
+        isActive: newStatus
+      });
+
+      if (updated) {
+        toast.success(`Đã ${newStatus ? 'kích hoạt' : 'tạm dừng'} học kỳ thành công!`);
+        // Update local state for immediate feedback
+        setTerms(prev => prev.map(t => t.id === term.id ? updated : t));
+      }
+    } catch (err: any) {
+      toast.error("Không thể thay đổi trạng thái học kỳ.");
     }
   };
 
@@ -77,21 +166,6 @@ export default function TermClientView({ initialTerms }: Props) {
         {/* Bộ lọc */}
         <div className="lg:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-6">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Trạng thái</label>
-            <div className="flex bg-slate-100 p-1 rounded-lg">
-              {(['All', 'Active', 'Expired'] as const).map(status => (
-                <button 
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${statusFilter === status ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  {status === 'All' ? 'Tất cả' : status === 'Active' ? 'Đang mở' : 'Đã đóng'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Hệ đào tạo</label>
             <select 
               className="bg-slate-100 border-none rounded-lg py-2 px-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-600 min-w-[180px] cursor-pointer"
@@ -115,19 +189,26 @@ export default function TermClientView({ initialTerms }: Props) {
         </div>
       </div>
 
-      {/* Table */}
-      <TermTable 
-        terms={filteredTerms} 
-        onEdit={(term) => { setEditingTerm(term); setIsModalOpen(true); }}
-        onDelete={handleOpenDelete} 
-      />
+      {loading ? (
+        <div className="flex flex-col items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Đang tải danh mục học kỳ...</p>
+        </div>
+      ) : (
+        <TermTable 
+          terms={filteredTerms} 
+          onEdit={(term) => { setEditingTerm(term); setIsModalOpen(true); }}
+          onDelete={handleOpenDelete} 
+          onToggleStatus={handleToggleStatus}
+        />
+      )}
 
       {/* Create/Edit Modal */}
       <TermModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={editingTerm}
-        onSubmit={(data) => { console.log('Save Term', data); setIsModalOpen(false); }}
+        onSubmit={handleSave}
       /> 
 
       {/* Delete Confirmation Modal */}

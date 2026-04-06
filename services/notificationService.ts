@@ -26,6 +26,7 @@ const mapToNotificationRecord = (dto: any): NotificationRecord => {
     id: dto.id,
     title: dto.title,
     message: dto.content,
+    content: dto.content, // Map to both for compatibility with Detail types
     type: dto.type,
     typeLabel: NOTIFICATION_TYPE_STRING_MAP[dto.type] || 'Thông báo',
     isRead: dto.isRead,
@@ -41,21 +42,33 @@ export const notificationService = {
   getMyNotifications: async (): Promise<NotificationRecord[]> => {
     try {
       const response = await api.get<any>("/Notification/me");
-      // Backend returns a standard ApiResponse<IEnumerable<NotificationResponseDto>>
       return (response.data.data || []).map(mapToNotificationRecord);
     } catch (error) {
-      console.error("Failed to fetch notifications:", error);
+      console.error("Failed to fetch personal notifications:", error);
       return [];
     }
   },
 
   /**
-   * Get a single notification by local ID (from the list state).
-   * Note: Backend doesn't have a direct GetById that is personalized, 
-   * so we usually find it in the list or fetch the full list.
+   * [ADMIN] Fetch all system notifications.
    */
-  getNotificationById: async (id: string): Promise<NotificationRecord | null> => {
-    const notifications = await notificationService.getMyNotifications();
+  getAllAdminNotifications: async (): Promise<NotificationRecord[]> => {
+    try {
+      const response = await api.get<any>("/Notification/all");
+      return (response.data.data || []).map(mapToNotificationRecord);
+    } catch (error) {
+      console.error("Failed to fetch admin notifications:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get a single notification by local ID.
+   */
+  getNotificationById: async (id: string, isAdmin: boolean = false): Promise<NotificationRecord | null> => {
+    const notifications = isAdmin 
+      ? await notificationService.getAllAdminNotifications()
+      : await notificationService.getMyNotifications();
     return notifications.find(n => n.id === id) || null;
   },
 
