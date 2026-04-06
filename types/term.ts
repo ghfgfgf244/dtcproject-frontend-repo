@@ -11,15 +11,14 @@ export interface TermItem {
   classCount?: number; // Số lượng lớp học đang mở trong khóa này
 }
 
-export type TermStatus = 'Active' | 'Scheduled' | 'Expired';
-
 export interface TermRecord {
   id: string;
-  code: string;           // VD: TRM-2024-001
-  name: string;           // VD: Học kỳ Mùa Thu 2024
-  courseName: string;     // VD: B2 Nâng cao
+  courseId: string;
+  name: string;
+  courseName: string;
   startDate: string;
   endDate: string;
-  status: TermStatus;
-  academicYear: number;   // Dùng để filter
+  currentStudents: number;
+  maxStudents: number;
+  isActive: boolean;
 }

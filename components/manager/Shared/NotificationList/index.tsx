@@ -10,22 +10,21 @@ interface Props {
 
 export default function NotificationList({ notifications, onViewDetail }: Props) {
   
-  const getIconAndStyle = (category: string) => {
-    switch(category) {
-      case 'Enrollment': return { icon: <CheckCircle className="w-5 h-5 text-emerald-600" />, bg: 'bg-emerald-100' };
-      case 'Schedule': return { icon: <Calendar className="w-5 h-5 text-orange-600" />, bg: 'bg-orange-100' };
+  const getIconAndStyle = (type: string) => {
+    switch(type) {
+      case 'Registration': return { icon: <CheckCircle className="w-5 h-5 text-emerald-600" />, bg: 'bg-emerald-100' };
+      case 'Class': return { icon: <Calendar className="w-5 h-5 text-orange-600" />, bg: 'bg-orange-100' };
       case 'System': return { icon: <Info className="w-5 h-5 text-blue-600" />, bg: 'bg-blue-100' };
-      case 'Exams': return { icon: <FileQuestion className="w-5 h-5 text-purple-600" />, bg: 'bg-purple-100' };
-      case 'Document': return { icon: <FileText className="w-5 h-5 text-slate-600" />, bg: 'bg-slate-200' };
-      default: return { icon: <Info className="w-5 h-5 text-slate-600" />, bg: 'bg-slate-100' };
+      case 'Exam': return { icon: <FileQuestion className="w-5 h-5 text-purple-600" />, bg: 'bg-purple-100' };
+      default: return { icon: <FileText className="w-5 h-5 text-slate-600" />, bg: 'bg-slate-200' };
     }
   };
 
   return (
     <div className="space-y-3">
       {notifications.map((notif) => {
-        const isUnread = notif.status === 'unread';
-        const { icon, bg } = getIconAndStyle(notif.category);
+        const isUnread = !notif.isRead;
+        const { icon, bg } = getIconAndStyle(notif.type);
 
         return (
           <div 
@@ -57,14 +56,6 @@ export default function NotificationList({ notifications, onViewDetail }: Props)
         );
       })}
 
-      {/* Pagination Mock */}
-      <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Showing 1-5 of 42 notifications</p>
-        <div className="flex gap-2">
-          <button className="w-8 h-8 flex items-center justify-center border border-blue-600 bg-blue-600 rounded text-white text-xs font-bold">1</button>
-          <button className="w-8 h-8 flex items-center justify-center border border-slate-200 bg-white rounded text-slate-600 text-xs font-bold hover:border-blue-600 hover:text-blue-600">2</button>
-        </div>
-      </div>
     </div>
   );
 }

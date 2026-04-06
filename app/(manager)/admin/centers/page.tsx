@@ -1,13 +1,11 @@
-// src/app/(admin)/centers/page.tsx
-import React from 'react';
-import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs/index'; 
-import { MOCK_CENTERS } from '@/constants/center-data';
-import CenterClientView from '@/components/manager/CenterManagement/CenterClientView';
+import React from "react";
+import { Breadcrumbs } from "@/components/manager/Shared/Breadcrumbs/index";
+import CenterClientView from "@/components/manager/CenterManagement/CenterClientView";
 
 export default function CenterManagementPage() {
   const breadcrumbsItems = [
-    { label: 'Hệ thống', href: '/admin/dashboard' },
-    { label: 'Quản lý Trung tâm', href: '/admin/centers' }
+    { label: "Hệ thống", href: "/admin/dashboard" },
+    { label: "Quản lý Trung tâm", href: "/admin/centers" },
   ];
 
   return (
@@ -16,7 +14,8 @@ export default function CenterManagementPage() {
         <Breadcrumbs items={breadcrumbsItems} />
       </div>
       <div className="max-w-7xl mx-auto w-full">
-        <CenterClientView initialCenters={MOCK_CENTERS} />
+        {/* CenterClientView now loads all data from API internally */}
+        <CenterClientView />
       </div>
     </div>
   );

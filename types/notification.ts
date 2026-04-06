@@ -54,6 +54,7 @@ export interface NotificationRecord {
   id: string;
   title: string;
   message: string;
+  content: string; // The backend provides this in both list and detail
   type: string; // From backend string
   typeLabel: string; // Vietnamese label
   isRead: boolean;
@@ -61,9 +62,7 @@ export interface NotificationRecord {
   timeAgo: string;
 }
 
-export interface NotificationDetailRecord extends NotificationRecord {
-  content: string; // The full message or markdown
-}
+export interface NotificationDetailRecord extends NotificationRecord {}
 
 export interface SystemAlert {
   id: string;

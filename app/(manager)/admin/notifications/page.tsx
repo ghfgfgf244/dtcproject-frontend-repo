@@ -17,8 +17,7 @@ export default function NotificationsPage() {
       </div>
 
       <NotificationClientView 
-        initialNotifications={MOCK_NOTIFICATIONS} 
-        alerts={MOCK_ALERTS} 
+        isAdmin={true}
       />
     </div>
   );

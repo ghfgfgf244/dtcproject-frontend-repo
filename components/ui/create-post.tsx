@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useUser, useAuth } from "@clerk/nextjs";
 import styles from "@/styles/feed.module.css";
-import PostModal from "@/components/ui/post-modal";
+import PostModal, { BlogEditorValues } from "@/components/ui/post-modal";
 import { blogService } from "@/services/blogService";
 import { setAuthToken } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -23,19 +23,20 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
 
   if (!canCreate) return null;
 
-  const handleSubmit = async (content: string, image?: string) => {
-    if (!content || content === "<p><br></p>") {
-      toast.error("Vui lòng nhập nội dung bài viết!");
-      return;
-    }
-
+  const handleSubmit = async (values: BlogEditorValues) => {
     setIsSubmitting(true);
     try {
       const token = await getToken();
       setAuthToken(token);
 
-      const title = `Bài viết của ${user?.fullName ?? "Cộng tác viên"}`;
-      await blogService.create(content, title, image);
+      await blogService.create({
+        title: values.title || `Bài viết của ${user?.fullName ?? "Cộng tác viên"}`,
+        categoryId: values.categoryId,
+        content: values.content,
+        summary: values.summary || values.title,
+        avatar: values.avatar,
+        status: values.status ?? true,
+      });
 
       toast.success("Đăng bài thành công!");
       setOpen(false);

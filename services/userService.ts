@@ -22,6 +22,14 @@ export interface UpdateUserRolesRequest {
   roleIds: number[];
 }
 
+export interface UserStats {
+  totalUsers: number;
+  staffCount: number;
+  instructorCount: number;
+  collaboratorCount: number;
+  studentCount: number;
+}
+
 export const userService = {
   /**
    * Fetch the current user's profile from the backend.
@@ -76,5 +84,13 @@ export const userService = {
    */
   async deleteUser(userId: string): Promise<void> {
     await api.delete(`/users/${userId}`);
+  },
+
+  /**
+   * [ADMIN] Get user statistics for dashboard cards.
+   */
+  async getStats(): Promise<UserStats> {
+    const response = await api.get<{ data: UserStats }>("/users/stats");
+    return response.data.data;
   },
 };

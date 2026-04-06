@@ -1,50 +1,74 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
+import { useUserRole } from "@/contexts/UserRoleContext";
 
-// Map from role to their dashboard URL
 const MANAGER_ROLE_REDIRECTS: Record<string, string> = {
   Admin: "/admin/dashboard",
   TrainingManager: "/training-manager/dashboard",
   EnrollmentManager: "/enrollment-manager/dashboard",
 };
 
-// Roles that stay in the user area (no manager redirect)
 const USER_AREA_ROLES = ["Student", "Instructor", "Collaborator"];
+const MANAGER_AREA_PREFIXES = ["/admin", "/training-manager", "/enrollment-manager"];
 
 /**
- * Handles post-login role-based redirection.
- * - Manager roles → their dashboard (only if not already in their dashboard area)
- * - Student / Instructor / Collaborator → /homepage (only if on landing page /)
+ * Role-based redirect after login.
+ *
+ * Root cause of previous failure: role was read from user.publicMetadata.role
+ * which is NEVER set in this project. Role is stored ONLY in the backend DB.
+ *
+ * Fixed flow:
+ *   1. SyncUser calls /Auth/sync → gets role back from DB in response
+ *   2. SyncUser saves role to UserRoleContext
+ *   3. RoleRedirect reads role from UserRoleContext → redirects accordingly
  */
 export default function RoleRedirect() {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
+  const { role } = useUserRole();
   const router = useRouter();
   const pathname = usePathname();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user) return;
+    if (!isLoaded) return;
 
-    const role = (user.publicMetadata?.role as string) ?? "";
-
-    // Manager roles: redirect to their dashboard if not already there
-    if (MANAGER_ROLE_REDIRECTS[role]) {
-      const targetPath = MANAGER_ROLE_REDIRECTS[role];
-      const dashboardPrefix = targetPath.split("/dashboard")[0]; // e.g. "/admin"
-      // Don't redirect if already in the correct manager area
-      if (!pathname.startsWith(dashboardPrefix)) {
-        router.replace(targetPath);
-      }
+    if (!isSignedIn) {
+      hasRedirected.current = false;
       return;
     }
 
-    // Student, Instructor, Collaborator: redirect to /homepage only from landing page
-    if (USER_AREA_ROLES.includes(role) && pathname === "/") {
-      router.replace("/homepage");
+    // Role not yet available — SyncUser hasn't finished yet, wait
+    if (!role) return;
+
+    // Prevent double redirect
+    if (hasRedirected.current) return;
+
+    console.log(`[RoleRedirect] Redirecting role="${role}" from pathname="${pathname}"`);
+
+    // ── Manager roles → their dashboard ──────────────────────────────────────
+    const targetManagerPath = MANAGER_ROLE_REDIRECTS[role];
+    if (targetManagerPath) {
+      const managerPrefix = "/" + targetManagerPath.split("/")[1];
+      if (pathname.startsWith(managerPrefix)) return; // already home
+      hasRedirected.current = true;
+      router.replace(targetManagerPath);
+      return;
     }
-  }, [isLoaded, isSignedIn, user, router, pathname]);
+
+    // ── User-area roles → /homepage (from landing or manager pages) ───────────
+    if (USER_AREA_ROLES.includes(role)) {
+      const isOnManagerPage = MANAGER_AREA_PREFIXES.some((p) => pathname.startsWith(p));
+      const isOnLanding = pathname === "/";
+
+      if (isOnLanding || isOnManagerPage) {
+        hasRedirected.current = true;
+        router.replace("/homepage");
+      }
+    }
+  }, [isLoaded, isSignedIn, role, pathname, router]);
 
   return null;
 }

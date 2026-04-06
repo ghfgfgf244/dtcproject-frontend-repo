@@ -18,7 +18,7 @@ export default function PostPage() {
       <section className={`${shellStyles.content} ${styles.content}`}>
         <div className={`${feedStyles.feedContainer} ${shellStyles.feedOverride}`}>
           <CreatePost onPostCreated={() => setRefreshKey(k => k + 1)} />
-          <PostList refreshKey={refreshKey} />
+          <PostList refreshKey={refreshKey} onlyPublished={true} />
         </div>
       </section>
     </div>
