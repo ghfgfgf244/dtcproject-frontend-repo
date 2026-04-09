@@ -82,7 +82,7 @@ export default function ClassDetailClientView({ classId }: Props) {
       setAddresses(addressData);
       setSelectedInstructorId(detail?.instructorId ?? "");
     } catch {
-      toast.error("Khong the tai chi tiet lop hoc");
+      toast.error("Không thể tải chi tiết lớp học");
     } finally {
       setLoading(false);
     }
@@ -115,10 +115,10 @@ export default function ClassDetailClientView({ classId }: Props) {
     setIsAssigningTeacher(true);
     try {
       await classService.assignTeacher(classId, selectedInstructorId);
-      toast.success("Da cap nhat giao vien phu trach");
+      toast.success("Đã cập nhật giáo viên phụ trách");
       await fetchData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the cap nhat giao vien");
+      toast.error(error?.response?.data?.message || "Không thể cập nhật giáo viên");
     } finally {
       setIsAssigningTeacher(false);
     }
@@ -130,11 +130,11 @@ export default function ClassDetailClientView({ classId }: Props) {
     try {
       const mergedStudentIds = Array.from(new Set([...students.map((student) => student.id), ...selectedStudentIds]));
       await classService.assignStudents(classId, mergedStudentIds);
-      toast.success("Da them hoc vien vao lop");
+      toast.success("Đã thêm học viên vào lớp");
       setIsAddStudentModalOpen(false);
       await fetchData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the them hoc vien");
+      toast.error(error?.response?.data?.message || "Không thể thêm học viên");
     }
   };
 
@@ -161,11 +161,11 @@ export default function ClassDetailClientView({ classId }: Props) {
 
     try {
       await classService.removeStudent(classId, studentToDelete.id);
-      toast.success("Da xoa hoc vien khoi lop");
+      toast.success("Đã xóa học viên khỏi lớp");
       setStudentToDelete(null);
       await fetchData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the xoa hoc vien");
+      toast.error(error?.response?.data?.message || "Không thể xóa học viên");
     }
   };
 
@@ -174,7 +174,7 @@ export default function ClassDetailClientView({ classId }: Props) {
       <div className="h-[320px] flex items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          <span>Dang tai chi tiet lop hoc...</span>
+          <span>Đang tải chi tiết lớp học...</span>
         </div>
       </div>
     );
@@ -183,7 +183,7 @@ export default function ClassDetailClientView({ classId }: Props) {
   if (!classDetail) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
-        Khong tim thay lop hoc.
+        Không tìm thấy lớp học.
       </div>
     );
   }
@@ -203,7 +203,7 @@ export default function ClassDetailClientView({ classId }: Props) {
             onClick={() => router.back()}
             className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 shadow-sm"
           >
-            <ArrowLeft className="w-4 h-4" /> Quay lai
+            <ArrowLeft className="w-4 h-4" /> Quay lại
           </button>
         </div>
       </div>
@@ -211,36 +211,36 @@ export default function ClassDetailClientView({ classId }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-black text-slate-900 mb-6">Thong tin lop hoc</h3>
+            <h3 className="text-lg font-black text-slate-900 mb-6">Thông tin lớp học</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-12">
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Ky hoc</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Kỳ học</p>
                 <p className="text-slate-900 font-bold text-sm">{classDetail.termName}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Trang thai</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Trạng thái</p>
                 <p className="text-slate-900 font-bold text-sm">{classDetail.status}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Ngay bat dau</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Ngày bắt đầu</p>
                 <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
                   <CalendarDays className="w-4 h-4 text-slate-400" /> {formatDate(classDetail.termStartDate)}
                 </div>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Ngay ket thuc</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Ngày kết thúc</p>
                 <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
                   <CalendarDays className="w-4 h-4 text-slate-400" /> {formatDate(classDetail.termEndDate)}
                 </div>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Hoc vien</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Học viên</p>
                 <p className="text-slate-900 font-bold text-sm">
                   {classDetail.currentStudents}/{classDetail.maxStudents}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Trung tam</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Trung tâm</p>
                 <p className="text-slate-900 font-bold text-sm">{classDetail.centerName || "N/A"}</p>
               </div>
             </div>
@@ -249,9 +249,9 @@ export default function ClassDetailClientView({ classId }: Props) {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-600" /> Hoc vien trong lop
+                <Users className="w-5 h-5 text-blue-600" /> Học viên trong lớp
                 <span className="bg-slate-100 text-slate-500 text-[11px] font-bold py-1 px-3 rounded-full ml-2">
-                  {students.length} tong
+                  {students.length} tổng
                 </span>
               </h3>
 
@@ -259,7 +259,7 @@ export default function ClassDetailClientView({ classId }: Props) {
                 onClick={() => setIsAddStudentModalOpen(true)}
                 className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm shadow-blue-600/20 hover:bg-blue-700"
               >
-                <Plus className="w-4 h-4" /> Them hoc vien
+                <Plus className="w-4 h-4" /> Thêm học viên
               </button>
             </div>
 
@@ -267,10 +267,10 @@ export default function ClassDetailClientView({ classId }: Props) {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-slate-50">
-                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hoc vien</th>
-                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lien he</th>
-                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vai tro</th>
-                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Thao tac</th>
+                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Học viên</th>
+                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Liên hệ</th>
+                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vai trò</th>
+                    <th className="px-6 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -295,7 +295,7 @@ export default function ClassDetailClientView({ classId }: Props) {
                         <button
                           onClick={() => setStudentToDelete(student)}
                           className="text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors p-1.5 rounded-md"
-                          title="Xoa hoc vien"
+                          title="Xóa học viên"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -305,7 +305,7 @@ export default function ClassDetailClientView({ classId }: Props) {
                   {students.length === 0 && (
                     <tr>
                       <td colSpan={4} className="p-8 text-center text-sm text-slate-500">
-                        Chua co hoc vien nao trong lop.
+                        Chưa có học viên nào trong lớp.
                       </td>
                     </tr>
                   )}
@@ -317,14 +317,14 @@ export default function ClassDetailClientView({ classId }: Props) {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Clock3 className="w-5 h-5 text-blue-600" /> Danh sach lich hoc
+                <Clock3 className="w-5 h-5 text-blue-600" /> Danh sách lịch học
               </h3>
-              
+
               <button
                 onClick={() => setIsScheduleModalOpen(true)}
                 className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm shadow-blue-600/20 hover:bg-blue-700 transition"
               >
-                <Plus className="w-4 h-4" /> Them lich hoc
+                <Plus className="w-4 h-4" /> Thêm lịch học
               </button>
             </div>
 
@@ -345,7 +345,7 @@ export default function ClassDetailClientView({ classId }: Props) {
                 </div>
               ))}
 
-              {schedules.length === 0 && <div className="p-6 text-sm text-slate-500">Chua co lich hoc nao cho lop nay.</div>}
+              {schedules.length === 0 && <div className="p-6 text-sm text-slate-500">Chưa có lịch học nào cho lớp này.</div>}
             </div>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default function ClassDetailClientView({ classId }: Props) {
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="text-sm font-black text-slate-900 mb-6 flex items-center gap-2 uppercase tracking-wide">
-              <UserSquare2 className="w-5 h-5 text-blue-600" /> Giao vien phu trach
+              <UserSquare2 className="w-5 h-5 text-blue-600" /> Giáo viên phụ trách
             </h3>
 
             <div className="space-y-4">
@@ -374,7 +374,7 @@ export default function ClassDetailClientView({ classId }: Props) {
                 disabled={!selectedInstructorId || isAssigningTeacher}
                 className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-60"
               >
-                {isAssigningTeacher ? "Dang cap nhat..." : "Gan giao vien khac"}
+                {isAssigningTeacher ? "Đang cập nhật..." : "Gán giáo viên khác"}
               </button>
             </div>
 
@@ -414,8 +414,8 @@ export default function ClassDetailClientView({ classId }: Props) {
 
       <ConfirmModal
         isOpen={Boolean(studentToDelete)}
-        title="Xoa hoc vien khoi lop"
-        message={`Ban co chac chan muon xoa "${studentToDelete?.fullName ?? ""}" khoi lop nay khong?`}
+        title="Xóa học viên khỏi lớp"
+        message={`Bạn có chắc chắn muốn xóa "${studentToDelete?.fullName ?? ""}" khỏi lớp này không?`}
         onCancel={() => setStudentToDelete(null)}
         onConfirm={handleRemoveStudent}
       />

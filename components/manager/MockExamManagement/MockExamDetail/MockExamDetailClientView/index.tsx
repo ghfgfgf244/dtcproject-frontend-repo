@@ -28,7 +28,7 @@ export default function MockExamDetailClientView({ examId }: Props) {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [bankQuestions, setBankQuestions] = useState<QuestionBankItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterCategory, setFilterCategory] = useState("Tat ca");
+  const [filterCategory, setFilterCategory] = useState("Tất cả");
   const [currentPage, setCurrentPage] = useState(1);
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
@@ -52,13 +52,13 @@ export default function MockExamDetailClientView({ examId }: Props) {
       ]);
 
       const courseMap = new Map(courses.map((course) => [course.id, course.courseName]));
-      const mapped = mockExamService.mapExamDetail(examDetail, courseMap.get(examDetail.courseId) || "Chua gan khoa hoc");
+      const mapped = mockExamService.mapExamDetail(examDetail, courseMap.get(examDetail.courseId) || "Chưa gán khóa học");
 
       setInfo(mapped.info);
       setQuestions(mapped.questions);
       setBankQuestions(questionBank);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tai chi tiet de thi thu");
+      toast.error(error?.response?.data?.message || "Không thể tải chi tiết đề thi thử");
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function MockExamDetailClientView({ examId }: Props) {
   }, [examId, isLoaded, isSignedIn]);
 
   const filteredQuestions = useMemo(() => {
-    if (filterCategory === "Tat ca") return questions;
+    if (filterCategory === "Tất cả") return questions;
     return questions.filter((question) => question.category === filterCategory);
   }, [filterCategory, questions]);
 
@@ -98,9 +98,9 @@ export default function MockExamDetailClientView({ examId }: Props) {
     try {
       await syncExamQuestions(updated);
       setQuestions(updated);
-      toast.success("Da them cau hoi vao de thi thu");
+      toast.success("Đã thêm câu hỏi vào đề thi thử");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the them cau hoi vao de thi");
+      toast.error(error?.response?.data?.message || "Không thể thêm câu hỏi vào đề thi");
     }
   };
 
@@ -114,9 +114,9 @@ export default function MockExamDetailClientView({ examId }: Props) {
       setBankQuestions((prev) => [...prev, createdQuestion]);
       setIsQuestionModalOpen(false);
       setEditingQuestion(null);
-      toast.success("Da tao va them cau hoi vao de thi");
+      toast.success("Đã tạo và thêm câu hỏi vào đề thi");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tao cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể tạo câu hỏi");
     }
   };
 
@@ -130,9 +130,9 @@ export default function MockExamDetailClientView({ examId }: Props) {
       setBankQuestions((prev) => prev.map((question) => (question.id === updated.id ? updated : question)));
       setIsQuestionModalOpen(false);
       setEditingQuestion(null);
-      toast.success("Da cap nhat cau hoi");
+      toast.success("Đã cập nhật câu hỏi");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the cap nhat cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể cập nhật câu hỏi");
     }
   };
 
@@ -147,9 +147,9 @@ export default function MockExamDetailClientView({ examId }: Props) {
       await syncExamQuestions(updated);
       setQuestions(updated);
       setQuestionToRemove(null);
-      toast.success("Da bo cau hoi khoi de thi");
+      toast.success("Đã bỏ câu hỏi khỏi đề thi");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the cap nhat danh sach cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể cập nhật danh sách câu hỏi");
     }
   };
 
@@ -158,7 +158,7 @@ export default function MockExamDetailClientView({ examId }: Props) {
       <div className="flex min-h-[320px] items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500">
           <RefreshCw className="h-5 w-5 animate-spin" />
-          <span>Dang tai chi tiet de thi thu...</span>
+          <span>Đang tải chi tiết đề thi thử...</span>
         </div>
       </div>
     );
@@ -220,10 +220,10 @@ export default function MockExamDetailClientView({ examId }: Props) {
             }}
             className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           >
-            <option value="Tat ca">Tat ca</option>
-            <option value="Ly thuyet">Ly thuyet</option>
-            <option value="Bien bao">Bien bao</option>
-            <option value="Sa hinh">Sa hinh</option>
+            <option value="Tất cả">Tất cả</option>
+            <option value="Lý thuyết">Lý thuyết</option>
+            <option value="Biển báo">Biển báo</option>
+            <option value="Sa hình">Sa hình</option>
           </select>
         </div>
 
@@ -297,8 +297,8 @@ export default function MockExamDetailClientView({ examId }: Props) {
 
       <ConfirmModal
         isOpen={questionToRemove !== null}
-        title="Bo cau hoi khoi de thi"
-        message="Ban co chac chan muon bo cau hoi nay khoi de thi thu khong?"
+        title="Bỏ câu hỏi khỏi đề thi"
+        message="Bạn có chắc chắn muốn bỏ câu hỏi này khỏi đề thi thử không?"
         onCancel={() => setQuestionToRemove(null)}
         onConfirm={handleRemoveQuestion}
       />

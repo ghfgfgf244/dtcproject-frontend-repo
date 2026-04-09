@@ -56,7 +56,7 @@ export default function MockExamClientView() {
       const courseMap = new Map(courseData.map((course) => [course.id, course]));
       const mappedExams = examData.map((exam) => {
         const course = courseMap.get(exam.courseId);
-        return mockExamService.mapExam(exam, course?.courseName || "Chua gan khoa hoc", course?.licenseType || "");
+        return mockExamService.mapExam(exam, course?.courseName || "Chưa gán khóa học", course?.licenseType || "");
       });
 
       setCourses(courseData);
@@ -65,12 +65,12 @@ export default function MockExamClientView() {
         totalExams: mappedExams.length,
         activeExams: mappedExams.filter((exam) => exam.isActive).length,
         totalQuestions: questionData.length,
-        theoryQuestions: questionData.filter((question) => question.category === "Ly thuyet").length,
-        signQuestions: questionData.filter((question) => question.category === "Bien bao").length,
-        simulationQuestions: questionData.filter((question) => question.category === "Sa hinh").length,
+        theoryQuestions: questionData.filter((question) => question.category === "Lý thuyết").length,
+        signQuestions: questionData.filter((question) => question.category === "Biển báo").length,
+        simulationQuestions: questionData.filter((question) => question.category === "Sa hình").length,
       });
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tai danh sach de thi thu");
+      toast.error(error?.response?.data?.message || "Không thể tải danh sách đề thi thử");
     } finally {
       setLoading(false);
     }
@@ -98,11 +98,11 @@ export default function MockExamClientView() {
     try {
       await ensureToken();
       await mockExamService.create(data);
-      toast.success("Da tao de thi thu moi");
+      toast.success("Đã tạo đề thi thử mới");
       setIsModalOpen(false);
       await fetchData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tao de thi thu");
+      toast.error(error?.response?.data?.message || "Không thể tạo đề thi thử");
     }
   };
 
@@ -112,12 +112,12 @@ export default function MockExamClientView() {
     try {
       await ensureToken();
       await mockExamService.delete(examToDelete.id);
-      toast.success("Da xoa de thi thu");
+      toast.success("Đã xóa đề thi thử");
       setIsDeleteModalOpen(false);
       setExamToDelete(null);
       await fetchData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the xoa de thi thu");
+      toast.error(error?.response?.data?.message || "Không thể xóa đề thi thử");
     }
   };
 
@@ -126,7 +126,7 @@ export default function MockExamClientView() {
       <div className="flex min-h-[320px] items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500">
           <RefreshCw className="h-5 w-5 animate-spin" />
-          <span>Dang tai de thi thu...</span>
+          <span>Đang tải đề thi thử...</span>
         </div>
       </div>
     );
@@ -163,19 +163,19 @@ export default function MockExamClientView() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tong de thi thu</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tổng đề thi thử</p>
           <p className="mt-3 text-3xl font-black text-slate-900">{stats.totalExams}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">De dang hoat dong</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Đề đang hoạt động</p>
           <p className="mt-3 text-3xl font-black text-slate-900">{stats.activeExams}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tong cau hoi</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tổng câu hỏi</p>
           <p className="mt-3 text-3xl font-black text-slate-900">{stats.totalQuestions}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Ly thuyet / Bien bao / Sa hinh</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Lý thuyết / Biển báo / Sa hình</p>
           <p className="mt-3 text-lg font-black text-slate-900">
             {stats.theoryQuestions} / {stats.signQuestions} / {stats.simulationQuestions}
           </p>
@@ -190,7 +190,7 @@ export default function MockExamClientView() {
               setSearchQuery(event.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Tim theo khoa hoc, hang bang hoac so de"
+            placeholder="Tìm theo khóa học, hạng bằng hoặc số đề"
             className="w-full max-w-md rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
 
@@ -200,7 +200,7 @@ export default function MockExamClientView() {
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
           >
             <RefreshCw className="h-4 w-4" />
-            Lam moi
+            Làm mới
           </button>
         </div>
 
@@ -225,7 +225,7 @@ export default function MockExamClientView() {
                   </td>
                   <td className="px-5 py-4">
                     <div className="font-semibold text-slate-900">{exam.courseName}</div>
-                    <div className="text-xs text-slate-500">Hạng {exam.licenseType || "Chua ro"}</div>
+                    <div className="text-xs text-slate-500">Hạng {exam.licenseType || "Chưa rõ"}</div>
                   </td>
                   <td className="px-5 py-4 text-slate-700">{exam.durationMinutes} phút</td>
                   <td className="px-5 py-4 text-slate-700">{exam.passingScore}</td>
@@ -300,8 +300,8 @@ export default function MockExamClientView() {
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        title="Xoa de thi thu"
-        message={`Ban co chac chan muon xoa de thi thu so ${examToDelete?.examNo || ""} khong?`}
+        title="Xóa đề thi thử"
+        message={`Bạn có chắc chắn muốn xóa đề thi thử số ${examToDelete?.examNo || ""} không?`}
         onCancel={() => {
           setIsDeleteModalOpen(false);
           setExamToDelete(null);

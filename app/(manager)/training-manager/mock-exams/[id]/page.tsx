@@ -10,9 +10,9 @@ export default async function MockExamDetailPage({ params }: PageProps) {
   const { id } = await params;
 
   const breadcrumbsItems = [
-    { label: "He thong", href: "/training-manager/dashboard" },
-    { label: "Quan ly thi thu", href: "/training-manager/mock-exams" },
-    { label: "Chi tiet bo de" },
+    { label: "Hệ thống", href: "/training-manager/dashboard" },
+    { label: "Quản lý thi thử", href: "/training-manager/mock-exams" },
+    { label: "Chi tiết bộ đề" },
   ];
 
   return (

@@ -10,9 +10,9 @@ export default async function ClassDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
 
   const breadcrumbsItems = [
-    { label: "Trang chu", href: "/training-manager/dashboard" },
-    { label: "Lop hoc", href: "/training-manager/classes" },
-    { label: "Chi tiet lop hoc" },
+    { label: "Trang chủ", href: "/training-manager/dashboard" },
+    { label: "Lớp học", href: "/training-manager/classes" },
+    { label: "Chi tiết lớp học" },
   ];
 
   return (

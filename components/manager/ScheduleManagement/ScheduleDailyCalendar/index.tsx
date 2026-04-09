@@ -40,13 +40,13 @@ function getEventStyles(type: ScheduleEvent["eventType"]) {
 function getEventLabel(type: ScheduleEvent["eventType"]) {
   switch (type) {
     case "Theory":
-      return "Ly thuyet";
+      return "Lý thuyết";
     case "Practice":
-      return "Thuc hanh";
+      return "Thực hành";
     case "Simulator":
-      return "Mo phong";
+      return "Mô phỏng";
     case "Exam":
-      return "Sat hach";
+      return "Sát hạch";
     default:
       return type;
   }
@@ -93,8 +93,8 @@ export default function ScheduleDailyCalendar({ date, events, onDateChange, onEd
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className={`${styles.timelineGrid} border-b border-slate-100 bg-slate-50/50`}>
-          <div className="border-r border-slate-100 p-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Thoi gian</div>
-          <div className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 md:px-8">Chi tiet lop hoc</div>
+          <div className="border-r border-slate-100 p-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Thời gian</div>
+          <div className="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 md:px-8">Chi tiết lớp học</div>
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -138,10 +138,10 @@ export default function ScheduleDailyCalendar({ date, events, onDateChange, onEd
                     </div>
 
                     <div className="flex shrink-0 gap-1 self-end md:self-start">
-                      <button onClick={() => onEditClick(event.id)} className="rounded-lg p-2 text-slate-400 transition-all hover:bg-blue-50 hover:text-blue-600" title="Sua lich">
+                      <button onClick={() => onEditClick(event.id)} className="rounded-lg p-2 text-slate-400 transition-all hover:bg-blue-50 hover:text-blue-600" title="Sửa lịch">
                         <Edit className="h-5 w-5" />
                       </button>
-                      <button onClick={() => onDeleteClick(event.id)} className="rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500" title="Xoa lich">
+                      <button onClick={() => onDeleteClick(event.id)} className="rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500" title="Xóa lịch">
                         <Trash2 className="h-5 w-5" />
                       </button>
                     </div>
@@ -152,7 +152,7 @@ export default function ScheduleDailyCalendar({ date, events, onDateChange, onEd
           })}
 
           {events.length === 0 && (
-            <div className="p-10 text-center text-sm text-slate-500">Chua co lich hoc nao trong ngay nay.</div>
+            <div className="p-10 text-center text-sm text-slate-500">Chưa có lịch học nào trong ngày này.</div>
           )}
         </div>
       </div>

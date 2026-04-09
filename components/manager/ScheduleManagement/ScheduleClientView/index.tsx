@@ -125,7 +125,7 @@ export default function ScheduleClientView() {
       setAddresses(addressData);
       setEvents(scheduleData.map((item) => mapScheduleEvent(item, classMap)).sort((left, right) => left.startDateTime.localeCompare(right.startDateTime)));
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tai lich hoc");
+      toast.error(error?.response?.data?.message || "Không thể tải lịch học");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -204,7 +204,7 @@ export default function ScheduleClientView() {
 
       if (formData.importedSchedules && formData.importedSchedules.length > 0) {
         await scheduleService.createBulk(formData.classId, formData.importedSchedules);
-        toast.success("Da nhap lich hoc tu file Excel");
+        toast.success("Đã nhập lịch học từ file Excel");
       } else if (editingEvent) {
         await scheduleService.update(editingEvent.id, {
           instructorId: formData.instructorId,
@@ -212,7 +212,7 @@ export default function ScheduleClientView() {
           endTime: formData.endTime,
           addressId: formData.addressId,
         });
-        toast.success("Da cap nhat lich hoc");
+        toast.success("Đã cập nhật lịch học");
       } else {
         await scheduleService.create({
           classId: formData.classId,
@@ -221,14 +221,14 @@ export default function ScheduleClientView() {
           endTime: formData.endTime,
           addressId: formData.addressId,
         });
-        toast.success("Da tao lich hoc");
+        toast.success("Đã tạo lịch học");
       }
 
       setIsModalOpen(false);
       setEditingEventId(null);
       await fetchData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the luu lich hoc");
+      toast.error(error?.response?.data?.message || "Không thể lưu lịch học");
     }
   };
 
@@ -243,12 +243,12 @@ export default function ScheduleClientView() {
     try {
       await ensureAuthToken();
       await scheduleService.delete(eventToDelete);
-      toast.success("Da xoa lich hoc");
+      toast.success("Đã xóa lịch học");
       setIsDeleteModalOpen(false);
       setEventToDelete(null);
       await fetchData();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the xoa lich hoc");
+      toast.error(error?.response?.data?.message || "Không thể xóa lịch học");
     }
   };
 
@@ -262,7 +262,7 @@ export default function ScheduleClientView() {
       <div className="flex h-[320px] items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500">
           <RefreshCw className="h-5 w-5 animate-spin" />
-          <span>Dang tai lich hoc...</span>
+          <span>Đang tải lịch học...</span>
         </div>
       </div>
     );
@@ -273,12 +273,12 @@ export default function ScheduleClientView() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="mb-2 text-[30px] font-black leading-none tracking-tight text-slate-900">
-            {viewMode === "MONTH" && `Lich hoc ${formatMonthLabel(selectedDate)}`}
-            {viewMode === "WEEK" && `Lich hoc tuan ${formatDayLabel(startOfWeek(selectedDate))}`}
-            {viewMode === "DAY" && `Lich hoc ${formatDayLabel(selectedDate)}`}
+            {viewMode === "MONTH" && `Lịch học ${formatMonthLabel(selectedDate)}`}
+            {viewMode === "WEEK" && `Lịch học tuần ${formatDayLabel(startOfWeek(selectedDate))}`}
+            {viewMode === "DAY" && `Lịch học ${formatDayLabel(selectedDate)}`}
           </h2>
           <p className="text-sm text-slate-500">
-            Xem, tao va dieu phoi lich hoc cua tung lop theo du lieu that tu he thong.
+            Xem, tạo và điều phối lịch học của từng lớp theo dữ liệu thật từ hệ thống.
           </p>
         </div>
 
@@ -287,18 +287,18 @@ export default function ScheduleClientView() {
             onClick={handleRefresh}
             className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Lam moi
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Làm mới
           </button>
           <div className="rounded-lg border border-slate-200 bg-slate-200/50 p-1 shadow-sm">
-            <button onClick={() => setViewMode("MONTH")} className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${viewMode === "MONTH" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Thang</button>
-            <button onClick={() => setViewMode("WEEK")} className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${viewMode === "WEEK" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Tuan</button>
-            <button onClick={() => setViewMode("DAY")} className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${viewMode === "DAY" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Ngay</button>
+            <button onClick={() => setViewMode("MONTH")} className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${viewMode === "MONTH" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Tháng</button>
+            <button onClick={() => setViewMode("WEEK")} className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${viewMode === "WEEK" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Tuần</button>
+            <button onClick={() => setViewMode("DAY")} className={`rounded-md px-4 py-2 text-xs font-bold transition-all ${viewMode === "DAY" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Ngày</button>
           </div>
           <button
             onClick={handleAddSlot}
             className="hidden items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 md:flex"
           >
-            <CalendarPlus className="h-5 w-5" /> Them lich hoc
+            <CalendarPlus className="h-5 w-5" /> Thêm lịch học
           </button>
         </div>
       </div>
@@ -308,7 +308,7 @@ export default function ScheduleClientView() {
           <div className="flex items-center gap-4">
             <div className="rounded-lg bg-blue-50 p-3 text-blue-600"><Users className="h-6 w-6" /></div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tong lop</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tổng lớp</p>
               <p className="text-xl font-black text-slate-900">{classes.length}</p>
             </div>
           </div>
@@ -317,7 +317,7 @@ export default function ScheduleClientView() {
           <div className="flex items-center gap-4">
             <div className="rounded-lg bg-slate-100 p-3 text-slate-600"><CalendarClock className="h-6 w-6" /></div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Lich trong tuan</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Lịch trong tuần</p>
               <p className="text-xl font-black text-slate-900">{weeklyInsights.totalClasses}</p>
             </div>
           </div>
@@ -326,7 +326,7 @@ export default function ScheduleClientView() {
           <div className="flex items-center gap-4">
             <div className="rounded-lg bg-emerald-50 p-3 text-emerald-600"><ShieldCheck className="h-6 w-6" /></div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Dang hoat dong</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Đang hoạt động</p>
               <p className="text-xl font-black text-slate-900">{weeklyInsights.activeClasses}</p>
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function ScheduleClientView() {
           <div className="flex items-center gap-4">
             <div className="rounded-lg bg-amber-50 p-3 text-amber-600"><Plus className="h-6 w-6" /></div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Cho khai giang</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Chờ khai giảng</p>
               <p className="text-xl font-black text-slate-900">{weeklyInsights.pendingCourses}</p>
             </div>
           </div>
@@ -354,29 +354,29 @@ export default function ScheduleClientView() {
             <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="rounded-lg bg-blue-50 p-3 text-blue-600"><Users className="h-6 w-6" /></div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ly thuyet</p>
-                <p className="text-xl font-black text-slate-900">{String(dailyInsights.theoryCount).padStart(2, "0")} buoi</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Lý thuyết</p>
+                <p className="text-xl font-black text-slate-900">{String(dailyInsights.theoryCount).padStart(2, "0")} buổi</p>
               </div>
             </div>
             <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="rounded-lg bg-emerald-50 p-3 text-emerald-600"><Users className="h-6 w-6" /></div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Thuc hanh</p>
-                <p className="text-xl font-black text-slate-900">{String(dailyInsights.practiceCount).padStart(2, "0")} buoi</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Thực hành</p>
+                <p className="text-xl font-black text-slate-900">{String(dailyInsights.practiceCount).padStart(2, "0")} buổi</p>
               </div>
             </div>
             <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="rounded-lg bg-amber-50 p-3 text-amber-600"><Users className="h-6 w-6" /></div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Mo phong</p>
-                <p className="text-xl font-black text-slate-900">{String(dailyInsights.simulationCount).padStart(2, "0")} buoi</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Mô phỏng</p>
+                <p className="text-xl font-black text-slate-900">{String(dailyInsights.simulationCount).padStart(2, "0")} buổi</p>
               </div>
             </div>
             <div className="flex items-center gap-4 rounded-xl bg-blue-600 p-5 shadow-lg shadow-blue-600/20">
               <div className="rounded-lg bg-white/20 p-3 text-white"><Users className="h-6 w-6" /></div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Tong hoc vien</p>
-                <p className="text-xl font-black text-white">{dailyInsights.totalStudents} nguoi</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Tổng học viên</p>
+                <p className="text-xl font-black text-white">{dailyInsights.totalStudents} người</p>
               </div>
             </div>
           </div>
@@ -406,8 +406,8 @@ export default function ScheduleClientView() {
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        title="Xoa lich hoc"
-        message="Ban co chac chan muon xoa lich hoc nay khong?"
+        title="Xóa lịch học"
+        message="Bạn có chắc chắn muốn xóa lịch học này không?"
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />

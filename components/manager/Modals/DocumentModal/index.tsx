@@ -26,15 +26,15 @@ const formatBytes = (bytes: number) => {
 
 export default function DocumentModal({ isOpen, onClose, userIdContext, initialData, onSubmit }: Props) {
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // 1. Tạo object mặc định kèm theo userIdContext truyền từ props
+  // 1. Tạo object mặc định kèm theo userIdContext truyền từ props
   const defaultDataWithUser = {
     ...DEFAULT_DOCUMENT_FORM,
-    userId: userIdContext 
+    userId: userIdContext
   };
 
- const [formData, setFormData] = useState<DocumentRecord>(initialData || defaultDataWithUser);
+  const [formData, setFormData] = useState<DocumentRecord>(initialData || defaultDataWithUser);
 
   // 3. Khai báo State phụ để theo dõi sự thay đổi của props (Thay thế cho Dependency Array của useEffect)
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
@@ -45,7 +45,7 @@ export default function DocumentModal({ isOpen, onClose, userIdContext, initialD
     // Cập nhật lại cờ theo dõi
     setPrevIsOpen(isOpen);
     setPrevInitialData(initialData);
-    
+
     // Nếu Modal đang được mở lên -> Reset lại Form
     if (isOpen) {
       setFormData(initialData || defaultDataWithUser);
@@ -80,15 +80,15 @@ export default function DocumentModal({ isOpen, onClose, userIdContext, initialD
   return (
     <div className={styles.overlay}>
       <div className={styles.backdrop} onClick={onClose} />
-      
+
       <div className={`${styles.modalContainer} max-w-2xl`}>
         {/* Modal Header */}
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
           <div>
             <h3 className="text-xl font-black text-slate-900 tracking-tight">
-              {initialData?.id ? 'Update Document' : 'Upload Document'}
+              {initialData?.id ? 'Cập nhật tài liệu' : 'Tải lên tài liệu'}
             </h3>
-            <p className="text-xs text-slate-500 mt-1">Fill in the technical details for the training record.</p>
+            <p className="text-xs text-slate-500 mt-1">Điền thông tin chi tiết cho hồ sơ đào tạo.</p>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-full hover:bg-slate-100">
             <X className="w-5 h-5" />
@@ -98,29 +98,29 @@ export default function DocumentModal({ isOpen, onClose, userIdContext, initialD
         {/* Modal Content */}
         <form onSubmit={handleSubmit} className={styles.modalBody}>
           <div className="space-y-6">
-            
+
             {/* Dropzone Area */}
             <div className="relative group">
-              <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2">Source File</label>
-              
+              <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2">File nguồn</label>
+
               {/* Vùng Clickable để chọn File */}
-              <div 
+              <div
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 text-center hover:border-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer"
               >
                 <CloudUpload className="w-10 h-10 mx-auto text-slate-300 mb-3 group-hover:text-blue-500 transition-colors" />
                 <p className="text-sm font-bold text-slate-600">
                   {formData.fileName ? `${formData.fileName}${formData.fileExtension}` : (
-                    <>Drag & drop or <span className="text-blue-600 underline decoration-blue-600/30">click to browse</span></>
+                    <>Kéo thả hoặc <span className="text-blue-600 underline decoration-blue-600/30">nhấn để chọn file</span></>
                   )}
                 </p>
-                <p className="text-[11px] text-slate-400 mt-1">PDF, PNG, JPG (Max 10MB)</p>
+                <p className="text-[11px] text-slate-400 mt-1">PDF, PNG, JPG (Tối đa 10MB)</p>
               </div>
-              
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
                 accept=".pdf,.png,.jpg,.jpeg"
                 onChange={handleFileChange}
               />
@@ -128,46 +128,46 @@ export default function DocumentModal({ isOpen, onClose, userIdContext, initialD
 
             {/* Form Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               {/* Document Type */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">Document Type</label>
-                <select 
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">Loại tài liệu</label>
+                <select
                   className="w-full bg-slate-100 border-none rounded-lg text-sm px-4 py-3 font-medium focus:ring-2 focus:ring-blue-600 outline-none cursor-pointer"
                   value={formData.documentType}
-                  onChange={(e) => setFormData({...formData, documentType: e.target.value as DocumentType})}
+                  onChange={(e) => setFormData({ ...formData, documentType: e.target.value as DocumentType })}
                 >
-                  <option value="ID Card">ID Card</option>
-                  <option value="Driving License">Driving License</option>
-                  <option value="Certification">Certification</option>
-                  <option value="Medical Clearance">Medical Clearance</option>
-                  <option value="Other">Other</option>
+                  <option value="ID Card">CCCD/CMND</option>
+                  <option value="Driving License">Giấy phép lái xe</option>
+                  <option value="Certification">Chứng chỉ</option>
+                  <option value="Medical Clearance">Giấy khám sức khỏe</option>
+                  <option value="Other">Khác</option>
                 </select>
               </div>
 
               {/* File Name */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">File Name</label>
-                <input 
-                  type="text" 
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">Tên tài liệu</label>
+                <input
+                  type="text"
                   required
-                  className="w-full bg-slate-100 border-none rounded-lg text-sm px-4 py-3 font-medium focus:ring-2 focus:ring-blue-600 outline-none" 
-                  placeholder="e.g. Driver_License_2024"
+                  className="w-full bg-slate-100 border-none rounded-lg text-sm px-4 py-3 font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+                  placeholder="Ví dụ: Giay_KSK_2024"
                   value={formData.fileName}
-                  onChange={(e) => setFormData({...formData, fileName: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, fileName: e.target.value })}
                 />
               </div>
 
               {/* Technical Meta (Read-only) */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">File Metadata</label>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">Thông tin file</label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-slate-50 border border-slate-100 px-4 py-3 rounded-lg text-[12px] font-bold text-slate-600 flex justify-between">
-                    <span className="text-slate-400 font-normal">Size</span> 
+                    <span className="text-slate-400 font-normal">Kích thước</span>
                     {formatBytes(formData.fileSize)}
                   </div>
                   <div className="flex-1 bg-slate-50 border border-slate-100 px-4 py-3 rounded-lg text-[12px] font-bold text-slate-600 flex justify-between">
-                    <span className="text-slate-400 font-normal">Ext</span> 
+                    <span className="text-slate-400 font-normal">Định dạng</span>
                     {formData.fileExtension || '--'}
                   </div>
                 </div>
@@ -175,20 +175,20 @@ export default function DocumentModal({ isOpen, onClose, userIdContext, initialD
 
               {/* Verification Status */}
               <div className="space-y-2">
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">Verification Status</label>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest">Trạng thái xác thực</label>
                 <div className="flex items-center justify-between bg-slate-50 border border-slate-100 px-4 py-3 rounded-lg h-[46px]">
                   <div className="flex items-center gap-2">
                     <BadgeCheck className={`w-5 h-5 ${formData.isVerified ? 'text-emerald-500' : 'text-slate-300'}`} />
-                    <span className="text-[12px] font-bold text-slate-700">Mark as Verified</span>
+                    <span className="text-[12px] font-bold text-slate-700">Đánh dấu đã xác thực</span>
                   </div>
-                  
+
                   {/* Custom Toggle */}
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
                       checked={formData.isVerified}
-                      onChange={(e) => setFormData({...formData, isVerified: e.target.checked})}
+                      onChange={(e) => setFormData({ ...formData, isVerified: e.target.checked })}
                     />
                     <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
@@ -201,10 +201,10 @@ export default function DocumentModal({ isOpen, onClose, userIdContext, initialD
           {/* Modal Footer */}
           <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 -mx-8 -mb-8 mt-8">
             <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-200">
-              Cancel
+              Hủy bỏ
             </button>
             <button type="submit" className="px-8 py-2.5 bg-blue-600 text-white text-sm font-black rounded-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
-              Save Document
+              Lưu tài liệu
             </button>
           </div>
         </form>
