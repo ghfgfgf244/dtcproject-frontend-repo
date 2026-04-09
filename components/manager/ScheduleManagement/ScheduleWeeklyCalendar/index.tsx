@@ -62,13 +62,13 @@ function getCardClass(type: ScheduleEvent["eventType"]) {
 function getEventLabel(type: ScheduleEvent["eventType"]) {
   switch (type) {
     case "Theory":
-      return "Ly thuyet";
+      return "Lý thuyết";
     case "Practice":
-      return "Thuc hanh";
+      return "Thực hành";
     case "Simulator":
-      return "Mo phong";
+      return "Mô phỏng";
     case "Exam":
-      return "Sat hach";
+      return "Sát hạch";
     default:
       return type;
   }

@@ -13,7 +13,7 @@ interface Props {
   onSubmit: (data: QuestionFormData) => Promise<void> | void;
 }
 
-const CATEGORIES: QuestionCategory[] = ["Ly thuyet", "Bien bao", "Sa hinh"];
+const CATEGORIES: QuestionCategory[] = ["Lý thuyết", "Biển báo", "Sa hình"];
 
 function mapInitialData(question: ExamQuestion | null): QuestionFormData {
   const answer = (label: "A" | "B" | "C" | "D") =>
@@ -23,7 +23,7 @@ function mapInitialData(question: ExamQuestion | null): QuestionFormData {
   const correctAnswer = correctLabel === "A" ? 1 : correctLabel === "B" ? 2 : correctLabel === "C" ? 3 : 4;
 
   return {
-    category: question?.category || "Ly thuyet",
+    category: question?.category || "Lý thuyết",
     content: question?.content || "",
     answerA: answer("A"),
     answerB: answer("B"),
@@ -61,7 +61,7 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
 
   const uploadSelectedImage = async () => {
     if (!selectedImage) {
-      toast.error("Vui long chon hinh anh tu may tinh.");
+      toast.error("Vui lòng chọn hình ảnh từ máy tính.");
       return;
     }
 
@@ -73,10 +73,10 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
       });
       setField("imageLink", uploadedUrl);
       setSelectedImage(null);
-      toast.success("Da tai hinh anh len thanh cong.");
+      toast.success("Đã tải hình ảnh lên thành công.");
     } catch (error) {
       console.error("Failed to upload question image:", error);
-      toast.error("Khong the tai hinh anh len.");
+      toast.error("Không thể tải hình ảnh lên.");
     } finally {
       setUploadingImage(false);
     }
@@ -110,10 +110,10 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-black text-slate-900">
-                  {isEditing ? "Chinh sua cau hoi" : "Them cau hoi moi"}
+                  {isEditing ? "Chỉnh sửa câu hỏi" : "Thêm câu hỏi mới"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Nhap day du noi dung, dap an va nhom cau hoi de luu vao ngan hang de.
+                  Nhập đầy đủ nội dung, đáp án và nhóm câu hỏi để lưu vào ngân hàng đề.
                 </p>
               </div>
               <button
@@ -130,7 +130,7 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
             <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Nhom cau hoi</label>
+                  <label className="text-sm font-bold text-slate-700">Nhóm câu hỏi</label>
                   <select
                     value={form.category}
                     onChange={(event) => setField("category", event.target.value as QuestionCategory)}
@@ -145,22 +145,22 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Dap an dung</label>
+                  <label className="text-sm font-bold text-slate-700">Đáp án đúng</label>
                   <select
                     value={form.correctAnswer}
                     onChange={(event) => setField("correctAnswer", Number(event.target.value) as QuestionFormData["correctAnswer"])}
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value={1}>1 - Dap an A</option>
-                    <option value={2}>2 - Dap an B</option>
-                    <option value={3}>3 - Dap an C</option>
-                    <option value={4}>4 - Dap an D</option>
+                    <option value={1}>1 - Đáp án A</option>
+                    <option value={2}>2 - Đáp án B</option>
+                    <option value={3}>3 - Đáp án C</option>
+                    <option value={4}>4 - Đáp án D</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">Noi dung cau hoi</label>
+                <label className="text-sm font-bold text-slate-700">Nội dung câu hỏi</label>
                 <textarea
                   value={form.content}
                   onChange={(event) => setField("content", event.target.value)}
@@ -172,19 +172,19 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Dap an A</label>
+                  <label className="text-sm font-bold text-slate-700">Đáp án A</label>
                   <input value={form.answerA || ""} onChange={(event) => setField("answerA", event.target.value)} required={form.correctAnswer === 1} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Dap an B</label>
+                  <label className="text-sm font-bold text-slate-700">Đáp án B</label>
                   <input value={form.answerB || ""} onChange={(event) => setField("answerB", event.target.value)} required={form.correctAnswer === 2} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Dap an C</label>
+                  <label className="text-sm font-bold text-slate-700">Đáp án C</label>
                   <input value={form.answerC || ""} onChange={(event) => setField("answerC", event.target.value)} required={form.correctAnswer === 3} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Dap an D</label>
+                  <label className="text-sm font-bold text-slate-700">Đáp án D</label>
                   <input value={form.answerD || ""} onChange={(event) => setField("answerD", event.target.value)} required={form.correctAnswer === 4} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                 </div>
               </div>
@@ -192,19 +192,19 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Hinh anh cau hoi</label>
+                    <label className="text-sm font-bold text-slate-700">Hình ảnh câu hỏi</label>
                     <input
                       value={form.imageLink || ""}
                       onChange={(event) => setField("imageLink", event.target.value)}
                       className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                      placeholder="Dan link hinh anh hoac tai file tu may tinh"
+                      placeholder="Dán link hình ảnh hoặc tải file từ máy tính"
                     />
                   </div>
 
                   <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-5 text-center transition hover:bg-blue-50">
                     <ImagePlus className="mx-auto mb-2 h-8 w-8 text-blue-600" />
-                    <p className="text-sm font-bold text-blue-700">Chon hinh anh local</p>
-                    <p className="mt-1 text-xs text-slate-500">Ho tro JPG, PNG, WEBP. File se duoc tai len Cloudinary.</p>
+                    <p className="text-sm font-bold text-blue-700">Chọn hình ảnh local</p>
+                    <p className="mt-1 text-xs text-slate-500">Hỗ trợ JPG, PNG, WEBP. File sẽ được tải lên Cloudinary.</p>
                     <input
                       type="file"
                       accept=".jpg,.jpeg,.png,.webp"
@@ -214,7 +214,7 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
                   </label>
 
                   <div className="flex flex-wrap items-center gap-3">
-                    {selectedImage && <span className="text-xs font-medium text-slate-600">Da chon: {selectedImage.name}</span>}
+                    {selectedImage && <span className="text-xs font-medium text-slate-600">Đã chọn: {selectedImage.name}</span>}
                     <button
                       type="button"
                       onClick={uploadSelectedImage}
@@ -222,7 +222,7 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
                       className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-4 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      Tai hinh len ngay
+                      Tải hình lên ngay
                     </button>
                     {form.imageLink && (
                       <button
@@ -230,14 +230,14 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
                         onClick={() => setField("imageLink", "")}
                         className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
                       >
-                        Xoa link anh
+                        Xóa link ảnh
                       </button>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-sm font-bold text-slate-700">Giai thich</label>
+                  <label className="text-sm font-bold text-slate-700">Giải thích</label>
                   <textarea
                     value={form.explanation || ""}
                     onChange={(event) => setField("explanation", event.target.value)}
@@ -246,12 +246,12 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
                   />
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Xem truoc hinh anh</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Xem trước hình ảnh</p>
                     {imagePreview ? (
                       <img src={imagePreview} alt="Preview question" className="h-44 w-full rounded-xl object-contain bg-white" />
                     ) : (
                       <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm text-slate-400">
-                        Chua co hinh anh
+                        Chưa có hình ảnh
                       </div>
                     )}
                   </div>
@@ -266,7 +266,7 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
                   onClick={onClose}
                   className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
                 >
-                  Huy
+                  Hủy
                 </button>
                 <button
                   type="submit"
@@ -274,7 +274,7 @@ export default function MockExamQuestionModal({ isOpen, onClose, initialData, on
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {submitting ? "Dang luu..." : isEditing ? "Cap nhat cau hoi" : "Luu cau hoi"}
+                  {submitting ? "Đang lưu..." : isEditing ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
                 </button>
               </div>
             </div>

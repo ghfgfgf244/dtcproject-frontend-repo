@@ -77,7 +77,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
       let finalUrl = url.trim();
       if (uploadMode === "file") {
         if (!selectedFile) {
-          toast.error("Vui long chon tep tai nguyen tu may tinh.");
+          toast.error("Vui lòng chọn tệp tài nguyên từ máy tính.");
           return;
         }
 
@@ -88,7 +88,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
       }
 
       if (!finalUrl) {
-        toast.error("Vui long nhap hoac tai len tep tai nguyen.");
+        toast.error("Vui lòng nhập hoặc tải lên tệp tài nguyên.");
         return;
       }
 
@@ -113,9 +113,9 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black tracking-tight text-slate-900">
-                  {initialData ? "Cap nhat tai nguyen" : "Them moi tai nguyen"}
+                  {initialData ? "Cập nhật tài nguyên" : "Thêm mới tài nguyên"}
                 </h2>
-                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-600">Quan ly tai nguyen hoc tap</p>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-600">Quản lý tài nguyên học tập</p>
               </div>
               <button
                 type="button"
@@ -130,7 +130,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-8">
               <div>
-                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Khoa hoc lien ket</label>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Khóa học liên kết</label>
                 <div className="relative">
                   <select
                     required
@@ -139,7 +139,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
                     className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:ring-2 focus:ring-blue-600"
                   >
                     <option value="" disabled>
-                      -- Chon khoa hoc --
+                      -- Chọn khóa học --
                     </option>
                     {courses.map((course) => (
                       <option key={course.id} value={course.id}>
@@ -152,20 +152,20 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
               </div>
 
               <div>
-                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Tieu de tai nguyen</label>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Tiêu đề tài nguyên</label>
                 <input
                   required
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Nhap ten tai nguyen hoc tap..."
+                  placeholder="Nhập tên tài nguyên học tập..."
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:ring-2 focus:ring-blue-600"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Loai tai nguyen</label>
+                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Loại tài nguyên</label>
                   <div className="relative">
                     <select
                       required
@@ -175,15 +175,15 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
                     >
                       <option value="Video">Video</option>
                       <option value="Pdf">PDF</option>
-                      <option value="Link">Lien ket</option>
+                      <option value="Link">Liên kết</option>
                       <option value="Slide">Slide</option>
-                      <option value="Image">Hinh anh</option>
+                      <option value="Image">Hình ảnh</option>
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Ngay tai len</label>
+                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Ngày tải lên</label>
                   <input
                     disabled
                     type="text"
@@ -194,7 +194,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
               </div>
 
               <div className="space-y-4">
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Duong dan / tep tin</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Đường dẫn / tệp tin</label>
 
                 <div className="flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 p-1">
                   <button
@@ -202,14 +202,14 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
                     onClick={() => setUploadMode("url")}
                     className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${uploadMode === "url" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                   >
-                    Dan URL
+                    Dán URL
                   </button>
                   <button
                     type="button"
                     onClick={() => setUploadMode("file")}
                     className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${uploadMode === "file" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                   >
-                    Tai tep len
+                    Tải tệp lên
                   </button>
                 </div>
 
@@ -228,8 +228,8 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
                 ) : (
                   <label className="block cursor-pointer rounded-xl border-2 border-dashed border-blue-300 bg-slate-50 p-8 text-center transition-colors hover:bg-blue-50/50">
                     <CloudUpload className="mx-auto mb-3 h-10 w-10 text-blue-500" />
-                    <p className="text-sm font-bold text-blue-700">Keo tha tep vao day hoac bam de chon</p>
-                    <p className="mt-1 text-xs text-slate-400">Ho tro PDF, MP4, DOCX, PPTX, JPG, PNG</p>
+                    <p className="text-sm font-bold text-blue-700">Kéo thả tệp vào đây hoặc bấm để chọn</p>
+                    <p className="mt-1 text-xs text-slate-400">Hỗ trợ PDF, MP4, DOCX, PPTX, JPG, PNG</p>
                     <input
                       type="file"
                       className="hidden"
@@ -237,7 +237,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
                       onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                     />
                     {selectedFile && (
-                      <p className="mt-3 text-xs font-semibold text-slate-600">Da chon: {selectedFile.name}</p>
+                      <p className="mt-3 text-xs font-semibold text-slate-600">Đã chọn: {selectedFile.name}</p>
                     )}
                   </label>
                 )}
@@ -251,7 +251,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
                   onClick={onClose}
                   className="rounded-lg border border-slate-200 px-6 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200 active:scale-95"
                 >
-                  Huy bo
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
@@ -259,7 +259,7 @@ export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, 
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {submitting ? "Dang luu..." : "Luu tai nguyen"}
+                  {submitting ? "Đang lưu..." : "Lưu tài nguyên"}
                 </button>
               </div>
             </div>

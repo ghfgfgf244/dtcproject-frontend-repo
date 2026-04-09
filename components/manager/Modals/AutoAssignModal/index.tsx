@@ -44,7 +44,7 @@ export default function AutoAssignModal({ isOpen, onClose, terms, onConfirm }: P
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
               <Sparkles className="h-4 w-4" />
             </div>
-            <h3 className="text-base font-black text-slate-900">Xep lop tu dong</h3>
+            <h3 className="text-base font-black text-slate-900">Xếp lớp tự động</h3>
           </div>
           <button
             onClick={onClose}
@@ -57,18 +57,18 @@ export default function AutoAssignModal({ isOpen, onClose, terms, onConfirm }: P
 
         <div className="space-y-5 p-6">
           <p className="text-sm leading-relaxed text-slate-600">
-            He thong se lay hoc vien da duoc duyet trong ky hoc da chon, chia lop theo suc chua trung tam va tu dong them hoc vien vao tung lop.
+            Hệ thống sẽ lấy học viên đã được duyệt trong kỳ học đã chọn, chia lớp theo sức chứa trung tâm và tự động thêm học viên vào từng lớp.
           </p>
 
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wide text-slate-700">Ky hoc</label>
+            <label className="block text-xs font-bold uppercase tracking-wide text-slate-700">Kỳ học</label>
             <select
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:ring-2 focus:ring-blue-600"
               value={selectedTerm}
               onChange={(event) => setSelectedTerm(event.target.value)}
               disabled={isLoading}
             >
-              <option value="">Chon ky hoc</option>
+              <option value="">Chọn kỳ học</option>
               {activeTerms.map((term) => (
                 <option key={term.id} value={term.id}>
                   {term.name} - {term.courseName}
@@ -78,15 +78,15 @@ export default function AutoAssignModal({ isOpen, onClose, terms, onConfirm }: P
           </div>
 
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wide text-slate-700">Loai lop hoc</label>
+            <label className="block text-xs font-bold uppercase tracking-wide text-slate-700">Loại lớp học</label>
             <select
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:ring-2 focus:ring-blue-600"
               value={classType}
               onChange={(event) => setClassType(event.target.value as ClassType)}
               disabled={isLoading}
             >
-              <option value="Theory">Ly thuyet</option>
-              <option value="Practice">Thuc hanh</option>
+              <option value="Theory">Lý thuyết</option>
+              <option value="Practice">Thực hành</option>
             </select>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function AutoAssignModal({ isOpen, onClose, terms, onConfirm }: P
             disabled={isLoading}
             className="rounded-xl px-5 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-50"
           >
-            Huy bo
+            Hủy bỏ
           </button>
           <button
             onClick={handleRun}
@@ -106,11 +106,11 @@ export default function AutoAssignModal({ isOpen, onClose, terms, onConfirm }: P
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Dang xu ly
+                <Loader2 className="h-4 w-4 animate-spin" /> Đang xử lý
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4" /> Chay xep lop
+                <Sparkles className="h-4 w-4" /> Chạy xếp lớp
               </>
             )}
           </button>

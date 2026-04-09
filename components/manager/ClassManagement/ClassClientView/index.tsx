@@ -42,13 +42,13 @@ function mapClassRecord(dto: ClassDto): ClassRecord {
     id: dto.id,
     code: dto.classType === "Practice" ? "TH" : "LT",
     name: dto.className,
-    courseName: dto.courseName || "Chua ro khoa hoc",
-    termName: dto.termName || "Chua ro ky hoc",
+    courseName: dto.courseName || "Chưa rõ khóa học",
+    termName: dto.termName || "Chưa rõ kỳ học",
     classType: dto.classType,
     status: dto.status,
     currentStudents: dto.currentStudents,
     maxStudents: dto.maxStudents,
-    instructorName: dto.instructorName || "Chua phan cong",
+    instructorName: dto.instructorName || "Chưa phân công",
     startDate: formatDate(dto.termStartDate),
     endDate: formatDate(dto.termEndDate),
     theme: mapTheme(dto.classType),
@@ -86,8 +86,8 @@ export default function ClassClientView() {
   const [classToDelete, setClassToDelete] = useState<ClassRecord | null>(null);
 
   const breadcrumbsItems = [
-    { label: "Trang chu", href: "/training-manager/dashboard" },
-    { label: "Lop hoc", href: "/training-manager/classes" },
+    { label: "Trang chủ", href: "/training-manager/dashboard" },
+    { label: "Lớp học", href: "/training-manager/classes" },
   ];
 
   const ensureAuthToken = async () => {
@@ -115,7 +115,7 @@ export default function ClassClientView() {
       setInstructors(instructorData);
       setAddresses(addressData);
     } catch (error) {
-      toast.error("Khong the tai du lieu lop hoc");
+      toast.error("Không thể tải dữ liệu lớp học");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -152,7 +152,7 @@ export default function ClassClientView() {
     if (data.id) {
       await classService.updateClass(data.id, payload);
       await classService.assignTeacher(data.id, data.instructorId);
-      toast.success("Da cap nhat lop hoc");
+      toast.success("Đã cập nhật lớp học");
     } else {
       const created = await classService.createClass(payload);
       if (data.schedules.length > 0) {
@@ -166,7 +166,7 @@ export default function ClassClientView() {
           }))
         );
       }
-      toast.success("Da tao lop hoc");
+      toast.success("Đã tạo lớp học");
     }
 
     setIsModalOpen(false);
@@ -180,7 +180,7 @@ export default function ClassClientView() {
       termId: payload.termId,
       classType: classTypeMap[payload.classType],
     });
-    toast.success(response.message || "Da xep lop tu dong");
+    toast.success(response.message || "Đã xếp lớp tự động");
     setIsAutoAssignModalOpen(false);
     await fetchData();
   };
@@ -189,7 +189,7 @@ export default function ClassClientView() {
     if (!classToDelete) return;
     await ensureAuthToken();
     await classService.deleteClass(classToDelete.id);
-    toast.success("Da xoa lop hoc");
+    toast.success("Đã xóa lớp học");
     setClassToDelete(null);
     await fetchData();
   };
@@ -199,7 +199,7 @@ export default function ClassClientView() {
       <div className="h-[400px] flex items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          <span>Dang tai danh sach lop hoc...</span>
+          <span>Đang tải danh sách lớp học...</span>
         </div>
       </div>
     );
@@ -212,8 +212,8 @@ export default function ClassClientView() {
           <div className="mb-2">
             <Breadcrumbs items={breadcrumbsItems} />
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">Quan ly lop hoc</h2>
-          <p className="text-slate-500 mt-1">Danh sach lop hoc duoc xep theo term va khoa hoc.</p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900">Quản lý lớp học</h2>
+          <p className="text-slate-500 mt-1">Danh sách lớp học được xếp theo term và khóa học.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -221,7 +221,7 @@ export default function ClassClientView() {
             onClick={handleRefresh}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> Lam moi
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> Làm mới
           </button>
           <button
             onClick={() => {
@@ -230,13 +230,13 @@ export default function ClassClientView() {
             }}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2"
           >
-            <Plus className="w-5 h-5" /> Them lop thu cong
+            <Plus className="w-5 h-5" /> Thêm lớp thủ công
           </button>
           <button
             onClick={() => setIsAutoAssignModalOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/20 flex items-center gap-2"
           >
-            <Sparkles className="w-5 h-5" /> Xep lop tu dong
+            <Sparkles className="w-5 h-5" /> Xếp lớp tự động
           </button>
         </div>
       </div>
@@ -245,7 +245,7 @@ export default function ClassClientView() {
         <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-2xl text-white shadow-xl shadow-blue-600/10">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-blue-100 text-sm font-medium">Tong so lop hoc</p>
+              <p className="text-blue-100 text-sm font-medium">Tổng số lớp học</p>
               <h3 className="text-3xl font-bold mt-1">{classes.length}</h3>
             </div>
             <div className="bg-white/20 p-2.5 rounded-lg">
@@ -256,7 +256,7 @@ export default function ClassClientView() {
         <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-slate-500 text-sm font-medium">Cho khai giang</p>
+              <p className="text-slate-500 text-sm font-medium">Chờ khai giảng</p>
               <h3 className="text-3xl font-bold mt-1 text-slate-900">
                 {classes.filter((item) => item.status === "Pending").length}
               </h3>
@@ -269,7 +269,7 @@ export default function ClassClientView() {
         <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-slate-500 text-sm font-medium">Dang hoat dong</p>
+              <p className="text-slate-500 text-sm font-medium">Đang hoạt động</p>
               <h3 className="text-3xl font-bold mt-1 text-slate-900">
                 {classes.filter((item) => item.status === "InProgress").length}
               </h3>
@@ -321,8 +321,8 @@ export default function ClassClientView() {
         isOpen={Boolean(classToDelete)}
         onCancel={() => setClassToDelete(null)}
         onConfirm={handleConfirmDelete}
-        title="Xac nhan xoa lop hoc"
-        message={`Ban co chac muon xoa lop "${classToDelete?.name ?? ""}"?`}
+        title="Xác nhận xóa lớp học"
+        message={`Bạn có chắc muốn xóa lớp "${classToDelete?.name ?? ""}"?`}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-export type QuestionCategory = "Ly thuyet" | "Bien bao" | "Sa hinh";
+export type QuestionCategory = "Lý thuyết" | "Biển báo" | "Sa hình";
 export type AnswerLabel = "A" | "B" | "C" | "D";
 
 export interface ExamAnswer {

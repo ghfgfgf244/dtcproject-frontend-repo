@@ -159,7 +159,7 @@ export default function ScheduleModal({
         setError(preview.warnings.join(" "));
       }
     } catch (importError: any) {
-      setError(importError?.response?.data?.message || "Khong the nhap file lich hoc.");
+      setError(importError?.response?.data?.message || "Không thể nhập file lịch học.");
       setImportedSchedules([]);
     } finally {
       setIsImporting(false);
@@ -175,9 +175,9 @@ export default function ScheduleModal({
         <div className="shrink-0 flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-5 md:px-8 md:py-6">
           <div>
             <h3 className="text-lg font-black tracking-tight text-slate-900">
-              {initialData ? "Cap nhat lich hoc" : "Tao lich hoc moi"}
+              {initialData ? "Cập nhật lịch học" : "Tạo lịch học mới"}
             </h3>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">Thiet lap lop hoc, giang vien va dia diem hoc</p>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">Thiết lập lớp học, giảng viên và địa điểm học</p>
           </div>
           <button
             onClick={onClose}
@@ -197,12 +197,12 @@ export default function ScheduleModal({
                   className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100"
                 >
                   <Download className="h-4 w-4" />
-                  Tai file Excel mau
+                  Tải file Excel mẫu
                 </button>
 
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100">
                   <Upload className="h-4 w-4" />
-                  {isImporting ? "Dang nhap file..." : "Nhap lich tu Excel"}
+                  {isImporting ? "Đang nhập file..." : "Nhập lịch từ Excel"}
                   <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={isImporting} />
                 </label>
               </div>
@@ -210,7 +210,7 @@ export default function ScheduleModal({
 
             {!fixedClassId && (
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Chon lop hoc</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Chọn lớp học</label>
                 <div className="relative">
                   <select
                     required
@@ -219,7 +219,7 @@ export default function ScheduleModal({
                     className="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-600"
                   >
                     <option value="" disabled>
-                      -- Chon lop hoc --
+                      -- Chọn lớp học --
                     </option>
                     {classes.map((classOption) => (
                       <option key={classOption.id} value={classOption.id}>
@@ -233,7 +233,7 @@ export default function ScheduleModal({
             )}
 
             <div className="space-y-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Chon giang vien</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Chọn giảng viên</label>
               <div className="relative">
                 <select
                   required
@@ -242,7 +242,7 @@ export default function ScheduleModal({
                   className="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="" disabled>
-                    -- Chon giang vien --
+                    -- Chọn giảng viên --
                   </option>
                   {instructors.map((instructor) => (
                     <option key={instructor.id} value={instructor.id}>
@@ -255,7 +255,7 @@ export default function ScheduleModal({
             </div>
 
             <div className="space-y-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Chon dia diem</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Chọn địa điểm</label>
               <div className="relative">
                 <select
                   required
@@ -264,7 +264,7 @@ export default function ScheduleModal({
                   className="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="" disabled>
-                    -- Chon dia diem --
+                    -- Chọn địa điểm --
                   </option>
                   {addresses.map((address) => (
                     <option key={address.id} value={address.id}>
@@ -278,7 +278,7 @@ export default function ScheduleModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Bat dau</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Bắt đầu</label>
                 <input
                   required
                   type="datetime-local"
@@ -288,7 +288,7 @@ export default function ScheduleModal({
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Ket thuc</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Kết thúc</label>
                 <input
                   required
                   type="datetime-local"
@@ -302,13 +302,13 @@ export default function ScheduleModal({
             <div className="flex gap-3 rounded-lg border border-blue-100 bg-blue-50 p-4">
               <Info className="h-5 w-5 shrink-0 text-blue-600" />
               <p className="text-[11px] font-medium leading-relaxed text-blue-800">
-                He thong se kiem tra xung dot lich hoc cua giang vien va dia diem truoc khi luu.
+                Hệ thống sẽ kiểm tra xung đột lịch học của giảng viên và địa điểm trước khi lưu.
               </p>
             </div>
 
             {importedSchedules.length > 0 && !initialData && (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                Da doc {importedSchedules.length} dong lich hoc tu file. Khi bam luu, he thong se tao toan bo cac dong nay cho lop da chon.
+                Đã đọc {importedSchedules.length} dòng lịch học từ file. Khi bấm lưu, hệ thống sẽ tạo toàn bộ các dòng này cho lớp đã chọn.
               </div>
             )}
 
@@ -321,13 +321,13 @@ export default function ScheduleModal({
               onClick={onClose}
               className="rounded-lg border border-slate-200 px-6 py-2.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
             >
-              Huy bo
+              Hủy bỏ
             </button>
             <button
               type="submit"
               className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95"
             >
-              Luu lich hoc
+              Lưu lịch học
             </button>
           </div>
         </form>
