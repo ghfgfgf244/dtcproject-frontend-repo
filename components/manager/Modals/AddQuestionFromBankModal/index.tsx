@@ -1,186 +1,149 @@
-// src/app/(manager)/training-manager/mock-exams/[id]/_components/Modals/AddQuestionFromBankModal/index.tsx
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { X, Search, ChevronDown, Upload, Info } from 'lucide-react';
-import { QuestionBankItem } from '@/types/mock-exam-detail';
+import { useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
+import { QuestionBankItem } from "@/types/mock-exam-detail";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onAddSelected: (selectedQuestions: QuestionBankItem[]) => void;
+  onAddSelected: (selectedQuestions: QuestionBankItem[]) => Promise<void> | void;
   bankQuestions: QuestionBankItem[];
+  excludedQuestionIds?: number[];
 }
 
-export default function AddQuestionFromBankModal({ isOpen, onClose, onAddSelected, bankQuestions }: Props) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [filterDifficulty, setFilterDifficulty] = useState('Tất cả cấp độ');
-  const [filterCategory, setFilterCategory] = useState('Tất cả loại hình');
+export default function AddQuestionFromBankModal({
+  isOpen,
+  onClose,
+  onAddSelected,
+  bankQuestions,
+  excludedQuestionIds = [],
+}: Props) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [category, setCategory] = useState("Tat ca");
 
-  // Logic lọc câu hỏi trong ngân hàng
-  const filteredBank = useMemo(() => {
-    return bankQuestions.filter((q) => {
-      // 1. Lọc theo từ khóa (Tìm trong nội dung câu hỏi hoặc ID)
-      const matchesSearch = searchQuery === '' || 
-        q.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        q.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredQuestions = useMemo(() => {
+    return bankQuestions.filter((question) => {
+      if (excludedQuestionIds.includes(question.id)) return false;
 
-      // 2. Lọc theo độ khó
-      const matchesDifficulty = filterDifficulty === 'Tất cả cấp độ' || 
-        q.difficulty === filterDifficulty;
+      const matchesKeyword =
+        searchQuery.trim().length === 0 ||
+        question.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(question.id).includes(searchQuery.trim());
 
-      // 3. Lọc theo loại hình (Category)
-      const matchesCategory = filterCategory === 'Tất cả loại hình' || 
-        q.category === filterCategory;
+      const matchesCategory = category === "Tat ca" || question.category === category;
 
-      return matchesSearch && matchesDifficulty && matchesCategory;
+      return matchesKeyword && matchesCategory;
     });
-  }, [bankQuestions, searchQuery, filterDifficulty, filterCategory]);
+  }, [bankQuestions, category, excludedQuestionIds, searchQuery]);
 
   if (!isOpen) return null;
 
-  // Xử lý chọn/bỏ chọn
-  const toggleSelect = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedIds(newSet);
+  const toggleQuestion = (id: number) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
-  const handleAdd = () => {
-    const selectedItems = bankQuestions.filter(q => selectedIds.has(q.id));
-    onAddSelected(selectedItems);
-    setSelectedIds(new Set()); // Reset sau khi thêm
+  const handleAdd = async () => {
+    const selected = filteredQuestions.filter((question) => selectedIds.includes(question.id));
+    await onAddSelected(selected);
+    setSelectedIds([]);
+    setSearchQuery("");
+    setCategory("Tat ca");
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl rounded-xl overflow-hidden border border-slate-200">
-        
-        {/* HEADER */}
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
           <div>
-            <h2 className="text-xl font-black text-slate-900 leading-none">Thêm Câu Hỏi Từ Ngân Hàng</h2>
-            <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-bold">Chọn câu hỏi để thêm vào đề thi thử</p>
+            <h2 className="text-xl font-black text-slate-900">Chọn câu hỏi từ ngân hàng</h2>
+            <p className="mt-1 text-sm text-slate-500">Chọn một hoặc nhiều câu hỏi để thêm vào đề thi thử.</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
-            <X className="w-5 h-5" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* TOOLBAR */}
-        <div className="p-4 bg-slate-50 border-b border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-4 shrink-0">
-          <div className="md:col-span-6 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input 
-              type="text"
-              placeholder="Tìm kiếm câu hỏi theo từ khóa..."
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 focus:ring-2 focus:ring-blue-600 rounded-lg text-sm outline-none"
+        <div className="grid grid-cols-1 gap-4 border-b border-slate-100 bg-slate-50 px-6 py-4 md:grid-cols-[1fr_220px]">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Tìm theo ID hoặc nội dung câu hỏi"
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
-          <div className="md:col-span-3">
-            <select 
-              className="w-full py-2 border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-blue-600 rounded-lg outline-none px-3 cursor-pointer font-medium"
-              value={filterDifficulty}
-              onChange={(e) => setFilterDifficulty(e.target.value)}
-            >
-              <option value="Tất cả cấp độ">Tất cả cấp độ</option>
-              <option value="Cơ bản">Cơ bản</option>
-              <option value="Trung bình">Trung bình</option>
-              <option value="Nâng cao">Nâng cao</option>
-            </select>
-          </div>
 
-          <div className="md:col-span-3">
-            <select 
-              className="w-full py-2 border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-blue-600 rounded-lg outline-none px-3 cursor-pointer font-medium"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-            >
-              <option value="Tất cả loại hình">Tất cả loại hình</option>
-              <option value="Lý thuyết">Câu hỏi lý thuyết</option>
-              <option value="Biển báo">Câu hỏi biển báo</option>
-              <option value="Sa hình">Câu hỏi sa hình</option>
-            </select>
-          </div>
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="Tat ca">Tat ca nhom</option>
+            <option value="Ly thuyet">Ly thuyet</option>
+            <option value="Bien bao">Bien bao</option>
+            <option value="Sa hinh">Sa hinh</option>
+          </select>
         </div>
 
-        {/* CONTENT LIST */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 space-y-4 custom-scrollbar">
-          {filteredBank.map((q) => (
-            <div 
-              key={q.id}
-              onClick={() => toggleSelect(q.id)}
-              className={`bg-white p-4 border rounded-xl transition-all flex gap-4 cursor-pointer group hover:shadow-md ${
-                selectedIds.has(q.id) ? 'border-blue-600 ring-1 ring-blue-600' : 'border-slate-200'
+        <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-6 py-5">
+          {filteredQuestions.map((question) => (
+            <button
+              key={question.id}
+              type="button"
+              onClick={() => toggleQuestion(question.id)}
+              className={`w-full rounded-2xl border p-4 text-left transition ${
+                selectedIds.includes(question.id)
+                  ? "border-blue-600 bg-blue-50 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"
               }`}
             >
-              <div className="pt-1">
-                <input 
-                  type="checkbox" 
-                  checked={selectedIds.has(q.id)}
-                  onChange={() => {}} // Handle by parent div click
-                  className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer pointer-events-none"
-                />
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                  Câu #{question.id}
+                </span>
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                  {question.category}
+                </span>
               </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${
-                    q.difficulty === 'Cơ bản' ? 'bg-emerald-50 text-emerald-600' : 
-                    q.difficulty === 'Trung bình' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
-                  }`}>
-                    ID: {q.id} • {q.difficulty}
-                  </span>
-                  <span className="text-[10px] font-medium text-slate-400">{q.updatedAt}</span>
-                </div>
-                
-                <div className="flex flex-col md:flex-row gap-4">
-                   <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-800 mb-3 leading-relaxed">{q.content}</p>
-                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        {q.answers.map(ans => (
-                          <div 
-                            key={ans.id} 
-                            className={`text-xs p-2 rounded border ${ans.isCorrect ? 'bg-blue-50 border-blue-100 text-blue-700 font-medium' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
-                          >
-                            {ans.label}. {ans.content} {ans.isCorrect && '(Đúng)'}
-                          </div>
-                        ))}
-                      </div>
-                   </div>
-                   {q.imageUrl && (
-                     <div className="w-24 h-20 bg-slate-100 rounded border border-slate-200 shrink-0 overflow-hidden">
-                        <img src={q.imageUrl} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                     </div>
-                   )}
-                </div>
-              </div>
-            </div>
+              <p className="text-sm font-semibold text-slate-900">{question.content}</p>
+            </button>
           ))}
+
+          {filteredQuestions.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
+              Không có câu hỏi phù hợp với bộ lọc hiện tại.
+            </div>
+          )}
         </div>
 
-        {/* FOOTER */}
-        <div className="p-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white shrink-0">
-          <div className="text-sm text-slate-600 font-medium">
-            Đã chọn <span className="font-black text-blue-600 text-lg">{selectedIds.size}</span> câu hỏi
-          </div>
-          <div className="flex gap-3 w-full md:w-auto">
-            <button 
+        <div className="flex items-center justify-between gap-4 border-t border-slate-100 px-6 py-4">
+          <p className="text-sm text-slate-500">
+            Đã chọn <strong className="text-slate-900">{selectedIds.length}</strong> câu hỏi
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
               onClick={onClose}
-              className="flex-1 md:flex-none px-6 py-2.5 text-sm font-bold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors active:scale-95"
+              className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
             >
               Đóng
             </button>
-            <button 
+            <button
+              type="button"
               onClick={handleAdd}
-              disabled={selectedIds.size === 0}
-              className="flex-1 md:flex-none px-8 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={selectedIds.length === 0}
+              className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Upload className="w-4 h-4" /> Thêm vào Đề thi
+              Thêm vào đề thi
             </button>
           </div>
         </div>

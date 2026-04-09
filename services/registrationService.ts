@@ -4,10 +4,10 @@ import {
   CourseRegistrationStatusValue,
   ExamRegistrationStatus,
   RegistrationRecord,
-  RegistrationResponse
+  RegistrationResponse,
+  TermRegistrationCandidate,
 } from "@/types/registration";
 
-// Define the standard unified API response structure
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -15,67 +15,168 @@ interface ApiResponse<T> {
   errors: string[];
 }
 
-/**
- * Maps the backend DTO to the frontend UI model.
- * Note: Some UI fields are derived as they don't exist in the simple backend DTO.
- */
+const avatarColors = [
+  "bg-blue-100 text-blue-700",
+  "bg-purple-100 text-purple-700",
+  "bg-slate-200 text-slate-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-amber-100 text-amber-700",
+];
+
+const getStatusLabel = (status: number): RegistrationRecord["approvalStatus"] => {
+  switch (status) {
+    case ExamRegistrationStatus.Approved:
+      return "Đã duyệt";
+    case ExamRegistrationStatus.Rejected:
+      return "Từ chối";
+    case ExamRegistrationStatus.Cancelled:
+      return "Đã hủy";
+    default:
+      return "Chờ duyệt";
+  }
+};
+
+const getCourseStatusValue = (
+  status: number | string | undefined,
+): CourseRegistrationStatus => {
+  if (status === CourseRegistrationStatusValue.Approved || status === "Approved") {
+    return "Approved";
+  }
+  if (status === CourseRegistrationStatusValue.Rejected || status === "Rejected") {
+    return "Rejected";
+  }
+  if (status === CourseRegistrationStatusValue.Cancelled || status === "Cancelled") {
+    return "Cancelled";
+  }
+  return "Pending";
+};
+
+const getCourseApprovalLabel = (
+  status: CourseRegistrationStatus,
+): RegistrationRecord["approvalStatus"] => {
+  switch (status) {
+    case "Approved":
+      return "Đã duyệt";
+    case "Rejected":
+      return "Từ chối";
+    case "Cancelled":
+      return "Đã hủy";
+    default:
+      return "Chờ duyệt";
+  }
+};
+
 const mapToRegistrationRecord = (dto: any): RegistrationRecord => {
-  const avatarColors = [
-    'bg-blue-100 text-blue-700',
-    'bg-purple-100 text-purple-700',
-    'bg-slate-200 text-slate-700',
-    'bg-emerald-100 text-emerald-700',
-    'bg-amber-100 text-amber-700',
-  ];
-  
-  // Use id hash to pick a stable color/initials for the UI if not provided
-  const idHash = dto.id.split('-')[0].length;
-  const initials = dto.studentName ? dto.studentName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '??';
+  const initials = dto.studentName
+    ? dto.studentName
+        .split(" ")
+        .map((word: string) => word[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "HV";
+
+  const colorIndex = `${dto.id ?? dto.studentId ?? ""}`.length % avatarColors.length;
+  const attendanceRate = Number(dto.attendanceRate ?? 0);
 
   return {
     id: dto.id,
-    studentName: dto.studentName,
-    studentId: (dto.userId || dto.id || "").slice(0, 8), // Use userId or fallback to id
+    examBatchId: dto.examBatchId,
+    examBatch: dto.batchName ?? "Đợt thi chưa xác định",
+    studentId: dto.studentId,
+    studentName: dto.studentName ?? "Học viên",
+    email: dto.email ?? "",
+    phone: dto.phone ?? "",
     avatarInitials: initials,
-    avatarColor: avatarColors[idHash % avatarColors.length],
+    avatarColor: avatarColors[colorIndex],
+    registrationDate: dto.registrationDate
+      ? new Date(dto.registrationDate).toLocaleDateString("vi-VN")
+      : "",
+    paymentStatus: dto.isPaid ? "Đã nộp lệ phí" : "Chưa nộp lệ phí",
+    isPaid: Boolean(dto.isPaid),
+    attendanceRate,
+    totalSessions: Number(dto.totalSessions ?? 0),
+    presentCount: Number(dto.presentCount ?? 0),
+    approvalStatus: getStatusLabel(Number(dto.status)),
+    status: Number(dto.status) as ExamRegistrationStatus,
+    termId: dto.termId ?? undefined,
+    termName: dto.termName ?? undefined,
+    courseName: dto.courseName ?? undefined,
+    licenseType: dto.licenseTypeLabel ?? undefined,
+    isEligibleForApproval: Boolean(dto.isEligibleForApproval),
+  };
+};
+
+const mapToCandidate = (dto: any): TermRegistrationCandidate => ({
+  studentId: dto.studentId,
+  studentName: dto.studentName ?? "Học viên",
+  email: dto.email ?? "",
+  phone: dto.phone ?? "",
+  courseName: dto.courseName ?? "",
+  licenseTypeLabel: dto.licenseTypeLabel ?? "",
+  attendanceRate: Number(dto.attendanceRate ?? 0),
+  totalSessions: Number(dto.totalSessions ?? 0),
+  presentCount: Number(dto.presentCount ?? 0),
+  isEligibleForApproval: Boolean(dto.isEligibleForApproval),
+  alreadyRegistered: Boolean(dto.alreadyRegistered),
+});
+
+const mapToCourseRegistrationRecord = (dto: any): RegistrationRecord => {
+  const initials = dto.studentName
+    ? dto.studentName
+        .split(" ")
+        .map((word: string) => word[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "HV";
+  const colorIndex = `${dto.id ?? dto.userId ?? ""}`.length % avatarColors.length;
+  const status = getCourseStatusValue(dto.status);
+
+  return {
+    id: dto.id,
     courseId: dto.courseId,
-    courseName: dto.courseName || dto.batchName?.split(' - ')[0] || "Khóa học",
-    licenseType: dto.licenseTypeLabel || "B2",
-    registrationDate: new Date(dto.registrationDate).toLocaleDateString('vi-VN'),
-    conditionStatus: 'Đủ giờ học',
-    approvalStatus: 
-      dto.status === 'Pending' ? 'Đang chờ duyệt' :
-      dto.status === 'Approved' ? 'Đã duyệt' :
-      dto.status === 'Rejected' ? 'Bị từ chối' : 'Đã hủy',
-    status: dto.status,
-    email: dto.email || "N/A",
-    phone: dto.phone || "N/A",
-    totalFee: dto.totalFee,
-    notes: dto.notes,
-    photoUrl: dto.photoUrl,
-    idFrontUrl: dto.idFrontUrl,
-    idBackUrl: dto.idBackUrl
+    studentId: dto.userId ?? "",
+    studentName: dto.studentName ?? "Học viên",
+    email: dto.email ?? "",
+    phone: dto.phone ?? "",
+    avatarInitials: initials,
+    avatarColor: avatarColors[colorIndex],
+    registrationDate: dto.registrationDate
+      ? new Date(dto.registrationDate).toLocaleDateString("vi-VN")
+      : "",
+    approvalStatus: getCourseApprovalLabel(status),
+    status,
+    courseName: dto.courseName ?? "",
+    licenseType: dto.licenseTypeLabel ?? "",
+    totalFee: Number(dto.totalFee ?? 0),
+    notes: dto.notes ?? undefined,
+    assignedTermId: dto.assignedTermId ?? undefined,
+    assignedTermName: dto.assignedTermName ?? undefined,
+    assignedClassId: dto.assignedClassId ?? undefined,
+    assignedClassName: dto.assignedClassName ?? undefined,
+    suggestedTermId: dto.suggestedTermId ?? undefined,
+    suggestedTermName: dto.suggestedTermName ?? undefined,
+    suggestedTermStartDate: dto.suggestedTermStartDate ?? undefined,
+    placementMessage: dto.placementMessage ?? undefined,
+    photoUrl: dto.photoUrl ?? undefined,
+    idFrontUrl: dto.idFrontUrl ?? undefined,
+    idBackUrl: dto.idBackUrl ?? undefined,
   };
 };
 
 export const registrationService = {
-  /**
-   * Fetch all course registrations for Enrollment Manager.
-   */
-  getAllCourseRegistrations: async (): Promise<RegistrationRecord[]> => {
+  async getAllCourseRegistrations(): Promise<RegistrationRecord[]> {
     try {
       const response = await api.get<{ data: any[] }>("/CourseRegistration/all");
-      return (response.data.data || []).map(mapToRegistrationRecord);
+      return (response.data.data || []).map(mapToCourseRegistrationRecord);
     } catch (error) {
       console.error("Failed to fetch all course registrations:", error);
       return [];
     }
   },
 
-  /**
-   * Fetch registration stats.
-   */
-  getRegistrationStats: async (): Promise<any> => {
+  async getRegistrationStats(): Promise<any> {
     try {
       const response = await api.get<{ data: any }>("/CourseRegistration/stats");
       return response.data.data;
@@ -85,31 +186,25 @@ export const registrationService = {
     }
   },
 
-  /**
-   * Update course registration status (Approve/Reject).
-   */
-  updateCourseStatus: async (
+  async updateCourseStatus(
     id: string,
     status: CourseRegistrationStatus,
-    reason: string = ""
-  ): Promise<void> => {
+    reason = "",
+  ): Promise<void> {
     const statusValueMap: Record<CourseRegistrationStatus, number> = {
       Pending: CourseRegistrationStatusValue.Pending,
       Approved: CourseRegistrationStatusValue.Approved,
       Rejected: CourseRegistrationStatusValue.Rejected,
-      Cancelled: CourseRegistrationStatusValue.Cancelled
+      Cancelled: CourseRegistrationStatusValue.Cancelled,
     };
 
     await api.put(`/CourseRegistration/${id}/status`, {
       status: statusValueMap[status],
-      reason: reason.trim()
+      reason: reason.trim(),
     });
   },
 
-  /**
-   * Fetch all registrations for a specific exam batch (Legacy).
-   */
-  getRegistrationsByBatch: async (batchId: string): Promise<RegistrationRecord[]> => {
+  async getRegistrationsByBatch(batchId: string): Promise<RegistrationRecord[]> {
     try {
       const response = await api.get<ApiResponse<any[]>>(`/ExamRegistration/Batch/${batchId}`);
       return (response.data.data || []).map(mapToRegistrationRecord);
@@ -119,34 +214,50 @@ export const registrationService = {
     }
   },
 
-  /**
-   * Update the approval status of a registration.
-   */
-  updateStatus: async (id: string, status: ExamRegistrationStatus): Promise<void> => {
+  async updateStatus(id: string, status: ExamRegistrationStatus): Promise<void> {
     await api.patch(`/ExamRegistration/${id}/status`, { status });
   },
 
-  /**
-   * Mark a registration as paid.
-   */
-  markAsPaid: async (id: string): Promise<void> => {
+  async setPaymentStatus(id: string, isPaid: boolean): Promise<void> {
+    await api.patch(`/ExamRegistration/${id}/payment`, { isPaid });
+  },
+
+  async markAsPaid(id: string): Promise<void> {
     await api.patch(`/ExamRegistration/${id}/pay`);
   },
 
-  /**
-   * Create bulk registrations (Admin/Manager utility).
-   */
-  createBulk: async (examBatchId: string, studentIds: string[]): Promise<void> => {
-    await api.post("/ExamRegistration/bulk", {
+  async createRegistration(examBatchId: string, studentId: string, isPaid = false): Promise<void> {
+    await api.post("/ExamRegistration", {
       examBatchId,
-      studentIds
+      studentId,
+      isPaid,
     });
   },
 
-  /**
-   * Fetch authenticated student's course registrations.
-   */
-  getMyRegistrations: async (): Promise<RegistrationResponse[]> => {
+  async createBulk(examBatchId: string, studentIds: string[], isPaid = false): Promise<void> {
+    await api.post("/ExamRegistration/bulk", {
+      examBatchId,
+      studentIds,
+      isPaid,
+    });
+  },
+
+  async getTermCandidates(termId: string, examBatchId: string): Promise<TermRegistrationCandidate[]> {
+    try {
+      const response = await api.get<ApiResponse<any[]>>(
+        `/ExamRegistration/Term/${termId}/candidates`,
+        {
+          params: { examBatchId },
+        },
+      );
+      return (response.data.data || []).map(mapToCandidate);
+    } catch (error) {
+      console.error("Failed to fetch term candidates:", error);
+      return [];
+    }
+  },
+
+  async getMyRegistrations(): Promise<RegistrationResponse[]> {
     try {
       const response = await api.get<{ data: RegistrationResponse[] }>("/CourseRegistration/me");
       return response.data.data || [];
@@ -156,20 +267,21 @@ export const registrationService = {
     }
   },
 
-  /**
-   * Register a new course with required documents
-   * @param formData FormData containing courseId, notes, referralCode, and optional files (Photo, IdFront, IdBack)
-   */
-  registerCourse: async (formData: FormData): Promise<void> => {
+  async registerCourse(formData: FormData): Promise<RegistrationResponse | null> {
     try {
-      await api.post("/CourseRegistration", formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post<ApiResponse<RegistrationResponse>>(
+        "/CourseRegistration",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      return response.data.data ?? null;
     } catch (error) {
       console.error("Failed to register course:", error);
       throw error;
     }
-  }
+  },
 };

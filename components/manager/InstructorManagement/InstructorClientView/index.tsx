@@ -1,89 +1,103 @@
-// src/app/(manager)/training-manager/instructors/_components/InstructorClientView/index.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Filter, XCircle } from "lucide-react";
-import { Instructor, LicenseType } from "@/types/instructor";
-import { MOCK_INSTRUCTOR_STATS } from "@/constants/instructor-data";
+import { useAuth } from "@clerk/nextjs";
+import toast from "react-hot-toast";
 import InstructorTable from "../InstructorTable";
 import InstructorModal from "@/components/manager/Modals/InstructorModal";
-import { InstructorFormData } from "@/types/instructor";
 import InstructorHeader from "../InstructorHeader";
-import InstructorStats from "../InstructorStats";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import { Instructor, InstructorFormData } from "@/types/instructor";
+import { setAuthToken } from "@/lib/api";
+import { UserListItem, userService } from "@/services/userService";
 
-interface Props {
-  initialData: Instructor[];
-}
+const mapInstructor = (user: UserListItem): Instructor => ({
+  id: user.id,
+  code: user.id.slice(0, 8).toUpperCase(),
+  name: user.fullName,
+  email: user.email,
+  phone: user.phone,
+  avatar: user.avatarUrl || "",
+  licenses: user.roles || ["Instructor"],
+  classesWeekly: 0,
+  status: user.isActive ? "Active" : "Inactive",
+});
 
-export default function InstructorClientView({ initialData }: Props) {
+export default function InstructorClientView() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-
-  const [instructors, setInstructors] = useState<Instructor[]>(initialData);
-  // Khởi tạo state bộ lọc bằng tiếng Việt
-  const [licenseFilter, setLicenseFilter] = useState<string>("Tất cả");
   const [statusFilter, setStatusFilter] = useState<string>("Tất cả");
-
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingInstructor, setEditingInstructor] =
-    useState<InstructorFormData | null>(null);
-
-  // State quản lý Modal Xóa
+  const [editingInstructor, setEditingInstructor] = useState<InstructorFormData | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [instructorToDelete, setInstructorToDelete] =
-    useState<Instructor | null>(null);
+  const [instructorToDelete, setInstructorToDelete] = useState<Instructor | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchInstructors = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return;
+
+    setLoading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      const data = await userService.getInstructors();
+      setInstructors(data.map(mapInstructor));
+    } catch (error) {
+      toast.error("Không thể tải danh sách giảng viên.");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, isLoaded, isSignedIn]);
+
+  useEffect(() => {
+    fetchInstructors();
+  }, [fetchInstructors]);
 
   const handleCreate = () => {
     setEditingInstructor(null);
     setIsModalOpen(true);
   };
 
+  const handleSubmit = async (data: InstructorFormData) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
 
-const handleSubmit = (data: InstructorFormData) => {
-  if (data.id) {
-    // Logic Cập nhật (Edit)
-    setInstructors((prev) =>
-      prev.map((ins) =>
-        ins.id === data.id
-          ? {
-              ...ins,
-              name: data.fullName,
-              email: data.email,
-              phone: data.phone,
-              status: data.isActive ? "Active" : "Inactive",
-              licenses: data.licenses,
-            }
-          : ins
-      )
-    );
-  } else {
-    // Logic Thêm mới (Create)
-    const newInstructor: Instructor = {
-      id: Date.now().toString(),
-      code: `GV-${Math.floor(1000 + Math.random() * 9000)}`,
-      name: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      avatar: "",
-      licenses: data.licenses,
-      classesWeekly: 0,
-      status: data.isActive ? "Active" : "Inactive",
-    };
-    setInstructors((prev) => [newInstructor, ...prev]);
-  }
-  setIsModalOpen(false); // Đóng modal sau khi xong
-};
+      if (data.id) {
+        const updated = await userService.updateInstructor(data.id, {
+          fullName: data.fullName,
+          phone: data.phone,
+          isActive: data.isActive,
+        });
+        setInstructors((prev) => prev.map((item) => (item.id === updated.id ? mapInstructor(updated) : item)));
+        toast.success("Đã cập nhật giảng viên.");
+      } else {
+        const created = await userService.createInstructor({
+          email: data.email,
+          fullName: data.fullName,
+          phone: data.phone,
+          isActive: data.isActive,
+        });
+        setInstructors((prev) => [mapInstructor(created), ...prev]);
+        toast.success("Đã tạo giảng viên mới.");
+      }
+
+      setIsModalOpen(false);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể lưu giảng viên.");
+    }
+  };
 
   const handleEdit = (instructorData: Instructor) => {
-    const formData: InstructorFormData = {
+    setEditingInstructor({
       id: instructorData.id,
       fullName: instructorData.name,
       email: instructorData.email,
       phone: instructorData.phone,
       isActive: instructorData.status === "Active",
-      licenses: instructorData.licenses,
-    };
-    setEditingInstructor(formData);
+    });
     setIsModalOpen(true);
   };
 
@@ -92,88 +106,64 @@ const handleSubmit = (data: InstructorFormData) => {
     setIsConfirmModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (instructorToDelete) {
-      // Xóa khỏi State UI
-      setInstructors((prev) =>
-        prev.filter((ins) => ins.id !== instructorToDelete.id),
-      );
-      console.log("Đã xóa giảng viên:", instructorToDelete.id);
-      // TODO: Gọi API Delete ở đây
+  const handleConfirmDelete = async () => {
+    if (!instructorToDelete) return;
+
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await userService.deleteInstructor(instructorToDelete.id);
+      setInstructors((prev) => prev.filter((ins) => ins.id !== instructorToDelete.id));
+      toast.success("Đã xóa giảng viên.");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể xóa giảng viên.");
+    } finally {
+      setIsConfirmModalOpen(false);
+      setInstructorToDelete(null);
     }
-    setIsConfirmModalOpen(false);
-    setInstructorToDelete(null);
   };
 
-  const handleToggleStatus = (instructor: Instructor) => {
-    // Tìm và đảo ngược trạng thái trong State
-    setInstructors((prev) =>
-      prev.map((ins) => {
-        if (ins.id === instructor.id) {
-          return {
-            ...ins,
-            // Nếu đang Active -> Đổi thành Inactive và ngược lại
-            status: ins.status === "Active" ? "Inactive" : "Active",
-          } as Instructor;
-        }
-        return ins;
-      }),
-    );
-
-    console.log(
-      `Đã đổi trạng thái giảng viên ${instructor.id} thành ${instructor.status === "Active" ? "Inactive" : "Active"}`,
-    );
-    // TODO: Gọi API update status ở đây
+  const handleToggleStatus = async (instructor: Instructor) => {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await userService.toggleInstructorStatus(instructor.id);
+      setInstructors((prev) =>
+        prev.map((ins) =>
+          ins.id === instructor.id ? { ...ins, status: ins.status === "Active" ? "Inactive" : "Active" } : ins,
+        ),
+      );
+      toast.success("Đã cập nhật trạng thái giảng viên.");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Không thể đổi trạng thái giảng viên.");
+    }
   };
-  // Logic Lọc (Real-time Filter) - Đã cập nhật để map Tiếng Việt với Tiếng Anh
-  // Logic Lọc (Real-time Filter)
+
   const filteredInstructors = useMemo(() => {
     return instructors.filter((ins) => {
-      // QUAN TRỌNG: Lọc từ state 'instructors'
-      // 1. Tìm kiếm (Tên, Email hoặc Mã)
       const q = searchQuery.toLowerCase();
-      const matchSearch =
-        ins.name.toLowerCase().includes(q) ||
-        ins.email.toLowerCase().includes(q) ||
-        ins.code.toLowerCase().includes(q);
-
-      // 2. Lọc Trạng thái (Map Tiếng Việt trên Select -> Type InstructorStatus)
+      const matchSearch = ins.name.toLowerCase().includes(q) || ins.email.toLowerCase().includes(q) || ins.code.toLowerCase().includes(q);
       const matchStatus =
         statusFilter === "Tất cả" ||
         (statusFilter === "Hoạt động" && ins.status === "Active") ||
         (statusFilter === "Tạm nghỉ" && ins.status === "Inactive");
 
-      // 3. Lọc Hạng bằng
-      const matchLicense =
-        licenseFilter === "Tất cả" ||
-        ins.licenses.includes(licenseFilter as LicenseType);
-
-      return matchSearch && matchStatus && matchLicense;
+      return matchSearch && matchStatus;
     });
-  }, [instructors, searchQuery, licenseFilter, statusFilter]);
+  }, [instructors, searchQuery, statusFilter]);
 
   const clearFilters = () => {
     setSearchQuery("");
-    setLicenseFilter("Tất cả");
     setStatusFilter("Tất cả");
   };
 
-  const isFiltering =
-    searchQuery !== "" ||
-    licenseFilter !== "Tất cả" ||
-    statusFilter !== "Tất cả";
+  const isFiltering = searchQuery !== "" || statusFilter !== "Tất cả";
 
   return (
     <div className="space-y-6">
-      {/* Header, Title & Actions */}
       <InstructorHeader onAddClick={handleCreate} />
 
-      {/* KPI Summary Cards */}
-      <InstructorStats data={MOCK_INSTRUCTOR_STATS} />
-
-      {/* Thanh Search & Filters */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row gap-4 items-center shadow-sm">
-        {/* Thanh tìm kiếm */}
         <div className="relative flex-1 w-full group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
@@ -185,20 +175,7 @@ const handleSubmit = (data: InstructorFormData) => {
           />
         </div>
 
-        {/* Dropdowns */}
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <select
-            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-600 outline-none min-w-[160px] cursor-pointer"
-            value={licenseFilter}
-            onChange={(e) => setLicenseFilter(e.target.value)}
-          >
-            <option value="Tất cả">Hạng bằng: Tất cả</option>
-            <option value="A1">Hạng A1 - Mô tô</option>
-            <option value="B1">Hạng B1 - Số tự động</option>
-            <option value="B2">Hạng B2 - Số sàn</option>
-            <option value="C">Hạng C - Xe tải</option>
-          </select>
-
           <select
             className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-600 outline-none min-w-[160px] cursor-pointer"
             value={statusFilter}
@@ -225,16 +202,18 @@ const handleSubmit = (data: InstructorFormData) => {
         </div>
       </div>
 
-      {/* Component Bảng */}
-      <InstructorTable
-        instructors={filteredInstructors}
-        onEditClick={handleEdit}
-        onToggleStatusClick={handleToggleStatus}
-        onDeleteClick={handleDeleteClick}
-      />
-
-      {/* Gắn Modal */}
-      {/* Gắn Modal */}
+      {loading ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500 font-medium">
+          Đang tải danh sách giảng viên...
+        </div>
+      ) : (
+        <InstructorTable
+          instructors={filteredInstructors}
+          onEditClick={handleEdit}
+          onToggleStatusClick={handleToggleStatus}
+          onDeleteClick={handleDeleteClick}
+        />
+      )}
 
       <InstructorModal
         isOpen={isModalOpen}
@@ -242,10 +221,11 @@ const handleSubmit = (data: InstructorFormData) => {
         initialData={editingInstructor}
         onSubmit={handleSubmit}
       />
+
       <ConfirmModal
         isOpen={isConfirmModalOpen}
         title="Xóa hồ sơ giảng viên"
-        message={`Bạn có chắc chắn muốn xóa hồ sơ giảng viên "${instructorToDelete?.name}" không? Dữ liệu lịch dạy liên quan có thể bị ảnh hưởng.`}
+        message={`Bạn có chắc chắn muốn xóa hồ sơ giảng viên "${instructorToDelete?.name}" không?`}
         onCancel={() => {
           setIsConfirmModalOpen(false);
           setInstructorToDelete(null);

@@ -26,7 +26,7 @@ export default function ExamBatchModal({ isOpen, onClose, initialData, onSubmit 
       ...(isEditing ? { id: initialData.id } : {}), // Giữ lại ID nếu là Edit
       batchName: formData.get('batchName') as string,
       courseId: formData.get('courseId') as string,
-      status: formData.get('status') as ExamBatch['status'],
+      status: parseInt(formData.get('status') as string, 10) as unknown as ExamBatch['status'],
       registrationStartDate: formData.get('registrationStartDate') as string,
       registrationEndDate: formData.get('registrationEndDate') as string,
       examStartDate: formData.get('examStartDate') as string,
@@ -80,13 +80,13 @@ export default function ExamBatchModal({ isOpen, onClose, initialData, onSubmit 
 
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Trạng thái ban đầu <span className="text-red-500">*</span></label>
-                  <select required name="status" defaultValue={initialData?.status || 'Pending'} className="w-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-600 px-4 py-3 text-sm rounded-lg font-medium text-slate-900 outline-none cursor-pointer">
-                    <option value="Pending">Chưa mở đăng ký</option>
-                    <option value="OpenForRegistration">Đang mở đăng ký</option>
-                    <option value="ClosedForRegistration">Đã đóng đăng ký</option>
-                    <option value="InProgress">Đang diễn ra kỳ thi</option>
-                    <option value="Completed">Đã kết thúc</option>
-                    <option value="Cancelled">Đã hủy</option>
+                  <select required name="status" defaultValue={initialData?.status || 1} className="w-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-600 px-4 py-3 text-sm rounded-lg font-medium text-slate-900 outline-none cursor-pointer">
+                    <option value={1}>Chưa mở đăng ký</option>
+                    <option value={2}>Đang mở đăng ký</option>
+                    <option value={3}>Đã đóng đăng ký</option>
+                    <option value={4}>Đang diễn ra kỳ thi</option>
+                    <option value={5}>Đã kết thúc</option>
+                    <option value={6}>Đã hủy</option>
                   </select>
                 </div>
 

@@ -1,12 +1,10 @@
-// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\types\registration.ts
-
-export type CourseRegistrationStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
+export type CourseRegistrationStatus = "Pending" | "Approved" | "Rejected" | "Cancelled";
 
 export enum CourseRegistrationStatusValue {
   Pending = 1,
   Approved = 2,
   Rejected = 3,
-  Cancelled = 4
+  Cancelled = 4,
 }
 
 export interface RegistrationRequest {
@@ -24,39 +22,98 @@ export interface RegistrationResponse {
   status: CourseRegistrationStatus;
   totalFee: number;
   notes?: string;
+  assignedTermId?: string;
+  assignedTermName?: string;
+  assignedClassId?: string;
+  assignedClassName?: string;
+  suggestedTermId?: string;
+  suggestedTermName?: string;
+  suggestedTermStartDate?: string;
+  placementMessage?: string;
 }
 
-// Exam Registration Status
 export enum ExamRegistrationStatus {
   Pending = 1,
   Approved = 2,
   Rejected = 3,
-  Cancelled = 4
+  Cancelled = 4,
 }
 
-// Model in UI
+export type ApprovalStatusLabel =
+  | "Chờ duyệt"
+  | "Đã duyệt"
+  | "Từ chối"
+  | "Đã hủy";
+
+export type PaymentStatusLabel = "Đã nộp lệ phí" | "Chưa nộp lệ phí";
+
 export interface RegistrationRecord {
   id: string;
-  studentName: string;
+  examBatchId?: string;
+  examBatch?: string;
+  courseId?: string;
   studentId: string;
+  studentName: string;
   email: string;
   phone: string;
   avatarInitials: string;
   avatarColor: string;
-  courseId: string;
-  courseName: string;
-  licenseType: string;
   registrationDate: string;
-  conditionStatus: 'Đủ giờ học' | 'Chưa đủ ĐK';
-  approvalStatus: 'Đang chờ duyệt' | 'Đã duyệt' | 'Bị từ chối' | 'Đã hủy';
-  status: CourseRegistrationStatus;
-  totalFee: number;
+  paymentStatus?: PaymentStatusLabel;
+  isPaid?: boolean;
+  attendanceRate?: number;
+  totalSessions?: number;
+  presentCount?: number;
+  approvalStatus: ApprovalStatusLabel;
+  status: CourseRegistrationStatus | ExamRegistrationStatus;
+  termId?: string;
+  termName?: string;
+  courseName?: string;
+  licenseType?: string;
+  isEligibleForApproval?: boolean;
+  totalFee?: number;
   notes?: string;
+  assignedTermId?: string;
+  assignedTermName?: string;
+  assignedClassId?: string;
+  assignedClassName?: string;
+  suggestedTermId?: string;
+  suggestedTermName?: string;
+  suggestedTermStartDate?: string;
+  placementMessage?: string;
   photoUrl?: string;
   idFrontUrl?: string;
   idBackUrl?: string;
 }
 
+export interface TermRegistrationCandidate {
+  studentId: string;
+  studentName: string;
+  email: string;
+  phone: string;
+  courseName: string;
+  licenseTypeLabel: string;
+  attendanceRate: number;
+  totalSessions: number;
+  presentCount: number;
+  isEligibleForApproval: boolean;
+  alreadyRegistered: boolean;
+}
+
 export const EXAM_LEVEL_LABELS: Record<number, string> = {
-  1: 'A1', 2: 'A', 3: 'B1', 4: 'B', 5: 'C1', 6: 'C', 7: 'D1', 8: 'D2', 9: 'D', 10: 'BE', 11: 'C1E', 12: 'CE', 13: 'D1E', 14: 'D2E', 15: 'DE'
+  1: "A1",
+  2: "A",
+  3: "B1",
+  4: "B",
+  5: "C1",
+  6: "C",
+  7: "D1",
+  8: "D2",
+  9: "D",
+  10: "BE",
+  11: "C1E",
+  12: "CE",
+  13: "D1E",
+  14: "D2E",
+  15: "DE",
 };

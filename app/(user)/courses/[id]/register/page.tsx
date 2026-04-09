@@ -130,9 +130,17 @@ export default function RegisterPage() {
       if (docs.idBack.file) formData.append("IdBack", docs.idBack.file);
 
       // 3. Submit registration package
-      await registrationService.registerCourse(formData);
+      const registration = await registrationService.registerCourse(formData);
+      if (false)
 
       alert("Đăng ký thành công!");
+      const placementNotice = registration?.placementMessage
+        ? `\n\n${registration.placementMessage}`
+        : registration?.suggestedTermName
+          ? `\n\nDu kien he thong se xep ban vao ky ${registration.suggestedTermName}. Neu ky nay da du cho, trung tam se uu tien ky tiep theo phu hop.`
+          : "\n\nNeu ky hien tai da du cho, trung tam se xep ban vao ky tiep theo phu hop.";
+
+      alert(placementNotice.trim());
       router.push("/courses");
     } catch (err: any) {
       console.error("Submit error:", err);

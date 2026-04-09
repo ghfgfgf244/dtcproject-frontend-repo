@@ -1,3 +1,63 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 0;
+  color: #17213a;
+  font-size: 28px;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #6c7a96;
+  font-size: 14px;
+}
+
+.card {
+  background: #f8fbff;
+  border: 1px solid #dbe5ef;
+  border-radius: 20px;
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.scheduleBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eef8ff 0%, #f8fcff 100%);
+  border: 1px solid #d5e8fb;
+}
+
+.scheduleBanner strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #17305c;
+  font-size: 14px;
+}
+
+.scheduleBanner p {
+  margin: 0;
+  color: #56708f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
 .metaRow {
   display: flex;
   align-items: center;

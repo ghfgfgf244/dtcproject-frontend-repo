@@ -9,6 +9,7 @@ import RegistrationDetailModal from './RegistrationDetailModal';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@clerk/nextjs';
 import { setAuthToken } from '@/lib/api';
+import { EXAM_LEVEL_OPTIONS } from '@/constants/exam-levels';
 
 export default function RegistrationClientView() {
   const { getToken, isLoaded: authLoaded, isSignedIn } = useAuth();
@@ -200,7 +201,7 @@ export default function RegistrationClientView() {
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider px-2">Hạng bằng</span>
           <div className="flex p-1 bg-slate-200/50 rounded-xl border border-slate-200">
-            {['ALL', 'A1', 'B1', 'B2', 'C'].map(type => (
+            {['ALL', ...EXAM_LEVEL_OPTIONS.map((item) => item.label)].map(type => (
               <button 
                 key={type}
                 onClick={() => { setFilterLicense(type); setCurrentPage(1); }}

@@ -1,142 +1,127 @@
-// src/components/manager/ScheduleManagement/ScheduleWeeklyCalendar/index.tsx
-import React from 'react';
-import { Clock, User, Utensils } from 'lucide-react';
-import styles from './weekly.module.css';
-
-const WEEK_DAYS = [
-  { day: 'Thứ Hai', date: 22 },
-  { day: 'Thứ Ba', date: 23 },
-  { day: 'Thứ Tư', date: 24, isToday: true },
-  { day: 'Thứ Năm', date: 25 },
-  { day: 'Thứ Sáu', date: 26 },
-  { day: 'Thứ Bảy', date: 27 },
-  { day: 'Chủ Nhật', date: 28, isWeekend: true },
-];
-
-const START_HOUR = 8;   // Bắt đầu từ 08:00
-const END_HOUR = 17;    // Kết thúc lúc 17:00
-const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
-const HOUR_HEIGHT = 120; // px (Mỗi tiếng cao 120px)
+import styles from "./weekly.module.css";
+import { ScheduleEvent } from "@/types/schedule";
 
 interface Props {
-  onDayClick: (day: number) => void;
+  currentDate: Date;
+  events: ScheduleEvent[];
+  onDayClick: (date: Date) => void;
 }
 
-export default function ScheduleWeeklyCalendar({ onDayClick }: Props) {
-  
-  // Hàm tính toán và render Event Card tự động kéo dài theo thời gian
-  const renderEvent = (
-    startHour: number,      // Giờ bắt đầu (VD: 10)
-    duration: number,       // Thời lượng tính bằng giờ (VD: 2)
-    type: 'Thực hành' | 'Mô phỏng' | 'Lý thuyết',
-    title: string,
-    instructor: string,
-    timeString: string,
-    colorClass: string,
-    bgClass: string,
-    borderClass: string
-  ) => {
-    // Logic tính toán vị trí tuyệt đối (Absolute)
-    const topOffset = (startHour - START_HOUR) * HOUR_HEIGHT + 4; // +4px margin top
-    const cardHeight = (duration * HOUR_HEIGHT) - 8;              // -8px margin bottom/top
+function startOfWeek(date: Date) {
+  const clone = new Date(date);
+  const day = (clone.getDay() + 6) % 7;
+  clone.setDate(clone.getDate() - day);
+  clone.setHours(0, 0, 0, 0);
+  return clone;
+}
 
-    return (
-      <div
-        className={`absolute left-1.5 right-1.5 ${bgClass} border-l-4 ${borderClass} rounded-lg p-3 shadow-sm group cursor-pointer hover:brightness-95 transition-all flex flex-col z-20`}
-        style={{ top: `${topOffset}px`, height: `${cardHeight}px` }}
-      >
-        <div className="flex justify-between items-start mb-2">
-          {/* Font chữ Badge to hơn (text-xs) */}
-          <span className={`bg-white/60 ${colorClass} text-xs font-black px-2 py-0.5 rounded uppercase tracking-wide`}>
-            {type}
-          </span>
-        </div>
-        {/* Font chữ Title to hơn (text-sm) */}
-        <h4 className="text-sm font-black text-slate-900 leading-tight mb-2">{title}</h4>
-        
-        <div className="mt-auto space-y-1.5">
-          {/* Font chữ Detail to hơn (text-xs) */}
-          <p className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5" /> {instructor}
-          </p>
-          <p className={`text-xs font-bold ${colorClass} flex items-center gap-1.5`}>
-            <Clock className="w-3.5 h-3.5" /> {timeString}
-          </p>
-        </div>
-      </div>
-    );
-  };
+function addDays(date: Date, amount: number) {
+  const clone = new Date(date);
+  clone.setDate(clone.getDate() + amount);
+  return clone;
+}
+
+function isSameDate(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+function formatDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getBadgeClass(type: ScheduleEvent["eventType"]) {
+  switch (type) {
+    case "Theory":
+      return "bg-blue-100 text-blue-700";
+    case "Practice":
+      return "bg-emerald-100 text-emerald-700";
+    case "Simulator":
+      return "bg-amber-100 text-amber-700";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+
+function getCardClass(type: ScheduleEvent["eventType"]) {
+  switch (type) {
+    case "Theory":
+      return "bg-blue-50 border-blue-500";
+    case "Practice":
+      return "bg-emerald-50 border-emerald-500";
+    case "Simulator":
+      return "bg-amber-50 border-amber-500";
+    default:
+      return "bg-slate-50 border-slate-500";
+  }
+}
+
+function getEventLabel(type: ScheduleEvent["eventType"]) {
+  switch (type) {
+    case "Theory":
+      return "Ly thuyet";
+    case "Practice":
+      return "Thuc hanh";
+    case "Simulator":
+      return "Mo phong";
+    case "Exam":
+      return "Sat hach";
+    default:
+      return type;
+  }
+}
+
+export default function ScheduleWeeklyCalendar({ currentDate, events, onDayClick }: Props) {
+  const weekStart = startOfWeek(currentDate);
+  const weekDays = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
 
   return (
     <div className={styles.wrapper}>
-      {/* 1. Header (Các ngày trong tuần) */}
-      <div className={styles.headerGrid}>
-        <div className="bg-slate-50/50 border-r border-slate-200 flex items-center justify-center p-4">
-          <Clock className="w-5 h-5 text-slate-400" />
-        </div>
-        {WEEK_DAYS.map((d, i) => (
-          <div key={i} onClick={() => onDayClick(d.date)} className={`p-4 text-center border-r border-slate-100 ${d.isToday ? 'bg-blue-50/80' : 'bg-white'}`}>
-            <p className={`text-xs font-bold uppercase tracking-widest ${d.isToday ? 'text-blue-600' : d.isWeekend ? 'text-red-400 opacity-60' : 'text-slate-400'}`}>
-              {d.day}
-            </p>
-            <p className={`text-xl font-black mt-1 ${d.isToday ? 'text-blue-600' : d.isWeekend ? 'text-red-500 opacity-60' : 'text-slate-900'}`}>
-              {d.date}
-            </p>
-          </div>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
+        {weekDays.map((day) => {
+          const dateKey = formatDateKey(day);
+          const dayEvents = events
+            .filter((event) => event.dateKey === dateKey)
+            .sort((left, right) => left.startTime.localeCompare(right.startTime));
 
-      {/* 2. Body (Các khung giờ và Lịch học) */}
-      <div className={styles.bodyContainer} style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
-        
-        {/* Render Background Lines & Time Labels */}
-        {Array.from({ length: TOTAL_HOURS }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-full border-b border-slate-100 flex pointer-events-none"
-            style={{ top: `${i * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
-          >
-            {/* Cột hiển thị Giờ */}
-            <div className="w-[80px] shrink-0 border-r border-slate-200 flex justify-center pt-2 bg-slate-50/30">
-              <span className="text-xs font-bold text-slate-400">
-                {String(START_HOUR + i).padStart(2, '0')}:00
-              </span>
-            </div>
-            {/* Cột Kẻ dọc của ngày */}
-            {WEEK_DAYS.map((d, colIdx) => (
-              <div key={colIdx} className={`flex-1 border-r border-slate-50 ${d.isToday ? 'bg-blue-50/20' : ''}`} />
-            ))}
-          </div>
-        ))}
+          return (
+            <button
+              key={dateKey}
+              onClick={() => onDayClick(day)}
+              className={`min-h-[320px] rounded-2xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${isSameDate(day, currentDate) ? "border-blue-200 bg-blue-50/30" : "border-slate-200 bg-white"}`}
+            >
+              <div className="mb-4 border-b border-slate-100 pb-4">
+                <p className={`text-xs font-bold uppercase tracking-widest ${isSameDate(day, currentDate) ? "text-blue-600" : "text-slate-400"}`}>
+                  {day.toLocaleDateString("vi-VN", { weekday: "long" })}
+                </p>
+                <p className={`mt-1 text-2xl font-black ${isSameDate(day, currentDate) ? "text-blue-600" : "text-slate-900"}`}>{day.getDate()}</p>
+              </div>
 
-        {/* Render Lớp Overlay Giờ Nghỉ Trưa (VD: 12:00 -> 13:00) */}
-        <div
-          className="absolute left-[80px] right-0 flex items-center justify-center bg-slate-50/90 border-y border-slate-200 z-10 pointer-events-none"
-          style={{ top: `${(12 - START_HOUR) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
-        >
-          <div className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-full shadow-sm">
-            <Utensils className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Nghỉ trưa (12:00 - 13:00)</span>
-          </div>
-        </div>
+              <div className="space-y-3">
+                {dayEvents.map((event) => (
+                  <div key={event.id} className={`rounded-r-lg border-l-4 p-2 shadow-sm ${getCardClass(event.eventType)}`}>
+                    <div className="mb-1 flex items-start justify-between gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${getBadgeClass(event.eventType)}`}>
+                        {getEventLabel(event.eventType)}
+                      </span>
+                    </div>
+                    <p className="truncate text-sm font-bold text-slate-900">{event.className}</p>
+                    <div className="mt-1 flex items-center gap-1 text-[10px] font-medium text-slate-500">
+                      <span>{event.startTime}</span>
+                      <span>-</span>
+                      <span>{event.endTime}</span>
+                    </div>
+                  </div>
+                ))}
 
-        {/* Render Overlay Các Sự Kiện (Events) */}
-        <div className="absolute inset-0 left-[80px] flex pointer-events-none">
-          {WEEK_DAYS.map((_, colIdx) => (
-            <div key={colIdx} className="flex-1 relative pointer-events-auto">
-              {/* Thứ Hai */}
-              {colIdx === 0 && renderEvent(8, 2, 'Thực hành', 'Lớp B2-01', 'Trần Thị B.', '08:00 - 10:00', 'text-blue-700', 'bg-blue-50', 'border-blue-500')}
-              
-              {/* Thứ Tư (Hôm nay) - Lớp từ 10h đến 12h */}
-              {colIdx === 2 && renderEvent(10, 2, 'Mô phỏng', 'Lab D-02', 'Nguyễn Văn A.', '10:00 - 12:00', 'text-emerald-700', 'bg-emerald-50', 'border-emerald-500')}
-              {colIdx === 2 && renderEvent(14, 2, 'Lý thuyết', 'Lớp C-05', 'Lê Văn C.', '14:00 - 16:00', 'text-purple-700', 'bg-purple-50', 'border-purple-500')}
-              
-              {/* Thứ Sáu - Demo lớp học dài 3 tiếng */}
-              {colIdx === 4 && renderEvent(13, 3, 'Thực hành', 'Lớp B2-03', 'Hoàng Văn D.', '13:00 - 16:00', 'text-amber-700', 'bg-amber-50', 'border-amber-500')}
-            </div>
-          ))}
-        </div>
-
+                {dayEvents.length === 0 && <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-400">Chua co lich hoc</div>}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

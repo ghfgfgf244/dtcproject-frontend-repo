@@ -3,12 +3,12 @@ import { ExamBatch, Exam } from "@/types/exam";
 // Cấu hình các Tabs lọc dựa trên backend enum names
 export const EXAM_TABS = [
   { id: 'all', label: 'Tất cả đợt thi' },
-  { id: 'Pending', label: 'Chờ mở đăng ký' },
-  { id: 'OpenForRegistration', label: 'Đang mở đăng ký' },
-  { id: 'ClosedForRegistration', label: 'Đã đóng đăng ký' },
-  { id: 'InProgress', label: 'Đang thi' },
-  { id: 'Completed', label: 'Đã kết thúc' },
-  { id: 'Cancelled', label: 'Đã hủy' },
+  { id: 1, label: 'Chờ mở đăng ký' },
+  { id: 2, label: 'Đang mở đăng ký' },
+  { id: 3, label: 'Đã đóng đăng ký' },
+  { id: 4, label: 'Đang thi' },
+  { id: 5, label: 'Đã kết thúc' },
+  { id: 6, label: 'Đã hủy' },
 ];
 
 // Mock data (Sau này đổi thành Fetch API)
@@ -19,7 +19,7 @@ export const MOCK_BATCHES: ExamBatch[] = [
     registrationStartDate: "2024-10-01", 
     registrationEndDate: "2024-10-15", 
     examStartDate: "2024-11-20", 
-    status: 'OpenForRegistration',
+    status: 2,
     maxCandidates: 200,
     currentCandidates: 142
   }, 
@@ -29,7 +29,7 @@ export const MOCK_BATCHES: ExamBatch[] = [
     registrationStartDate: "2024-11-01", 
     registrationEndDate: "2024-11-10", 
     examStartDate: "2024-11-25", 
-    status: 'Pending',
+    status: 1,
     maxCandidates: 100,
     currentCandidates: 0
   }

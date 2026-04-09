@@ -1,14 +1,6 @@
 import React from "react";
 import styles from "./table.module.css";
-import {
-  Calendar,
-  Edit,
-  Ban,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  Trash2,
-} from "lucide-react";
+import { Edit, Ban, CheckCircle, Trash2 } from "lucide-react";
 import { Instructor } from "@/types/instructor";
 
 interface Props {
@@ -25,92 +17,49 @@ export default function InstructorTable({ instructors, onEditClick, onDeleteClic
         <table className={styles.tableLayout}>
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/50">
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                Giảng viên
-              </th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                Liên hệ
-              </th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                Hạng bằng
-              </th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                Lớp học
-              </th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                Trạng thái
-              </th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">
-                Thao tác
-              </th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Giảng viên</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Liên hệ</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Vai trò</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Trạng thái</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {instructors.map((ins) => (
-              <tr
-                key={ins.id}
-                className="hover:bg-slate-50 transition-colors group"
-              >
+              <tr key={ins.id} className="hover:bg-slate-50 transition-colors group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-200 shrink-0">
-                      <img
-                        src={ins.avatar}
-                        alt={ins.name}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-200 shrink-0 bg-blue-50 text-blue-700 flex items-center justify-center font-black">
+                      {ins.avatar ? <img src={ins.avatar} alt={ins.name} className="w-full h-full object-cover" /> : ins.name.slice(0, 1).toUpperCase()}
                     </div>
                     <div>
                       <div className="font-bold text-slate-900">{ins.name}</div>
-                      <div className="text-[11px] font-medium text-slate-400 uppercase tracking-tighter">
-                        Mã GV: {ins.code}
-                      </div>
+                      <div className="text-[11px] font-medium text-slate-400 uppercase tracking-tighter">Mã GV: {ins.code}</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-slate-600">{ins.email}</div>
-                  <div className="text-xs text-slate-400">{ins.phone}</div>
+                  <div className="text-xs text-slate-400">{ins.phone || "-"}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex gap-1 flex-wrap">
-                    {ins.licenses.map((lic) => (
-                      <span
-                        key={lic}
-                        className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded-full border border-blue-100"
-                      >
-                        {lic}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-slate-700">
-                    {ins.classesWeekly} Lớp/Tuần
-                  </div>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">
+                    Giảng viên
+                  </span>
                 </td>
                 <td className="px-6 py-4">
                   {ins.status === "Active" ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[11px] font-bold rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{" "}
-                      Hoạt động
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Hoạt động
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>{" "}
-                      Tạm nghỉ
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Tạm nghỉ
                     </span>
                   )}
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-md transition-colors"
-                      title="Xem lịch dạy"
-                    >
-                      <Calendar className="w-4 h-4" />
-                    </button>
-
                     <button
                       onClick={() => onEditClick(ins)}
                       className="p-1.5 hover:bg-amber-50 text-amber-600 rounded-md transition-colors"
@@ -119,7 +68,6 @@ export default function InstructorTable({ instructors, onEditClick, onDeleteClic
                       <Edit className="w-4 h-4" />
                     </button>
 
-                    {/* LOGIC ĐỔI TRẠNG THÁI */}
                     {ins.status === "Active" ? (
                       <button
                         onClick={() => onToggleStatusClick(ins)}
@@ -138,7 +86,6 @@ export default function InstructorTable({ instructors, onEditClick, onDeleteClic
                       </button>
                     )}
 
-                    {/* NÚT XÓA MỚI THÊM */}
                     <button
                       onClick={() => onDeleteClick(ins)}
                       className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-md transition-colors"
@@ -152,10 +99,7 @@ export default function InstructorTable({ instructors, onEditClick, onDeleteClic
             ))}
             {instructors.length === 0 && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-6 py-8 text-center text-sm text-slate-500"
-                >
+                <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">
                   Không tìm thấy giảng viên nào.
                 </td>
               </tr>
@@ -164,22 +108,8 @@ export default function InstructorTable({ instructors, onEditClick, onDeleteClic
         </table>
       </div>
 
-      {/* Pagination Footer */}
-      <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-          Hiển thị {instructors.length} Giảng viên
-        </p>
-        <div className="flex gap-2">
-          <button className="px-2 py-1 bg-white border border-slate-200 rounded text-slate-500 hover:bg-slate-50 disabled:opacity-50">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button className="px-3 py-1 bg-blue-600 text-white border border-blue-600 rounded font-bold text-xs">
-            1
-          </button>
-          <button className="px-2 py-1 bg-white border border-slate-200 rounded text-slate-500 hover:bg-slate-50">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+      <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100">
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Hiển thị {instructors.length} giảng viên</p>
       </div>
     </div>
   );

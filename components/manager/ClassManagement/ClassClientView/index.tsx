@@ -1,236 +1,286 @@
-// src/app/(manager)/training-manager/classes/_components/ClassClientView/index.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Users,
-  CalendarClock,
-  ShieldCheck,
-  Download,
-  LibraryBig,
-  TrendingUp,
-  Sparkles,
-} from "lucide-react"; // Thêm icon Sparkles
-import { ClassRecord } from "@/types/class";
-import { ClassFormData } from "@/types/class";
-
-import ClassTable from "../ClassTable";
-import { Breadcrumbs } from "@/components/manager/Shared/Breadcrumbs/index";
-import ClassModal from "@/components/manager/Modals/ClassModal";
-import AutoAssignModal from "@/components/manager/Modals/AutoAssignModal"; // 1. IMPORT MODAL AUTO ASSIGN (Đổi đường dẫn cho đúng thư mục của bạn)
+import { Plus, Sparkles, RefreshCw, Users, CalendarClock, ShieldCheck } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { Breadcrumbs } from "@/components/manager/Shared/Breadcrumbs";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import ClassTable from "@/components/manager/ClassManagement/ClassTable";
+import ClassModal from "@/components/manager/Modals/ClassModal";
+import AutoAssignModal from "@/components/manager/Modals/AutoAssignModal";
+import { classService, ClassDto } from "@/services/classService";
+import { scheduleService } from "@/services/scheduleService";
+import { termService } from "@/services/termService";
+import { userService } from "@/services/userService";
+import { addressService } from "@/services/addressService";
+import { ClassFormData, ClassRecord, ClassType } from "@/types/class";
+import { TermRecord } from "@/types/term";
+import { UserListItem } from "@/services/userService";
+import { AddressOption } from "@/services/addressService";
 
-interface Props {
-  initialClasses: ClassRecord[];
+const ITEMS_PER_PAGE = 8;
+
+const classTypeMap: Record<ClassType, 1 | 2> = {
+  Theory: 1,
+  Practice: 2,
+};
+
+function mapTheme(classType: string): ClassRecord["theme"] {
+  return classType === "Practice" ? "emerald" : "blue";
 }
 
-const ITEMS_PER_PAGE = 5;
+function formatDate(date?: string) {
+  if (!date) return "N/A";
+  return new Date(date).toLocaleDateString("vi-VN");
+}
 
-export default function ClassClientView({ initialClasses }: Props) {
+function mapClassRecord(dto: ClassDto): ClassRecord {
+  return {
+    id: dto.id,
+    code: dto.classType === "Practice" ? "TH" : "LT",
+    name: dto.className,
+    courseName: dto.courseName || "Chua ro khoa hoc",
+    termName: dto.termName || "Chua ro ky hoc",
+    classType: dto.classType,
+    status: dto.status,
+    currentStudents: dto.currentStudents,
+    maxStudents: dto.maxStudents,
+    instructorName: dto.instructorName || "Chua phan cong",
+    startDate: formatDate(dto.termStartDate),
+    endDate: formatDate(dto.termEndDate),
+    theme: mapTheme(dto.classType),
+  };
+}
+
+function mapToFormData(dto: ClassDto): ClassFormData {
+  return {
+    id: dto.id,
+    className: dto.className,
+    termId: dto.termId,
+    instructorId: dto.instructorId,
+    classType: dto.classType,
+    maxStudents: dto.maxStudents,
+    schedules: [],
+  };
+}
+
+export default function ClassClientView() {
   const router = useRouter();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
 
-  // 2. STATE LƯU TRỮ DANH SÁCH (Để có thể thêm lớp mới vào bảng sau khi gen tự động)
-  const [classList, setClassList] = useState<ClassRecord[]>(initialClasses);
+  const [classes, setClasses] = useState<ClassRecord[]>([]);
+  const [rawClasses, setRawClasses] = useState<ClassDto[]>([]);
+  const [terms, setTerms] = useState<TermRecord[]>([]);
+  const [instructors, setInstructors] = useState<UserListItem[]>([]);
+  const [addresses, setAddresses] = useState<AddressOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // States quản lý Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAutoAssignModalOpen, setIsAutoAssignModalOpen] = useState(false); // State mở modal Xếp lớp tự động
-  const [editingClass, setEditingClass] = useState<ClassRecord | null>(null);
-
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isAutoAssignModalOpen, setIsAutoAssignModalOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState<ClassDto | null>(null);
   const [classToDelete, setClassToDelete] = useState<ClassRecord | null>(null);
 
   const breadcrumbsItems = [
-    { label: "Trang chủ", href: "/training-manager/dashboard" },
-    { label: "Lớp học", href: "/training-manager/classes" },
+    { label: "Trang chu", href: "/training-manager/dashboard" },
+    { label: "Lop hoc", href: "/training-manager/classes" },
   ];
 
-  // Logic Phân trang (Sử dụng classList thay vì initialClasses)
-  const totalItems = classList.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedClasses = classList.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE,
+  const ensureAuthToken = async () => {
+    const token = await getToken({ skipCache: true });
+    setAuthToken(token);
+    return token;
+  };
+
+  const fetchData = async () => {
+    if (!isLoaded || !isSignedIn) return;
+
+    try {
+      await ensureAuthToken();
+
+      const [classData, termData, instructorData, addressData] = await Promise.all([
+        classService.getAllClasses(),
+        termService.getAllTerms(),
+        userService.getInstructors(),
+        addressService.getAll(),
+      ]);
+
+      setRawClasses(classData);
+      setClasses(classData.map(mapClassRecord));
+      setTerms(termData);
+      setInstructors(instructorData);
+      setAddresses(addressData);
+    } catch (error) {
+      toast.error("Khong the tai du lieu lop hoc");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [isLoaded, isSignedIn]);
+
+  const totalItems = classes.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const paginatedClasses = useMemo(
+    () => classes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
+    [classes, currentPage]
   );
 
-  // HÀM CHUYỂN ĐỔI DATA (Từ Bảng -> Form)
-  const getInitialFormData = (
-    cls: ClassRecord | null,
-  ): ClassFormData | null => {
-    if (!cls) return null;
-
-    return {
-      id: cls.id,
-      name: cls.name,
-      termId: "t1",
-      maxStudents: cls.studentCount > 0 ? cls.studentCount + 10 : 30,
-      status: "Đang học",
-      sessions: [],
-    };
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchData();
   };
 
-  // HÀM XỬ LÝ LƯU THỦ CÔNG (SUBMIT)
-  const handleSubmit = (formData: ClassFormData) => {
-    if (formData.id) {
-      console.log("Đang gọi API Cập nhật lớp:", formData.id, formData);
+  const handleSubmitClass = async (data: ClassFormData) => {
+    await ensureAuthToken();
+
+    const payload = {
+      termId: data.termId,
+      instructorId: data.instructorId,
+      className: data.className,
+      maxStudents: data.maxStudents,
+      classType: classTypeMap[data.classType],
+    } as const;
+
+    if (data.id) {
+      await classService.updateClass(data.id, payload);
+      await classService.assignTeacher(data.id, data.instructorId);
+      toast.success("Da cap nhat lop hoc");
     } else {
-      console.log("Đang gọi API Tạo lớp mới:", formData);
-    }
-    setIsModalOpen(false);
-  };
-
-  // 3. LOGIC: Thực thi Xếp lớp tự động (Fake API)
-  const handleRunAutoAssign = async (term: string) => {
-    // Giả lập delay 1.5s gọi API AI/Thuật toán xếp lớp
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Fake dữ liệu trả về từ server sau khi xếp lớp
-    // Lưu ý: Tôi đang map với cấu trúc ClassRecord dựa trên code cũ của bạn (chứa id, name, studentCount)
-    const newGeneratedClasses: ClassRecord[] = [
-      {
-        id: `auto-${Date.now()}-1`,
-        name: `Lớp ${term} - Lý thuyết (Auto)`,
-        studentCount: 35,
-        // Thêm các thuộc tính bắt buộc khác của ClassRecord tại đây nếu Type của bạn yêu cầu (VD: status, instructor, v.v...)
-      } as ClassRecord,
-      {
-        id: `auto-${Date.now()}-2`,
-        name: `Lớp ${term} - Thực hành (Auto)`,
-        studentCount: 20,
-      } as ClassRecord,
-    ];
-
-    // Cập nhật danh sách mới (đưa các lớp mới lên đầu)
-    setClassList((prev) => [...newGeneratedClasses, ...prev]);
-    setCurrentPage(1); // Chuyển về trang 1 để xem kết quả ngay
-  };
-
-  // 2. Hàm xử lý mở modal xác nhận xóa
-  const handleOpenDeleteModal = (cls: ClassRecord) => {
-    setClassToDelete(cls);
-    setIsDeleteModalOpen(true);
-  };
-
-  // 3. Hàm thực thi xóa (gọi khi nhấn nút Confirm trên modal)
-  const handleConfirmDelete = async () => {
-    if (classToDelete) {
-      // Giả lập gọi API xóa
-      // await classService.delete(classToDelete.id);
-
-      // Cập nhật state cục bộ để UI mất dòng đó ngay lập tức
-      setClassList((prev) =>
-        prev.filter((item) => item.id !== classToDelete.id),
-      );
-
-      // Đóng modal và dọn dẹp state
-      setIsDeleteModalOpen(false);
-      setClassToDelete(null);
-
-      // Nếu xóa ở trang cuối mà hết dữ liệu thì lùi lại 1 trang
-      if (paginatedClasses.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
+      const created = await classService.createClass(payload);
+      if (data.schedules.length > 0) {
+        await scheduleService.createBulk(
+          created.id,
+          data.schedules.map((schedule) => ({
+            instructorId: schedule.instructorId,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+            addressId: schedule.addressId,
+          }))
+        );
       }
+      toast.success("Da tao lop hoc");
     }
+
+    setIsModalOpen(false);
+    setEditingClass(null);
+    await fetchData();
   };
+
+  const handleRunAutoAssign = async (payload: { termId: string; classType: ClassType }) => {
+    await ensureAuthToken();
+    const response = await classService.autoAssign({
+      termId: payload.termId,
+      classType: classTypeMap[payload.classType],
+    });
+    toast.success(response.message || "Da xep lop tu dong");
+    setIsAutoAssignModalOpen(false);
+    await fetchData();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!classToDelete) return;
+    await ensureAuthToken();
+    await classService.deleteClass(classToDelete.id);
+    toast.success("Da xoa lop hoc");
+    setClassToDelete(null);
+    await fetchData();
+  };
+
+  if (loading) {
+    return (
+      <div className="h-[400px] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span>Dang tai danh sach lop hoc...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      {/* Page Title & Action */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="mb-2">
             <Breadcrumbs items={breadcrumbsItems} />
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">
-            Quản lý Lớp học
-          </h2>
-          <p className="text-slate-500 mt-1">
-            Theo dõi và vận hành tất cả các lớp đào tạo đang mở.
-          </p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900">Quan ly lop hoc</h2>
+          <p className="text-slate-500 mt-1">Danh sach lop hoc duoc xep theo term va khoa hoc.</p>
         </div>
 
-        {/* 4. CHỈNH SỬA KHU VỰC NÚT BẤM */}
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> Lam moi
+          </button>
           <button
             onClick={() => {
               setEditingClass(null);
               setIsModalOpen(true);
             }}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2 transition-all active:scale-95"
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center gap-2"
           >
-            <Plus className="w-5 h-5" /> Thêm lớp thủ công
+            <Plus className="w-5 h-5" /> Them lop thu cong
           </button>
           <button
             onClick={() => setIsAutoAssignModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all active:scale-95"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/20 flex items-center gap-2"
           >
-            <Sparkles className="w-5 h-5" /> Xếp lớp tự động
+            <Sparkles className="w-5 h-5" /> Xep lop tu dong
           </button>
         </div>
       </div>
 
-      {/* Stats Bar (Giữ nguyên) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Stat 1 */}
         <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-2xl text-white shadow-xl shadow-blue-600/10">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-blue-100 text-sm font-medium">
-                Tổng số lớp học
-              </p>
-              <h3 className="text-3xl font-bold mt-1">24</h3>
+              <p className="text-blue-100 text-sm font-medium">Tong so lop hoc</p>
+              <h3 className="text-3xl font-bold mt-1">{classes.length}</h3>
             </div>
-            <div className="bg-white/20 p-2.5 rounded-lg backdrop-blur-md">
+            <div className="bg-white/20 p-2.5 rounded-lg">
               <Users className="w-6 h-6" />
             </div>
           </div>
-          <p className="text-xs text-blue-100 mt-4 flex items-center gap-1">
-            <TrendingUp className="w-4 h-4" /> +3 so với tháng trước
-          </p>
         </div>
-
-        {/* Stat 2 */}
         <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-slate-500 text-sm font-medium">
-                Chờ khai giảng
-              </p>
-              <h3 className="text-3xl font-bold mt-1 text-slate-900">8</h3>
+              <p className="text-slate-500 text-sm font-medium">Cho khai giang</p>
+              <h3 className="text-3xl font-bold mt-1 text-slate-900">
+                {classes.filter((item) => item.status === "Pending").length}
+              </h3>
             </div>
             <div className="bg-slate-100 p-2.5 rounded-lg text-slate-600">
               <CalendarClock className="w-6 h-6" />
             </div>
           </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-5 overflow-hidden">
-            <div className="bg-amber-500 h-1.5 rounded-full w-2/3"></div>
-          </div>
         </div>
-
-        {/* Stat 3 */}
         <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-slate-500 text-sm font-medium">
-                Tỷ lệ tốt nghiệp
-              </p>
-              <h3 className="text-3xl font-bold mt-1 text-slate-900">92%</h3>
+              <p className="text-slate-500 text-sm font-medium">Dang hoat dong</p>
+              <h3 className="text-3xl font-bold mt-1 text-slate-900">
+                {classes.filter((item) => item.status === "InProgress").length}
+              </h3>
             </div>
             <div className="bg-slate-100 p-2.5 rounded-lg text-slate-600">
               <ShieldCheck className="w-6 h-6" />
             </div>
           </div>
-          <p className="text-xs text-emerald-500 mt-4 flex items-center gap-1 font-bold uppercase tracking-wider">
-            Vượt chỉ tiêu
-          </p>
         </div>
       </div>
 
-      {/* Table Component */}
       <ClassTable
         classes={paginatedClasses}
         currentPage={currentPage}
@@ -238,88 +288,41 @@ export default function ClassClientView({ initialClasses }: Props) {
         totalItems={totalItems}
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
-        onView={(cls: ClassRecord) =>
-          router.push(`/training-manager/classes/${cls.id}`)
-        }
-        onEdit={(cls: ClassRecord) => {
-          setEditingClass(cls);
+        onView={(cls) => router.push(`/training-manager/classes/${cls.id}`)}
+        onEdit={(cls) => {
+          const found = rawClasses.find((item) => item.id === cls.id) || null;
+          setEditingClass(found);
           setIsModalOpen(true);
         }}
-        onDelete={handleOpenDeleteModal}
+        onDelete={(cls) => setClassToDelete(cls)}
       />
 
-      {/* Action Cards (Giữ nguyên) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="relative overflow-hidden p-6 rounded-2xl bg-white border border-slate-200 group transition-all hover:border-blue-300 shadow-sm cursor-pointer">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors"></div>
-          <div className="flex gap-4 relative z-10">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <Download className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="font-bold text-lg text-slate-900">
-                Xuất báo cáo lớp học
-              </h4>
-              <p className="text-sm text-slate-500 mt-1">
-                Xuất file PDF hoặc CSV toàn bộ danh sách, điểm danh và kết quả
-                thi của học viên.
-              </p>
-              <button className="mt-4 text-blue-600 text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                Tải xuống ngay <span className="text-lg leading-none">→</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative overflow-hidden p-6 rounded-2xl bg-white border border-slate-200 group transition-all hover:border-blue-300 shadow-sm cursor-pointer">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors"></div>
-          <div className="flex gap-4 relative z-10">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <LibraryBig className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="font-bold text-lg text-slate-900">
-                Thư viện giáo trình
-              </h4>
-              <p className="text-sm text-slate-500 mt-1">
-                Duyệt và gắn tài liệu, biểu đồ thực hành từ kho lưu trữ trung
-                tâm vào các lớp học.
-              </p>
-              <button className="mt-4 text-blue-600 text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                Truy cập kho <span className="text-lg leading-none">→</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* GỌI CÁC MODALS Ở ĐÂY */}
       <ClassModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialData={getInitialFormData(editingClass)}
-        onSubmit={handleSubmit}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingClass(null);
+        }}
+        initialData={editingClass ? mapToFormData(editingClass) : null}
+        terms={terms}
+        instructors={instructors}
+        addresses={addresses}
+        onSubmit={handleSubmitClass}
       />
 
-      {/* 5. GẮN MODAL XẾP LỚP TỰ ĐỘNG */}
       <AutoAssignModal
         isOpen={isAutoAssignModalOpen}
         onClose={() => setIsAutoAssignModalOpen(false)}
+        terms={terms}
         onConfirm={handleRunAutoAssign}
       />
 
-      {/* 6. GẮN CONFIRM MODAL CHO LOGIC XÓA */}
-
       <ConfirmModal
-        isOpen={isDeleteModalOpen}
-        // Đổi onClose thành onCancel
-        onCancel={() => {
-          setIsDeleteModalOpen(false);
-          setClassToDelete(null);
-        }}
+        isOpen={Boolean(classToDelete)}
+        onCancel={() => setClassToDelete(null)}
         onConfirm={handleConfirmDelete}
-        title="Xác nhận xóa lớp học"
-        message={`Bạn có chắc chắn muốn xóa lớp học "${classToDelete?.name}"?`}
+        title="Xac nhan xoa lop hoc"
+        message={`Ban co chac muon xoa lop "${classToDelete?.name ?? ""}"?`}
       />
     </div>
   );

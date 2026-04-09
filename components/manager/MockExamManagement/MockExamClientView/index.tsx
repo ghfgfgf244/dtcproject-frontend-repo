@@ -1,200 +1,312 @@
-// src/app/(manager)/training-manager/mock-exams/_components/MockExamClientView/index.tsx
 "use client";
 
-import React, { useState } from "react"; // Đã xóa import useMemo
-import { Search, Plus, Filter, Download, Sparkles } from "lucide-react";
-import { MockExamRecord, MockExamStats } from "@/types/mock-exam";
-
-import MockExamStatsCards from "../MockExamStats";
-import MockExamTable from "../MockExamTable";
-import MockExamModal from "../../Modals/MockExamModal";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BookOpen, FileQuestion, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { useAuth } from "@clerk/nextjs";
+import { setAuthToken } from "@/lib/api";
+import { courseService } from "@/services/courseService";
+import { mockExamService } from "@/services/mockExamService";
+import { questionService } from "@/services/questionService";
+import { MockExamRecord, MockExamStats } from "@/types/mock-exam";
+import MockExamModal from "@/components/manager/Modals/MockExamModal";
 import ConfirmModal from "@/components/ui/confirm-modal";
-
-interface Props {
-  initialData: MockExamRecord[];
-  statsData: MockExamStats;
-}
 
 const ITEMS_PER_PAGE = 10;
 
-export default function MockExamClientView({ initialData, statsData }: Props) {
+export default function MockExamClientView() {
   const router = useRouter();
-  const [exams, setExams] = useState<MockExamRecord[]>(initialData);
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
+  const [courses, setCourses] = useState<any[]>([]);
+  const [exams, setExams] = useState<MockExamRecord[]>([]);
+  const [stats, setStats] = useState<MockExamStats>({
+    totalExams: 0,
+    activeExams: 0,
+    totalQuestions: 0,
+    theoryQuestions: 0,
+    signQuestions: 0,
+    simulationQuestions: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingExam, setEditingExam] = useState<MockExamRecord | null>(null);
-
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [examToDelete, setExamToDelete] = useState<{id: string, code: string} | null>(null);
+  const [examToDelete, setExamToDelete] = useState<MockExamRecord | null>(null);
 
-  // --- LOGIC LỌC (SEARCH) ---
-  // Đã gỡ bỏ useMemo, để React Compiler tự động tối ưu
-  const query = searchQuery.toLowerCase();
-  const filteredExams =
-    query === ""
-      ? exams
-      : exams.filter(
-          (exam) =>
-            exam.examId.toLowerCase().includes(query) ||
-            exam.courseCode.toLowerCase().includes(query),
-        );
-
-  // --- LOGIC PHÂN TRANG ---
-  const totalItems = filteredExams.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const paginatedExams = filteredExams.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
-  );
-
-  // HANDLER MỞ MODAL
-  const handleCreateNew = () => {
-    setEditingExam(null);
-    setIsModalOpen(true);
+  const ensureToken = async () => {
+    const token = await getToken({ skipCache: true });
+    setAuthToken(token);
   };
 
-  // --- HANDLERS ĐIỀU HƯỚNG ---
-  const handleViewDetails = (id: string) => {
-    // Navigate sang trang chi tiết (vd: /training-manager/mock-exams/me-1)
-    router.push(`/training-manager/mock-exams/${id}`);
-  };
+  const fetchData = async () => {
+    if (!isLoaded || !isSignedIn) return;
 
-  // HANDLER SUBMIT (Tạo mới hoặc Cập nhật)
-  const handleSubmitExam = (data: Partial<MockExamRecord>) => {
-    if (data.id) {
-      // Logic Cập nhật
-      setExams((prev) =>
-        prev.map((ex) =>
-          ex.id === data.id ? ({ ...ex, ...data } as MockExamRecord) : ex,
-        ),
-      );
-      console.log("Đã cập nhật:", data);
-    } else {
-      // Logic Tạo mới
-      const newExam: MockExamRecord = {
-        ...data,
-        id: `ME-${Math.floor(Math.random() * 10000)}`, // Fake UUID
-        examId: `#EX-${data.courseCode?.split("-")[0]}-${data.examNumber?.toString().padStart(2, "0")}`,
-        createdAt: "Created just now",
-      } as MockExamRecord;
+    try {
+      await ensureToken();
+      const [courseData, examData, questionData] = await Promise.all([
+        courseService.getAllAdminCourses(),
+        mockExamService.getAll(),
+        questionService.getAll(),
+      ]);
 
-      setExams((prev) => [newExam, ...prev]); // Đẩy lên đầu danh sách
-      console.log("Đã tạo mới:", newExam);
+      const courseMap = new Map(courseData.map((course) => [course.id, course]));
+      const mappedExams = examData.map((exam) => {
+        const course = courseMap.get(exam.courseId);
+        return mockExamService.mapExam(exam, course?.courseName || "Chua gan khoa hoc", course?.licenseType || "");
+      });
+
+      setCourses(courseData);
+      setExams(mappedExams);
+      setStats({
+        totalExams: mappedExams.length,
+        activeExams: mappedExams.filter((exam) => exam.isActive).length,
+        totalQuestions: questionData.length,
+        theoryQuestions: questionData.filter((question) => question.category === "Ly thuyet").length,
+        signQuestions: questionData.filter((question) => question.category === "Bien bao").length,
+        simulationQuestions: questionData.filter((question) => question.category === "Sa hinh").length,
+      });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Khong the tai danh sach de thi thu");
+    } finally {
+      setLoading(false);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDeleteClick = (id: string, code: string) => {
-    setExamToDelete({ id, code });
-    setIsDeleteModalOpen(true);
-  };
+  useEffect(() => {
+    fetchData();
+  }, [isLoaded, isSignedIn]);
 
-  const handleConfirmDelete = () => {
-    if (examToDelete) {
-      setExams(prev => prev.filter(ex => ex.id !== examToDelete.id));
-      
-      // Fix lỗi kẹt trang nếu xóa item cuối
-      const newTotal = filteredExams.length - 1;
-      if (newTotal > 0 && Math.ceil(newTotal / ITEMS_PER_PAGE) < currentPage) {
-        setCurrentPage(prev => prev - 1);
-      }
+  const filteredExams = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+    if (!keyword) return exams;
+
+    return exams.filter((exam) =>
+      exam.courseName.toLowerCase().includes(keyword) ||
+      exam.licenseType.toLowerCase().includes(keyword) ||
+      String(exam.examNo).includes(keyword)
+    );
+  }, [exams, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredExams.length / ITEMS_PER_PAGE));
+  const paginatedExams = filteredExams.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const handleCreateExam = async (data: any) => {
+    try {
+      await ensureToken();
+      await mockExamService.create(data);
+      toast.success("Da tao de thi thu moi");
+      setIsModalOpen(false);
+      await fetchData();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Khong the tao de thi thu");
     }
-    setIsDeleteModalOpen(false);
-    setExamToDelete(null);
   };
+
+  const handleDelete = async () => {
+    if (!examToDelete) return;
+
+    try {
+      await ensureToken();
+      await mockExamService.delete(examToDelete.id);
+      toast.success("Da xoa de thi thu");
+      setIsDeleteModalOpen(false);
+      setExamToDelete(null);
+      await fetchData();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Khong the xoa de thi thu");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500">
+          <RefreshCw className="h-5 w-5 animate-spin" />
+          <span>Dang tai de thi thu...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Top Action Bar (Toolbar) */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm ID bộ đề hoặc mã khóa học..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all outline-none"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }} // Reset về trang 1 khi gõ tìm kiếm
-          />
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">Quản lý đề thi thử</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Tạo đề thi thử, quản lý câu hỏi theo từng đề và mở nhanh trang ngân hàng câu hỏi để bổ sung nội dung.
+          </p>
         </div>
-        <button
-          onClick={handleCreateNew}
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all w-full sm:w-auto justify-center"
-        >
-          <Plus className="w-5 h-5" /> Tạo bộ đề mới
-        </button>
+
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/training-manager/mock-exams/question-bank"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            <FileQuestion className="h-4 w-4" />
+            Ngân hàng câu hỏi
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Tạo đề mới
+          </button>
+        </div>
       </div>
 
-      {/* Stats Bento Grid */}
-      <MockExamStatsCards data={statsData} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tong de thi thu</p>
+          <p className="mt-3 text-3xl font-black text-slate-900">{stats.totalExams}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">De dang hoat dong</p>
+          <p className="mt-3 text-3xl font-black text-slate-900">{stats.activeExams}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tong cau hoi</p>
+          <p className="mt-3 text-3xl font-black text-slate-900">{stats.totalQuestions}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Ly thuyet / Bien bao / Sa hinh</p>
+          <p className="mt-3 text-lg font-black text-slate-900">
+            {stats.theoryQuestions} / {stats.signQuestions} / {stats.simulationQuestions}
+          </p>
+        </div>
+      </div>
 
-      {/* Main Table Container */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Table Header & Actions */}
-        <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight">
-            Danh sách Sample Exams
-          </h2>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition-all">
-              <Filter className="w-4 h-4" /> Lọc
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <input
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Tim theo khoa hoc, hang bang hoac so de"
+            className="w-full max-w-md rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+
+          <button
+            type="button"
+            onClick={fetchData}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Lam moi
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-100 text-sm">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-5 py-3 text-left font-bold text-slate-500">Đề</th>
+                <th className="px-5 py-3 text-left font-bold text-slate-500">Khóa học</th>
+                <th className="px-5 py-3 text-left font-bold text-slate-500">Thời lượng</th>
+                <th className="px-5 py-3 text-left font-bold text-slate-500">Điểm đạt</th>
+                <th className="px-5 py-3 text-left font-bold text-slate-500">Số câu hỏi</th>
+                <th className="px-5 py-3 text-right font-bold text-slate-500">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {paginatedExams.map((exam) => (
+                <tr key={exam.id} className="hover:bg-slate-50">
+                  <td className="px-5 py-4">
+                    <div className="font-bold text-slate-900">Đề số {exam.examNo}</div>
+                    <div className="text-xs text-slate-400">Tạo ngày {new Date(exam.createdAt).toLocaleDateString("vi-VN")}</div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="font-semibold text-slate-900">{exam.courseName}</div>
+                    <div className="text-xs text-slate-500">Hạng {exam.licenseType || "Chua ro"}</div>
+                  </td>
+                  <td className="px-5 py-4 text-slate-700">{exam.durationMinutes} phút</td>
+                  <td className="px-5 py-4 text-slate-700">{exam.passingScore}</td>
+                  <td className="px-5 py-4 text-slate-700">{exam.totalQuestions}</td>
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/training-manager/mock-exams/${exam.id}`)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        Xem chi tiết
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExamToDelete(exam);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Xóa
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {paginatedExams.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-500">
+                    Chưa có đề thi thử phù hợp.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-sm text-slate-500">
+          <span>
+            Hiển thị {filteredExams.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
+            {Math.min(currentPage * ITEMS_PER_PAGE, filteredExams.length)} trên tổng số {filteredExams.length} đề
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              Trước
             </button>
-            <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition-all">
-              <Download className="w-4 h-4" /> Xuất dữ liệu
+            <span className="text-xs font-bold text-slate-700">
+              {currentPage}/{totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              Sau
             </button>
           </div>
         </div>
-
-        {/* The Table */}
-        <MockExamTable
-          data={paginatedExams}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          itemsPerPage={ITEMS_PER_PAGE}
-          onPageChange={setCurrentPage}
-          onViewDetails={handleViewDetails} // Nối Navigation vào đây
-          onDeleteClick={handleDeleteClick} // Nối sự kiện Xóa vào đây
-        />
       </div>
 
-      {/* AI Helper Banner */}
-      <div className="mt-8 p-6 lg:p-8 bg-slate-900 rounded-2xl flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative gap-6">
-        <div className="relative z-10 text-center md:text-left">
-          <h3 className="text-xl font-black tracking-tight mb-2">
-            Cần tối ưu ngân hàng đề thi?
-          </h3>
-          <p className="text-slate-400 text-sm max-w-lg">
-            Sử dụng công cụ AI Generator để tự động tạo các bộ đề thi thử dựa
-            trên tỉ lệ độ khó mong muốn cho từng hạng xe mà không cần chọn tay
-            từng câu.
-          </p>
-        </div>
-        <button className="relative z-10 px-6 py-3 bg-white text-slate-900 text-sm font-bold rounded-xl shadow-lg hover:shadow-white/20 transition-all flex items-center gap-2 active:scale-95 shrink-0">
-          <Sparkles className="w-5 h-5 text-blue-600" /> Thử ngay AI Exam
-        </button>
-        {/* Decorative Background */}
-        <div className="absolute right-0 top-0 h-full w-1/2 opacity-20 pointer-events-none bg-gradient-to-l from-blue-600 to-transparent"></div>
-      </div>
-      <MockExamModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialData={editingExam}
-        onSubmit={handleSubmitExam}
-      />
-      
-      <ConfirmModal 
+      <MockExamModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} courses={courses} onSubmit={handleCreateExam} />
+
+      <ConfirmModal
         isOpen={isDeleteModalOpen}
-        title="Xóa bộ đề thi thử"
-        message={`Bạn có chắc chắn muốn xóa bộ đề "${examToDelete?.code}" không? Toàn bộ danh sách câu hỏi bên trong cũng sẽ bị xóa vĩnh viễn.`}
-        onCancel={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleConfirmDelete}
+        title="Xoa de thi thu"
+        message={`Ban co chac chan muon xoa de thi thu so ${examToDelete?.examNo || ""} khong?`}
+        onCancel={() => {
+          setIsDeleteModalOpen(false);
+          setExamToDelete(null);
+        }}
+        onConfirm={handleDelete}
       />
     </div>
   );

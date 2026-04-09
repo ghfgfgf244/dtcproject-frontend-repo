@@ -1,7 +1,6 @@
 // src/app/(manager)/training-manager/resources/page.tsx
 import React from 'react';
 import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs';
-import { MOCK_LEARNING_RESOURCES, MOCK_RESOURCE_STATS } from '@/constants/learning-resource-data';
 import ResourceClientView from '@/components/manager/LearningResourceManagement/ResourceClientView';
 
 export const metadata = {
@@ -23,11 +22,8 @@ export default function LearningResourcesPage() {
           <Breadcrumbs items={breadcrumbsItems} />
         </div>
 
-        {/* Truyền Mock Data vào Client View */}
-        <ResourceClientView 
-          initialResources={MOCK_LEARNING_RESOURCES} 
-          stats={MOCK_RESOURCE_STATS} 
-        />
+        {/* Client View fetches its own data */}
+        <ResourceClientView />
       </div>
     </div>
   );

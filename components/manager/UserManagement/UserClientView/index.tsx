@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Search, Filter, Loader2, X, ShieldAlert, CheckCircle2, UserCog, Ban, Trash2 } from "lucide-react";
+import { Search, Filter, Loader2, X, ShieldAlert, CheckCircle2, UserCog, Ban, Trash2, MapPin } from "lucide-react";
 import { userService, UserProfile, UserStats as UserStatsType } from "@/services/userService";
+import { centerService, Center } from "@/services/centerService";
 import { useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -24,12 +25,14 @@ const ROLE_OPTIONS = [
 export default function UserClientView() {
   const { getToken } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [centers, setCenters] = useState<Center[]>([]);
   const [stats, setStats] = useState<UserStatsType | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [centerFilter, setCenterFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   // Modals
@@ -37,6 +40,10 @@ export default function UserClientView() {
   const [draftRole, setDraftRole] = useState<number>(6);
   const [toggleTarget, setToggleTarget] = useState<UserProfile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
+
+  const [assignTarget, setAssignTarget] = useState<UserProfile | null>(null);
+  const [draftCenter, setDraftCenter] = useState<string>("");
+
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -47,6 +54,9 @@ export default function UserClientView() {
       
       const allUsers = await userService.getAllUsers();
       setUsers(allUsers);
+
+      const allCenters = await centerService.getAll();
+      setCenters(allCenters);
 
       // Calculate stats on FE (Matching Center logic)
       const calculatedStats: UserStatsType = {
@@ -69,7 +79,7 @@ export default function UserClientView() {
       setStats(calculatedStats);
     } catch (error) {
       console.error(error);
-      toast.error("Không thể tải danh sách người dùng.");
+      toast.error("Không thể tải danh sách người dùng hoặc trung tâm.");
     } finally {
       setLoading(false);
     }
@@ -98,9 +108,18 @@ export default function UserClientView() {
         return role === roleFilter;
       });
     }
+
+    // By Center
+    if (centerFilter) {
+      if (centerFilter === "none") {
+        result = result.filter(u => !u.centerId);
+      } else {
+        result = result.filter(u => u.centerId === centerFilter);
+      }
+    }
     
     return result;
-  }, [users, searchQuery, roleFilter]);
+  }, [users, searchQuery, roleFilter, centerFilter]);
 
   const totalItems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
@@ -120,6 +139,26 @@ export default function UserClientView() {
     } catch (error: any) {
       console.error(error);
       const msg = error.response?.data?.message || "Lỗi cập nhật vai trò.";
+      toast.error(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Center Assign Handler
+  const handleAssignCenter = async () => {
+    if (!assignTarget || !draftCenter) return;
+    setActionLoading(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      await userService.assignCenter(assignTarget.id, draftCenter);
+      toast.success("Đã thay đổi trung tâm thành công!");
+      await loadData();
+      setAssignTarget(null);
+    } catch (error: any) {
+      console.error(error);
+      const msg = error.response?.data?.message || "Lỗi khi đổi trung tâm.";
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -188,7 +227,7 @@ export default function UserClientView() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Filter Bar */}
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/20">
-          <div className="flex flex-col md:flex-row gap-3 flex-1 max-w-2xl">
+          <div className="flex flex-col lg:flex-row gap-3 flex-1 max-w-4xl">
             {/* Search Input */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -201,18 +240,36 @@ export default function UserClientView() {
               />
             </div>
             
-            {/* Role Select */}
-            <div className="relative min-w-[180px]">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <select
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none font-bold text-slate-600 cursor-pointer"
-                value={roleFilter}
-                onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-              >
-                {ROLE_OPTIONS.map(opt => (
-                  <option key={opt.id} value={opt.key}>{opt.label}</option>
-                ))}
-              </select>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Center Select */}
+              <div className="relative min-w-[200px]">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <select
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none font-bold text-slate-600 cursor-pointer"
+                  value={centerFilter}
+                  onChange={(e) => { setCenterFilter(e.target.value); setCurrentPage(1); }}
+                >
+                  <option value="">Tất cả Trung tâm</option>
+                  <option value="none">Chưa phân bổ</option>
+                  {centers.map(center => (
+                    <option key={center.id} value={center.id}>{center.centerName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Role Select */}
+              <div className="relative min-w-[180px]">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <select
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none font-bold text-slate-600 cursor-pointer"
+                  value={roleFilter}
+                  onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
+                >
+                  {ROLE_OPTIONS.map(opt => (
+                    <option key={opt.id} value={opt.key}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           
@@ -227,6 +284,7 @@ export default function UserClientView() {
           totalPages={totalPages}
           onPageChange={setCurrentPage}
           onEditRole={(u) => { setEditTarget(u); setDraftRole(ROLE_OPTIONS.find(o => o.key === (u.roles?.[0] || u.roleName))?.id || 6); }}
+          onAssignCenter={(u) => { setAssignTarget(u); setDraftCenter(u.centerId || ""); }}
           onToggleStatus={(u) => setToggleTarget(u)}
           onDelete={(u) => setDeleteTarget(u)}
         />
@@ -234,10 +292,57 @@ export default function UserClientView() {
 
       {/* --- Modals --- */}
       
+      {/* Assign Center Modal */}
+      {assignTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+               <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
+                 <MapPin className="w-5 h-5 text-indigo-600" />
+                 Điều chuyển Trung tâm
+               </h3>
+               <button onClick={() => setAssignTarget(null)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+            </div>
+            <div className="p-6 space-y-4 text-center">
+              <p className="text-sm text-slate-500">
+                Lựa chọn cơ sở quản lý mới cho <span className="font-black text-slate-900">{assignTarget.fullName}</span>
+              </p>
+              <select 
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={draftCenter}
+                onChange={(e) => setDraftCenter(e.target.value)}
+              >
+                <option value="" disabled>-- Hãy chọn một Trung tâm --</option>
+                {centers.map(center => (
+                  <option key={center.id} value={center.id}>{center.centerName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 flex gap-3">
+              <button 
+                onClick={() => setAssignTarget(null)}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 bg-white hover:bg-slate-100 transition-colors"
+                disabled={actionLoading}
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={handleAssignCenter}
+                disabled={actionLoading || !draftCenter}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:bg-slate-300"
+              >
+                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Xác nhận chuyển
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Role Modal */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
                <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
                  <UserCog className="w-5 h-5 text-blue-600" />
@@ -281,7 +386,7 @@ export default function UserClientView() {
       {/* Toggle Status Modal */}
       {toggleTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in duration-200">
             <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${toggleTarget.isActive ? "bg-red-100" : "bg-emerald-100"}`}>
               {toggleTarget.isActive ? <Ban className="w-8 h-8 text-red-500" /> : <CheckCircle2 className="w-8 h-8 text-emerald-600" />}
             </div>
@@ -309,7 +414,7 @@ export default function UserClientView() {
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in duration-200">
             <div className="w-16 h-16 rounded-full bg-red-100 mx-auto mb-4 flex items-center justify-center">
               <Trash2 className="w-8 h-8 text-red-500" />
             </div>

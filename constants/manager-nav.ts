@@ -12,14 +12,14 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Lớp học', href: '/training-manager/classes', icon: 'groups' },
       { label: 'Lịch học', href: '/training-manager/schedule', icon: 'calendar_today' },
       { label: 'Kỳ thi', href: '/training-manager/exams', icon: 'assignment' },
-      { label: 'Giảng viên', href: '/training-manager/instructors', icon: 'badge' },
       { label: 'Duyệt đăng ký', href: '/training-manager/registrations', icon: 'how_to_reg' },
+      { label: 'Giảng viên', href: '/training-manager/instructors', icon: 'badge' },
       { label: 'Bộ đề thi thử', href: '/training-manager/mock-exams', icon: 'note' },
-      { label: 'Điều phối giảng viên', href: '/training-manager/assignments', icon: 'swap_horiz' },
-      { label: 'Thông báo', href: '/training-manager/notifications', icon: 'notifications' },
-      { label: 'Tài liệu cá nhân', href: '/training-manager/documents', icon: 'description' }, 
-      { label: 'Quản lý lộ trình', href: '/training-manager/roadmaps', icon: 'bar_chart' },
       { label: 'Quản lý tài nguyên', href: '/training-manager/resources', icon: 'library_books' },
+      // { label: 'Điều phối giảng viên', href: '/training-manager/assignments', icon: 'swap_horiz' },
+      { label: 'Thông báo', href: '/training-manager/notifications', icon: 'notifications' },
+      { label: 'Hồ sơ', href: '/training-manager/documents', icon: 'description' },
+      // { label: 'Quản lý lộ trình', href: '/training-manager/roadmaps', icon: 'bar_chart' },
     ]
   },
   EnrollmentManager: {
@@ -29,13 +29,9 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Kỳ tuyển sinh', href: '/enrollment-manager/terms', icon: 'calendar_view_month' },
       { label: 'Bài đăng tuyển sinh', href: '/enrollment-manager/posts', icon: 'post_add' },
       { label: 'Duyệt đăng ký', href: '/enrollment-manager/registrations', icon: 'how_to_reg' },
-      { label: 'Thống kê & Báo cáo', href: '/enrollment-manager/reports', icon: 'bar_chart' },
-      { label: 'Thông báo', href: '/enrollment-manager/notifications', icon: 'notifications' },
       { label: 'Quản lý cộng tác viên', href: '/enrollment-manager/collaborators', icon: 'group_add' },
-      { label: 'Quản lý hồ sơ', href: '/enrollment-manager/profiles', icon: 'people_alt' },
-      { label: 'Quản lý hoa hồng', href: '/enrollment-manager/commissions', icon: 'description' },
-      { label: 'Tài liệu cá nhân', href: '/enrollment-manager/documents', icon: 'description' }, 
-      
+      { label: 'Thông báo', href: '/enrollment-manager/notifications', icon: 'notifications' },
+      { label: 'Hồ sơ', href: '/enrollment-manager/documents', icon: 'switch_account' },
     ]
   },
   Admin: {
@@ -45,6 +41,7 @@ export const MANAGER_MENUS: Record<ManagerRole, MenuConfig> = {
       { label: 'Quản lý trung tâm', href: '/admin/centers', icon: 'domain' },
       { label: 'Quản lý người dùng', href: '/admin/users', icon: 'manage_accounts' },
       { label: 'Duyệt khóa học', href: '/admin/courses', icon: 'auto_stories' },
+      { label: 'Duyệt đợt thi', href: '/admin/exams', icon: 'fact_check' },
       { label: 'Thông báo', href: '/admin/notifications', icon: 'notifications' },
     ]
   }

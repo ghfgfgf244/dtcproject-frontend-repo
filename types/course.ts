@@ -1,6 +1,8 @@
 // d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\types\course.ts
 
-export type LicenseType = 'A1' | 'B1' | 'B' | 'C';
+import { ExamLevelLabel } from "@/constants/exam-levels";
+
+export type LicenseType = ExamLevelLabel;
 export type CourseStatus = 'Hoạt động' | 'Ngừng hoạt động';
 
 export interface LearningRoadmapItem {
@@ -8,12 +10,9 @@ export interface LearningRoadmapItem {
   courseId: string;
   orderNo: number;
   title: string;
-  type: string;
-  content: string;
-  attachmentUrl?: string;
-  status: boolean;
-  isDeleted: boolean;
-  createdAt: string;
+  description: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Course {

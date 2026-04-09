@@ -16,9 +16,9 @@ export default function NotificationDetailPage({ params }: { params: Promise<{ i
   const [currentId, setCurrentId] = useState<string | null>(null);
 
   const breadcrumbsItems = [
-    { label: 'Dashboard', href: '/training-manager/dashboard' },
-    { label: 'Notifications', href: '/training-manager/notifications' },
-    { label: 'Detail' }
+    { label: 'Trang chủ', href: '/training-manager/dashboard' },
+    { label: 'Thông báo', href: '/training-manager/notifications' },
+    { label: 'Chi tiết thông báo' }
   ];
 
   const fetchData = useCallback(async (id: string) => {

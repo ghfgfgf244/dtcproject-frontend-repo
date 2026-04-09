@@ -17,7 +17,7 @@ export default function ContactPage() {
               <div className={styles.heroCopy}>
                 <h1>
                   Get in touch with our <br />
-                  <span>Academy Experts.</span>
+                  <span>Drive Safe Academy Experts.</span>
                 </h1>
                 <p>
                   Whether you're looking to start your journey or need help with your
@@ -69,7 +69,7 @@ export default function ContactPage() {
 
               <div className={styles.mapCard}>
                 <iframe
-                  title="DriveMaster location"
+                  title="Drive Safe Academy location"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3835.856069316429!2d108.25831637486753!3d15.968891042116757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3142116949840599%3A0x365b35580f52e8d5!2zxJDhuqFpIGjhu41jIEZQVCDEkMOgIE7hurVuZw!5e0!3m2!1svi!2s!4v1774247108504!5m2!1svi!2s"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"

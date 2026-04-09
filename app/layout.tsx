@@ -21,8 +21,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DriveSafe Academy",
-  description: "Hệ thống quản lý đào tạo lái xe thông minh",
+  title: "Drive Safe Academy",
+  description: "He thong quan ly dao tao lai xe thong minh",
+  icons: {
+    icon: "/brand-car.svg",
+    shortcut: "/brand-car.svg",
+    apple: "/brand-car.svg",
+  },
 };
 
 export default function RootLayout({
@@ -42,7 +47,7 @@ export default function RootLayout({
           colorInputText: "#fff",
         },
         elements: {
-          cardBox: "custom-clerk-cardBox", // To fix centering if needed
+          cardBox: "custom-clerk-cardBox",
           card: "custom-clerk-card",
           main: "custom-clerk-main",
           headerTitle: "custom-clerk-headerTitle",
@@ -57,34 +62,19 @@ export default function RootLayout({
     >
       <html lang="en" suppressHydrationWarning>
         <head>
-          {/* Tăng tốc kết nối tới server Font */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link
-            rel="preconnect"
-            href="https://fonts.gstatic.com"
-            crossOrigin="anonymous"
-          />
-
-          {/* Load Material Symbols với display=block để tránh hiện chữ rồi mới hiện hình */}
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
           />
         </head>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-        >
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
           <UserRoleProvider>
-            {/* Sync Clerk user with local backend on login */}
             <SyncUser />
-            {/* Role-based redirection after login */}
             <RoleRedirect />
             <Toaster position="top-right" reverseOrder={false} />
-
-            {/* MAIN CONTENT */}
             <main className="flex-1">{children}</main>
-
-            {/* FOOTER */}
             {/* <Footer /> */}
           </UserRoleProvider>
         </body>
