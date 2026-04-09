@@ -11,9 +11,10 @@ import DocumentTable from '../DocumentTable';
 
 interface Props {
   initialDocs?: DocumentRecord[];
+  hideHeader?: boolean;
 }
 
-export default function DocumentClientView({ initialDocs = [] }: Props) {
+export default function DocumentClientView({ initialDocs = [], hideHeader = false }: Props) {
   const { getToken } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -122,35 +123,32 @@ export default function DocumentClientView({ initialDocs = [] }: Props) {
   return (
     <div className="space-y-8">
       
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="mb-2">
-            <Breadcrumbs items={breadcrumbsItems} />
+      {!hideHeader && (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="mb-2">
+              <Breadcrumbs items={breadcrumbsItems} />
+            </div>
+            <h2 className="text-3xl font-black tracking-tight text-slate-900">Hồ sơ cá nhân</h2>
+            <p className="text-slate-500 mt-1">Đăng tải và quản lý các giấy tờ cá nhân của bạn.</p>
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">Hồ sơ cá nhân</h2>
-          <p className="text-slate-500 mt-1">Đăng tải và quản lý các giấy tờ cá nhân của bạn.</p>
+          <button
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
+            {uploading ? "Đang tải lên..." : "Tải hồ sơ lên"}
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+          />
         </div>
-        <button 
-          onClick={handleUploadClick}
-          disabled={uploading}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-        >
-          {uploading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <UploadCloud className="w-5 h-5" />
-          )}
-          {uploading ? "Đang tải lên..." : "Tải hồ sơ lên"}
-        </button>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleFileChange} 
-          className="hidden" 
-          accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-        />
-      </div>
+      )}
 
       {/* FILTER BAR SECTION - ĐÃ ĐƯA LÊN CÙNG 1 HÀNG */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">

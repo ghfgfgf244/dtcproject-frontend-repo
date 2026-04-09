@@ -53,17 +53,17 @@ export default function ExamBatchTable({
                 </td>
                 <td className="px-6 py-4">
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                    batch.status === 'OpenForRegistration' || batch.status === 'InProgress' ? 'bg-emerald-100 text-emerald-700' : 
-                    batch.status === 'Pending' ? 'bg-blue-100 text-blue-700' : 
-                    batch.status === 'Completed' ? 'bg-slate-100 text-slate-600' : 
-                    batch.status === 'ClosedForRegistration' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
+                    batch.status === 2 || batch.status === 4 ? 'bg-emerald-100 text-emerald-700' : 
+                    batch.status === 1 ? 'bg-blue-100 text-blue-700' : 
+                    batch.status === 5 ? 'bg-slate-100 text-slate-600' : 
+                    batch.status === 3 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                   }`}>
-                    {batch.status === 'Pending' ? 'CHƯA MỞ ĐĂNG KÝ' :
-                     batch.status === 'OpenForRegistration' ? 'ĐANG MỞ ĐĂNG KÝ' :
-                     batch.status === 'ClosedForRegistration' ? 'ĐÃ ĐÓNG ĐĂNG KÝ' :
-                     batch.status === 'InProgress' ? 'ĐANG DIỄN RA KỲ THI' :
-                     batch.status === 'Completed' ? 'ĐÃ KẾT THÚC' : 
-                     batch.status === 'Cancelled' ? 'ĐÃ HỦY' : batch.status}
+                    {batch.status === 1 ? 'CHƯA MỞ ĐĂNG KÝ' :
+                     batch.status === 2 ? 'ĐANG MỞ ĐĂNG KÝ' :
+                     batch.status === 3 ? 'ĐÃ ĐÓNG ĐĂNG KÝ' :
+                     batch.status === 4 ? 'ĐANG DIỄN RA KỲ THI' :
+                     batch.status === 5 ? 'ĐÃ KẾT THÚC' : 
+                     batch.status === 6 ? 'ĐÃ HỦY' : batch.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">

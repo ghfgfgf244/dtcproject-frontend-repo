@@ -1,194 +1,285 @@
-// src/app/(manager)/training-manager/mock-exams/[id]/_components/Modals/MockExamQuestionModal/index.tsx
 "use client";
 
-import React, { useState } from 'react';
-import { X, Info, Upload } from 'lucide-react';
-import { ExamQuestion, ExamAnswer } from '@/types/mock-exam-detail';
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ImagePlus, Loader2, Upload, X } from "lucide-react";
+import { fileUploadService } from "@/services/fileUploadService";
+import { ExamQuestion, QuestionCategory, QuestionFormData } from "@/types/mock-exam-detail";
+import { toast } from "react-hot-toast";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialData: ExamQuestion | null;
-  onSubmit: (updatedData: ExamQuestion) => void;
+  onSubmit: (data: QuestionFormData) => Promise<void> | void;
+}
+
+const CATEGORIES: QuestionCategory[] = ["Ly thuyet", "Bien bao", "Sa hinh"];
+
+function mapInitialData(question: ExamQuestion | null): QuestionFormData {
+  const answer = (label: "A" | "B" | "C" | "D") =>
+    question?.answers.find((item) => item.label === label)?.content || "";
+
+  const correctLabel = question?.answers.find((item) => item.isCorrect)?.label || "A";
+  const correctAnswer = correctLabel === "A" ? 1 : correctLabel === "B" ? 2 : correctLabel === "C" ? 3 : 4;
+
+  return {
+    category: question?.category || "Ly thuyet",
+    content: question?.content || "",
+    answerA: answer("A"),
+    answerB: answer("B"),
+    answerC: answer("C"),
+    answerD: answer("D"),
+    correctAnswer,
+    imageLink: question?.imageUrl || "",
+    explanation: question?.explanation || "",
+  };
 }
 
 export default function MockExamQuestionModal({ isOpen, onClose, initialData, onSubmit }: Props) {
-  // State quản lý Form
-  const [content, setContent] = useState('');
-  const [answers, setAnswers] = useState<ExamAnswer[]>([]);
-  const [correctLabel, setCorrectLabel] = useState<string>('A');
+  const [form, setForm] = useState<QuestionFormData>(mapInitialData(initialData));
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Kỹ thuật đồng bộ State an toàn (thay thế useEffect)
-  const [prevIsOpen, setPrevIsOpen] = useState(false);
-  const [prevInitialData, setPrevInitialData] = useState<ExamQuestion | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    setForm(mapInitialData(initialData));
+    setSelectedImage(null);
+    setSubmitting(false);
+    setUploadingImage(false);
+  }, [initialData, isOpen]);
 
-  if (isOpen !== prevIsOpen || initialData !== prevInitialData) {
-    setPrevIsOpen(isOpen);
-    setPrevInitialData(initialData);
-    
-    if (isOpen && initialData) {
-      setContent(initialData.content);
-      setAnswers(initialData.answers);
-      const correctAns = initialData.answers.find(a => a.isCorrect);
-      setCorrectLabel(correctAns?.label || 'A');
-    }
-  }
+  const isEditing = useMemo(() => Boolean(initialData), [initialData]);
 
-  if (!isOpen || !initialData) return null;
+  if (!isOpen) return null;
 
-  // Xử lý thay đổi nội dung của một đáp án cụ thể
-  const handleAnswerChange = (label: string, newContent: string) => {
-    setAnswers(prev => prev.map(ans => 
-      ans.label === label ? { ...ans, content: newContent } : ans
-    ));
+  const setField = <K extends keyof QuestionFormData>(key: K, value: QuestionFormData[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Submit Form
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Cập nhật lại cờ isCorrect cho mảng answers dựa trên correctLabel
-    const updatedAnswers = answers.map(ans => ({
-      ...ans,
-      isCorrect: ans.label === correctLabel
-    }));
+  const imagePreview = selectedImage ? URL.createObjectURL(selectedImage) : form.imageLink || "";
 
-    const updatedQuestion: ExamQuestion = {
-      ...initialData,
-      content,
-      answers: updatedAnswers
-    };
+  const uploadSelectedImage = async () => {
+    if (!selectedImage) {
+      toast.error("Vui long chon hinh anh tu may tinh.");
+      return;
+    }
 
-    onSubmit(updatedQuestion);
+    try {
+      setUploadingImage(true);
+      const uploadedUrl = await fileUploadService.uploadPublic(selectedImage, {
+        folder: "question_images",
+        resourceType: "image",
+      });
+      setField("imageLink", uploadedUrl);
+      setSelectedImage(null);
+      toast.success("Da tai hinh anh len thanh cong.");
+    } catch (error) {
+      console.error("Failed to upload question image:", error);
+      toast.error("Khong the tai hinh anh len.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    try {
+      let payload = form;
+
+      if (selectedImage && !form.imageLink) {
+        const uploadedUrl = await fileUploadService.uploadPublic(selectedImage, {
+          folder: "question_images",
+          resourceType: "image",
+        });
+        payload = { ...form, imageLink: uploadedUrl };
+      }
+
+      await onSubmit(payload);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose}></div>
-      
-      {/* Modal Container */}
-      <div className="relative bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl border border-slate-200 flex flex-col custom-scrollbar">
-        
-        {/* Header */}
-        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-start sticky top-0 bg-white z-10">
-          <div>
-            <h3 className="text-[1.125rem] font-black text-slate-900 leading-none">Chỉnh sửa câu hỏi</h3>
-            <p className="text-slate-500 text-[0.75rem] font-bold mt-1 uppercase tracking-wider">
-              Mã câu hỏi: {initialData.id}
-            </p>
-          </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 p-1.5 rounded-md transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Body Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
-          <div className="p-8 space-y-8">
-            
-            {/* Question Text */}
-            <div className="space-y-2">
-              <label className="text-[0.75rem] font-bold text-slate-500 uppercase tracking-widest">Nội dung câu hỏi (Question)</label>
-              <textarea 
-                required
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all resize-none font-medium leading-relaxed outline-none" 
-                rows={3}
-              />
+    <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-sm">
+      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-4xl items-center justify-center py-4">
+        <div className="flex max-h-[calc(100vh-48px)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="shrink-0 border-b border-slate-100 px-6 py-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">
+                  {isEditing ? "Chinh sua cau hoi" : "Them cau hoi moi"}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Nhap day du noi dung, dap an va nhom cau hoi de luu vao ngan hang de.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
+          </div>
 
-            {/* Illustration / ImageLink */}
-            <div className="space-y-2">
-              <label className="text-[0.75rem] font-bold text-slate-500 uppercase tracking-widest">Hình ảnh minh họa (ImageLink)</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                
-                {initialData.imageUrl ? (
-                  <div className="aspect-video bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden group relative">
-                    <img src={initialData.imageUrl} alt="Minh họa" className="w-full h-full object-contain p-2" />
-                    <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button type="button" className="bg-white text-slate-900 px-4 py-2 rounded-lg text-xs font-bold shadow-lg">Thay đổi ảnh</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="aspect-video bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center">
-                    <p className="text-xs text-slate-400 font-medium">Chưa có hình ảnh</p>
-                  </div>
-                )}
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Nhom cau hoi</label>
+                  <select
+                    value={form.category}
+                    onChange={(event) => setField("category", event.target.value as QuestionCategory)}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    {CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <p className="text-xs text-blue-700 font-medium flex items-start gap-2">
-                      <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                      Gợi ý: Sử dụng ảnh .png hoặc .jpg có độ phân giải cao để học viên dễ quan sát.
-                    </p>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Dap an dung</label>
+                  <select
+                    value={form.correctAnswer}
+                    onChange={(event) => setField("correctAnswer", Number(event.target.value) as QuestionFormData["correctAnswer"])}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value={1}>1 - Dap an A</option>
+                    <option value={2}>2 - Dap an B</option>
+                    <option value={3}>3 - Dap an C</option>
+                    <option value={4}>4 - Dap an D</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Noi dung cau hoi</label>
+                <textarea
+                  value={form.content}
+                  onChange={(event) => setField("content", event.target.value)}
+                  rows={4}
+                  required
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Dap an A</label>
+                  <input value={form.answerA || ""} onChange={(event) => setField("answerA", event.target.value)} required={form.correctAnswer === 1} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Dap an B</label>
+                  <input value={form.answerB || ""} onChange={(event) => setField("answerB", event.target.value)} required={form.correctAnswer === 2} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Dap an C</label>
+                  <input value={form.answerC || ""} onChange={(event) => setField("answerC", event.target.value)} required={form.correctAnswer === 3} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Dap an D</label>
+                  <input value={form.answerD || ""} onChange={(event) => setField("answerD", event.target.value)} required={form.correctAnswer === 4} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700">Hinh anh cau hoi</label>
+                    <input
+                      value={form.imageLink || ""}
+                      onChange={(event) => setField("imageLink", event.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="Dan link hinh anh hoac tai file tu may tinh"
+                    />
                   </div>
-                  <button type="button" className="w-full border border-slate-200 py-3 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 transition-all active:scale-95">
-                    <Upload className="w-4 h-4" /> Tải lên từ thiết bị
-                  </button>
+
+                  <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-5 text-center transition hover:bg-blue-50">
+                    <ImagePlus className="mx-auto mb-2 h-8 w-8 text-blue-600" />
+                    <p className="text-sm font-bold text-blue-700">Chon hinh anh local</p>
+                    <p className="mt-1 text-xs text-slate-500">Ho tro JPG, PNG, WEBP. File se duoc tai len Cloudinary.</p>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp"
+                      className="hidden"
+                      onChange={(event) => setSelectedImage(event.target.files?.[0] || null)}
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {selectedImage && <span className="text-xs font-medium text-slate-600">Da chon: {selectedImage.name}</span>}
+                    <button
+                      type="button"
+                      onClick={uploadSelectedImage}
+                      disabled={!selectedImage || uploadingImage}
+                      className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-4 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      Tai hinh len ngay
+                    </button>
+                    {form.imageLink && (
+                      <button
+                        type="button"
+                        onClick={() => setField("imageLink", "")}
+                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        Xoa link anh
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-slate-700">Giai thich</label>
+                  <textarea
+                    value={form.explanation || ""}
+                    onChange={(event) => setField("explanation", event.target.value)}
+                    rows={5}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Xem truoc hinh anh</p>
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview question" className="h-44 w-full rounded-xl object-contain bg-white" />
+                    ) : (
+                      <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm text-slate-400">
+                        Chua co hinh anh
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Answer Options */}
-            <div className="space-y-4">
-              <label className="text-[0.75rem] font-bold text-slate-500 uppercase tracking-widest">Phương án trả lời</label>
-              <div className="grid grid-cols-1 gap-4">
-                {answers.map((ans) => (
-                  <div key={ans.id} className="flex items-center gap-4">
-                    <div className="w-10 h-10 flex-shrink-0 bg-slate-900 text-white font-black flex items-center justify-center rounded-lg shadow-sm">
-                      {ans.label}
-                    </div>
-                    <input 
-                      type="text" 
-                      required
-                      value={ans.content}
-                      onChange={(e) => handleAnswerChange(ans.label, e.target.value)}
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-600 outline-none font-medium transition-all" 
-                    />
-                  </div>
-                ))}
+            <div className="shrink-0 border-t border-slate-100 bg-white px-6 py-4">
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+                >
+                  Huy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting || uploadingImage}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {submitting ? "Dang luu..." : isEditing ? "Cap nhat cau hoi" : "Luu cau hoi"}
+                </button>
               </div>
             </div>
-
-            {/* Correct Answer Selection */}
-            <div className="space-y-3">
-              <label className="text-[0.75rem] font-bold text-slate-500 uppercase tracking-widest">Đáp án đúng (CorrectAnswer)</label>
-              <div className="flex flex-wrap gap-3">
-                {answers.map((ans) => (
-                  <label key={`correct-${ans.label}`} className="flex-1 min-w-[120px] relative cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="correct_ans" 
-                      value={ans.label}
-                      checked={correctLabel === ans.label}
-                      onChange={() => setCorrectLabel(ans.label)}
-                      className="peer sr-only" 
-                    />
-                    <div className="p-4 rounded-xl border-2 border-slate-100 bg-slate-50 peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center select-none hover:bg-slate-100">
-                      <span className={`block text-sm font-black transition-colors ${correctLabel === ans.label ? 'text-blue-700' : 'text-slate-600'}`}>
-                        Đáp án {ans.label}
-                      </span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-          </div>
-
-          {/* Modal Footer */}
-          <div className="px-8 py-5 border-t border-slate-100 flex justify-end gap-4 bg-slate-50 sticky bottom-0 z-10 rounded-b-xl">
-            <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors active:scale-95">
-              Hủy bỏ
-            </button>
-            <button type="submit" className="px-8 py-2.5 bg-blue-600 text-white text-sm font-black rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all">
-              Cập nhật câu hỏi
-            </button>
-          </div>
-        </form>
-
+          </form>
+        </div>
       </div>
     </div>
   );

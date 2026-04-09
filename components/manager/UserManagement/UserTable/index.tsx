@@ -2,12 +2,13 @@
 
 import React from "react";
 import { UserProfile } from "@/services/userService";
-import { Loader2, Mail, Phone, Calendar, UserCog, ToggleLeft, ToggleRight, Trash2, Ban } from "lucide-react";
+import { Loader2, Mail, Phone, Calendar, UserCog, ToggleLeft, ToggleRight, Trash2, Ban, MapPin } from "lucide-react";
 
 interface UserTableProps {
   data: UserProfile[];
   loading: boolean;
   onEditRole: (user: UserProfile) => void;
+  onAssignCenter: (user: UserProfile) => void;
   onToggleStatus: (user: UserProfile) => void;
   onDelete: (user: UserProfile) => void;
   // Pagination (passed from parent)
@@ -44,6 +45,7 @@ export default function UserTable({
   data,
   loading,
   onEditRole,
+  onAssignCenter,
   onToggleStatus,
   onDelete,
   currentPage,
@@ -76,7 +78,7 @@ export default function UserTable({
             <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-500 tracking-wider">Người dùng</th>
             <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-500 tracking-wider">Liên hệ</th>
             <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-500 tracking-wider">Vai trò</th>
-            <th className="px-6 py-4 text-[11px) font-black uppercase text-slate-500 tracking-wider">Trạng thái</th>
+            <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-500 tracking-wider">Trạng thái</th>
             <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-500 tracking-wider text-right">Tùy chọn</th>
           </tr>
         </thead>
@@ -119,6 +121,10 @@ export default function UserTable({
                         {user.phone}
                       </div>
                     )}
+                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
+                      <MapPin className="w-3 h-3 text-blue-400" />
+                      {user.centerName || "Chưa phân bổ"}
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -150,6 +156,13 @@ export default function UserTable({
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
+                    <button 
+                      onClick={() => onAssignCenter(user)}
+                      className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100"
+                      title="Chuyển cơ sở"
+                    >
+                      <MapPin className="w-4 h-4" />
+                    </button>
                     <button 
                       onClick={() => onEditRole(user)}
                       className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all opacity-0 group-hover:opacity-100"

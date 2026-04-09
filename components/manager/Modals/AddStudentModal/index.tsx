@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { X, Search } from 'lucide-react';
-import styles from '@/components/manager/Modals/modal.module.css';
-import { StudentOption } from '@/types/class-detail';
+import { useEffect, useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
+import styles from "@/components/manager/Modals/modal.module.css";
+import { StudentOption } from "@/types/class-detail";
 
 interface Props {
   isOpen: boolean;
@@ -12,23 +12,37 @@ interface Props {
   onSubmit: (selectedStudentIds: string[]) => void;
 }
 
+function getFallbackInitial(name: string) {
+  return (name.trim()[0] || "U").toUpperCase();
+}
+
 export default function AddStudentModal({ isOpen, onClose, availableStudents, onSubmit }: Props) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Lọc học viên theo từ khóa tìm kiếm
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+      setSelectedIds(new Set());
+    }
+  }, [isOpen]);
+
   const filteredStudents = useMemo(() => {
-    const q = searchQuery.toLowerCase();
-    return availableStudents.filter(stu => 
-      stu.fullName.toLowerCase().includes(q) || 
-      stu.email.toLowerCase().includes(q) || 
-      stu.phone.includes(q)
-    );
+    const query = searchQuery.trim().toLowerCase();
+
+    return availableStudents.filter((student) => {
+      if (!query) return true;
+
+      return (
+        student.fullName.toLowerCase().includes(query) ||
+        student.email.toLowerCase().includes(query) ||
+        (student.phone || "").toLowerCase().includes(query)
+      );
+    });
   }, [availableStudents, searchQuery]);
 
   if (!isOpen) return null;
 
-  // Logic Checkbox
   const handleToggleStudent = (id: string) => {
     const next = new Set(selectedIds);
     if (next.has(id)) {
@@ -36,28 +50,27 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
     } else {
       next.add(id);
     }
+
     setSelectedIds(next);
   };
 
   const handleToggleAll = () => {
-    if (selectedIds.size === filteredStudents.length) {
-      setSelectedIds(new Set()); // Bỏ chọn tất cả
-    } else {
-      setSelectedIds(new Set(filteredStudents.map(s => s.id))); // Chọn tất cả
+    if (filteredStudents.length > 0 && selectedIds.size === filteredStudents.length) {
+      setSelectedIds(new Set());
+      return;
     }
+
+    setSelectedIds(new Set(filteredStudents.map((student) => student.id)));
   };
 
-  // Logic Submit
   const handleSubmit = () => {
     onSubmit(Array.from(selectedIds));
-    // Reset state sau khi submit
-    setSearchQuery('');
+    setSearchQuery("");
     setSelectedIds(new Set());
   };
 
-  // Logic Hủy (Đóng Modal và clear dữ liệu đang chọn dở)
   const handleCancel = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     setSelectedIds(new Set());
     onClose();
   };
@@ -65,110 +78,140 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
   return (
     <div className={styles.overlay}>
       <div className={styles.backdrop} onClick={handleCancel} />
-      
-      <div className={`${styles.modalContainer} max-w-3xl flex flex-col max-h-[85vh]`}>
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-          <h3 className="text-lg font-black text-slate-900 tracking-tight">Tìm và Thêm Học viên</h3>
-          <button onClick={handleCancel} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded transition-all">
-            <X className="w-5 h-5" />
-          </button>
+
+      <div className={`${styles.modalContainer} max-w-3xl flex max-h-[85vh] flex-col`}>
+        <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black tracking-tight text-slate-900">Tim va them hoc vien</h3>
+            <button
+              onClick={handleCancel}
+              className="flex h-8 w-8 items-center justify-center rounded text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-900"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Search Section */}
-        <div className="p-6 bg-slate-50 border-b border-slate-100 shrink-0">
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
-              <Search className="w-5 h-5" />
+        <div className="shrink-0 border-b border-slate-100 bg-slate-50 p-6">
+          <div className="group relative">
+            <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
+              <Search className="h-5 w-5" />
             </div>
-            <input 
+            <input
               type="text"
-              className="w-full bg-white border-none ring-1 ring-slate-200 focus:ring-blue-600 focus:ring-2 py-3.5 pl-12 pr-4 text-sm rounded-lg shadow-sm transition-all placeholder:text-slate-400 outline-none" 
-              placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..." 
+              className="w-full rounded-lg border-none bg-white py-3.5 pl-12 pr-4 text-sm shadow-sm outline-none ring-1 ring-slate-200 transition-all placeholder:text-slate-400 focus:ring-2 focus:ring-blue-600"
+              placeholder="Tim kiem theo ten, email hoac so dien thoai..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
         </div>
 
-        {/* Results Table (Scrollable) */}
         <div className="flex-1 overflow-y-auto bg-white">
-          <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-white border-b border-slate-200 z-10 shadow-sm">
+          <table className="w-full border-collapse text-left">
+            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm">
               <tr>
-                <th className="pl-6 pr-2 py-3 w-12">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 rounded-sm border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
+                <th className="w-12 py-3 pl-6 pr-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer rounded-sm border-slate-300 text-blue-600 focus:ring-blue-600"
                     checked={filteredStudents.length > 0 && selectedIds.size === filteredStudents.length}
                     onChange={handleToggleAll}
                   />
                 </th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Học viên</th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Liên hệ</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Khóa học đã đăng ký</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Hoc vien</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Lien he</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Khoa hoc lien quan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredStudents.map((stu) => {
-                const isSelected = selectedIds.has(stu.id);
+              {filteredStudents.map((student) => {
+                const isSelected = selectedIds.has(student.id);
+
                 return (
-                  <tr 
-                    key={stu.id} 
-                    onClick={() => handleToggleStudent(stu.id)}
-                    className={`transition-colors cursor-pointer ${isSelected ? 'bg-blue-50/50' : 'hover:bg-slate-50'}`}
+                  <tr
+                    key={student.id}
+                    onClick={() => handleToggleStudent(student.id)}
+                    className={`cursor-pointer transition-colors ${isSelected ? "bg-blue-50/50" : "hover:bg-slate-50"}`}
                   >
-                    <td className="pl-6 pr-2 py-3">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 rounded-sm border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
+                    <td className="py-3 pl-6 pr-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 cursor-pointer rounded-sm border-slate-300 text-blue-600 focus:ring-blue-600"
                         checked={isSelected}
-                        onChange={() => {}} // Đã handle ở thẻ tr
-                        onClick={(e) => e.stopPropagation()} // Tránh click 2 lần
+                        onChange={() => handleToggleStudent(student.id)}
+                        onClick={(event) => event.stopPropagation()}
                       />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <img src={stu.avatar} alt={stu.fullName} className="w-9 h-9 rounded-full bg-slate-100 object-cover ring-1 ring-slate-200" />
-                        <div className="text-sm font-bold text-slate-900 leading-tight">{stu.fullName}</div>
+                        {student.avatar ? (
+                          <img
+                            src={student.avatar}
+                            alt={student.fullName}
+                            className="h-9 w-9 rounded-full bg-slate-100 object-cover ring-1 ring-slate-200"
+                          />
+                        ) : (
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+                            {getFallbackInitial(student.fullName)}
+                          </div>
+                        )}
+                        <div className="text-sm font-bold leading-tight text-slate-900">{student.fullName}</div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-[11px] text-slate-600 font-medium">{stu.email}</div>
-                      <div className="text-[10px] text-slate-400">{stu.phone}</div>
+                      <div className="text-[11px] font-medium text-slate-600">{student.email}</div>
+                      <div className="text-[10px] text-slate-400">{student.phone || "N/A"}</div>
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {stu.enrolledCourses.map((course, idx) => (
-                          <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200">
-                            {course}
-                          </span>
-                        ))}
+                        {student.enrolledCourses.length > 0 ? (
+                          student.enrolledCourses.map((course) => (
+                            <span
+                              key={`${student.id}-${course}`}
+                              className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600"
+                            >
+                              {course}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400">Chua co thong tin khoa hoc</span>
+                        )}
                       </div>
                     </td>
                   </tr>
                 );
               })}
+
               {filteredStudents.length === 0 && (
-                <tr><td colSpan={4} className="p-8 text-center text-sm text-slate-500">Không tìm thấy học viên nào phù hợp.</td></tr>
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-sm text-slate-500">
+                    Khong tim thay hoc vien nao phu hop.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-5 bg-white border-t border-slate-100 flex justify-between items-center shrink-0">
-          <span className="text-xs text-slate-500 font-medium">Đã chọn <span className="text-blue-600 font-bold">{selectedIds.size}</span> học viên</span>
+        <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-white px-6 py-5">
+          <span className="text-xs font-medium text-slate-500">
+            Da chon <span className="font-bold text-blue-600">{selectedIds.size}</span> hoc vien
+          </span>
+
           <div className="flex gap-3">
-            <button onClick={handleCancel} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-all active:scale-95">
-              Hủy bỏ
+            <button
+              onClick={handleCancel}
+              className="rounded-lg px-5 py-2.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 active:scale-95"
+            >
+              Huy bo
             </button>
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={selectedIds.size === 0}
-              className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Thêm vào lớp
+              Them vao lop
             </button>
           </div>
         </div>

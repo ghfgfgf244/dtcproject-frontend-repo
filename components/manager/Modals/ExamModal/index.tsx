@@ -1,52 +1,58 @@
 "use client";
 
-import React, { useState } from 'react';
-import styles from '@/components/manager/Modals/modal.module.css';
-import { X, Archive, BellRing, CheckCircle } from 'lucide-react';
-import { Exam, ExamType } from '@/types/exam';
-import { Course } from '@/types/course';
-import { courseService } from '@/services/courseService';
+import React, { useEffect, useState } from "react";
+import styles from "@/components/manager/Modals/modal.module.css";
+import { X, Archive, CheckCircle } from "lucide-react";
+import { Exam, ExamStatus, ExamType } from "@/types/exam";
+import { Course } from "@/types/course";
+import { courseService } from "@/services/courseService";
+import { addressService, AddressOption } from "@/services/addressService";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  batchContext: { id: string; name: string; courseId: string }; 
+  batchContext: { id: string; name: string; courseId: string };
   initialData?: Exam | null;
   onSubmit: (data: Partial<Exam>) => void;
 }
 
 export default function ExamModal({ isOpen, onClose, batchContext, initialData, onSubmit }: Props) {
-  const [notify, setNotify] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [courseSearch, setCourseSearch] = useState('');
+  const [addresses, setAddresses] = useState<AddressOption[]>([]);
 
-  // Fetch courses on mount
-  React.useEffect(() => {
-    const fetchCourses = async () => {
-      const data = await courseService.getAvailableCourses();
-      setCourses(data);
+  useEffect(() => {
+    const fetchOptions = async () => {
+      const [courseData, addressData] = await Promise.all([courseService.getAvailableCourses(), addressService.getAll()]);
+      setCourses(courseData);
+      setAddresses(addressData);
     };
-    if (isOpen) fetchCourses();
+
+    if (isOpen) {
+      fetchOptions().catch(() => {
+        setCourses([]);
+        setAddresses([]);
+      });
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // HÀM XỬ LÝ SUBMIT
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
-    // Gom dữ liệu
+
     const examData: Partial<Exam> = {
-      ...(initialData?.id ? { id: initialData.id } : {}), // Giữ lại ID nếu là Edit
-      examBatchId: batchContext.id, // Lấy từ props
-      courseId: formData.get('courseId') as string, // Lấy từ form
-      examName: formData.get('examName') as string,
-      examType: formData.get('examType') as ExamType, 
-      examDate: formData.get('examDate') as string,
-      durationMinutes: Number(formData.get('durationMinutes')),
-      totalScore: initialData?.totalScore || 100,
-      passScore: initialData?.passScore || 40,
+      ...(initialData?.id ? { id: initialData.id } : {}),
+      examBatchId: batchContext.id,
+      courseId: formData.get("courseId") as string,
+      addressId: Number(formData.get("addressId")),
+      examName: formData.get("examName") as string,
+      examType: parseInt(formData.get("examType") as string, 10) as ExamType,
+      examDate: formData.get("examDate") as string,
+      durationMinutes: Number(formData.get("durationMinutes")),
+      totalScore: Number(formData.get("totalScore")),
+      passScore: Number(formData.get("passScore")),
+      status: parseInt(formData.get("status") as string, 10) as ExamStatus,
     };
 
     onSubmit(examData);
@@ -55,46 +61,36 @@ export default function ExamModal({ isOpen, onClose, batchContext, initialData, 
   return (
     <div className={styles.overlay}>
       <div className={styles.backdrop} onClick={onClose} />
-      
+
       <div className={`${styles.modalContainer} ${styles.modalMaxLg}`}>
-        {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white">
           <div>
-            <h3 className="text-lg font-black text-slate-900 leading-tight">
-              {initialData ? 'Cập nhật Bài thi' : 'Tạo Bài thi mới'}
-            </h3>
-            <p className="text-xs font-medium text-slate-500">Thêm vào Đợt thi: <span className="text-blue-600 font-bold">{batchContext.name}</span></p>
+            <h3 className="text-lg font-black text-slate-900 leading-tight">{initialData ? "Cập nhật bài thi" : "Tạo bài thi mới"}</h3>
+            <p className="text-xs font-medium text-slate-500">
+              Thêm vào đợt thi: <span className="text-blue-600 font-bold">{batchContext.name}</span>
+            </p>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* BỌC NỘI DUNG TRONG THẺ FORM */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1">
-          {/* Modal Body */}
           <div className={styles.modalBody}>
             <div className="space-y-6">
-              
-              {/* Context (Read Only) */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mã tham chiếu Đợt thi</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mã tham chiếu đợt thi</label>
                 <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
                   <Archive className="text-slate-400 w-4 h-4" />
                   <span className="text-sm text-slate-600 font-medium">ID: {batchContext.id}</span>
                 </div>
               </div>
 
-              <div className="space-y-1.5 flex-1">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Khóa học áp dụng <span className="text-red-500">*</span></label>
-                <select 
-                  required 
-                  name="courseId" 
-                  defaultValue={initialData?.courseId} 
-                  className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none cursor-pointer"
-                >
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Khóa học áp dụng</label>
+                <select required name="courseId" defaultValue={initialData?.courseId || ""} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none cursor-pointer">
                   <option value="">-- Chọn khóa học --</option>
-                  {courses.map(c => (
+                  {courses.map((c) => (
                     <option key={c.id} value={c.id}>
                       [{c.licenseType}] {c.courseName}
                     </option>
@@ -103,60 +99,75 @@ export default function ExamModal({ isOpen, onClose, batchContext, initialData, 
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tên Bài thi <span className="text-red-500">*</span></label>
-                <input required name="examName" type="text" defaultValue={initialData?.examName} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none" placeholder="VD: Thi sát hạch Lý thuyết" />
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tên bài thi</label>
+                <input required name="examName" type="text" defaultValue={initialData?.examName} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none" placeholder="Ví dụ: Thi sát hạch lý thuyết" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Hình thức thi <span className="text-red-500">*</span></label>
-                  {/* Thêm name và required */}
-                  <select required name="examType" defaultValue={initialData?.examType || 'Theory'} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none cursor-pointer">
-                    <option value="Theory">Lý thuyết (Theory)</option>
-                    <option value="Practice">Thực hành (Practice)</option>
-                    <option value="Simulation">Mô phỏng (Simulation)</option>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Hình thức thi</label>
+                  <select required name="examType" defaultValue={initialData?.examType || ExamType.Theory} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none cursor-pointer">
+                    <option value={ExamType.Theory}>Lý thuyết</option>
+                    <option value={ExamType.Practice}>Thực hành</option>
+                    <option value={ExamType.Simulation}>Mô phỏng</option>
                   </select>
                 </div>
+
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ngày thi <span className="text-red-500">*</span></label>
-                  {/* Thêm name và required */}
-                  <input required name="examDate" type="date" defaultValue={initialData?.examDate} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2 px-4 font-medium outline-none" />
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ngày thi</label>
+                  <input required name="examDate" type="date" defaultValue={initialData?.examDate?.toString().slice(0, 10)} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2 px-4 font-medium outline-none" />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thời lượng (Phút) <span className="text-red-500">*</span></label>
-                <div className="flex items-center">
-                  {/* Thêm name và required */}
-                  <input required name="durationMinutes" type="number" defaultValue={initialData?.durationMinutes} min="1" placeholder="60" className="w-full bg-slate-100 border-none rounded-l-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none" />
-                  <div className="bg-slate-200 text-slate-500 px-4 py-2.5 text-xs font-bold rounded-r-lg">PHÚT</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Địa điểm thi</label>
+                  <select required name="addressId" defaultValue={initialData?.addressId || ""} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none cursor-pointer">
+                    <option value="">-- Chọn địa điểm --</option>
+                    {addresses.map((address) => (
+                      <option key={address.id} value={address.id}>
+                        {address.addressName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Trạng thái</label>
+                  <select required name="status" defaultValue={initialData?.status || ExamStatus.Draft} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none cursor-pointer">
+                    <option value={ExamStatus.Draft}>Bản nháp</option>
+                    <option value={ExamStatus.Scheduled}>Đã lên lịch</option>
+                    <option value={ExamStatus.Finished}>Đã kết thúc</option>
+                    <option value={ExamStatus.Cancelled}>Đã hủy</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Custom Tailwind Toggle */}
-              <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-lg border border-blue-100">
-                <div className="flex items-center gap-3">
-                  <BellRing className="text-blue-600 w-5 h-5" />
-                  <div>
-                    <p className="text-[12px] font-bold text-blue-900">Thông báo Giảng viên</p>
-                    <p className="text-[10px] text-blue-700">Gửi thông báo lịch thi tới email khi lưu</p>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thời lượng</label>
+                  <input required name="durationMinutes" type="number" min="1" defaultValue={initialData?.durationMinutes || 60} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none" />
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" checked={notify} onChange={() => setNotify(!notify)} />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
 
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng điểm</label>
+                  <input required name="totalScore" type="number" min="1" defaultValue={initialData?.totalScore || 100} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Điểm đạt</label>
+                  <input required name="passScore" type="number" min="1" defaultValue={initialData?.passScore || 40} className="w-full bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 transition-all text-sm py-2.5 px-4 font-medium outline-none" />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Footer */}
           <div className="px-6 py-5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 mt-auto">
-            <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors">Hủy bỏ</button>
-            {/* Đổi thành type submit */}
+            <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors">
+              Hủy bỏ
+            </button>
             <button type="submit" className="bg-blue-600 text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2">
-              <span>Lưu Bài thi</span>
+              <span>Lưu bài thi</span>
               <CheckCircle className="w-4 h-4" />
             </button>
           </div>

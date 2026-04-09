@@ -37,7 +37,7 @@ export const ManagerSidebar = () => {
         </div>
         <div className="overflow-hidden">
           <h1 className="text-slate-900 dark:text-white font-bold text-lg leading-tight truncate">
-            DriveSafe
+            Drive Safe
           </h1>
           <p className="text-primary text-xs font-medium uppercase tracking-wider truncate">
             {config?.title}

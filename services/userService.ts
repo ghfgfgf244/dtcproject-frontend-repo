@@ -10,6 +10,34 @@ export interface UserProfile {
   roles?: string[]; // Used for "all" list (from UserResponseDto)
   lastLoginAt?: string;
   isActive: boolean;
+  centerId?: string;
+  centerName?: string;
+}
+
+export interface UserListItem {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string;
+  avatarUrl?: string;
+  roles?: string[];
+  isActive: boolean;
+  lastLoginAt?: string;
+  centerId?: string;
+  centerName?: string;
+}
+
+export interface ManagedUserCreateRequest {
+  email: string;
+  fullName: string;
+  phone: string;
+  isActive: boolean;
+}
+
+export interface ManagedUserUpdateRequest {
+  fullName?: string;
+  phone?: string;
+  isActive?: boolean;
 }
 
 export interface UpdateProfileRequest {
@@ -65,6 +93,39 @@ export const userService = {
     return response.data.data;
   },
 
+  async getStudents(): Promise<UserListItem[]> {
+    const response = await api.get<{ data: UserListItem[] }>("/users/students");
+    return response.data.data || [];
+  },
+
+  async getInstructors(): Promise<UserListItem[]> {
+    const response = await api.get<{ data: UserListItem[] }>("/users/instructors");
+    return response.data.data || [];
+  },
+
+  async createInstructor(data: ManagedUserCreateRequest): Promise<UserListItem> {
+    const response = await api.post<{ data: UserListItem }>("/users/instructors", data);
+    return response.data.data;
+  },
+
+  async updateInstructor(userId: string, data: ManagedUserUpdateRequest): Promise<UserListItem> {
+    const response = await api.put<{ data: UserListItem }>(`/users/instructors/${userId}`, data);
+    return response.data.data;
+  },
+
+  async toggleInstructorStatus(userId: string): Promise<void> {
+    await api.put(`/users/instructors/${userId}/toggle-status`);
+  },
+
+  async deleteInstructor(userId: string): Promise<void> {
+    await api.delete(`/users/instructors/${userId}`);
+  },
+
+  async createCollaborator(data: ManagedUserCreateRequest): Promise<UserListItem> {
+    const response = await api.post<{ data: UserListItem }>("/users/collaborators", data);
+    return response.data.data;
+  },
+
   /**
    * [ADMIN] Update roles for a specific user.
    */
@@ -92,5 +153,12 @@ export const userService = {
   async getStats(): Promise<UserStats> {
     const response = await api.get<{ data: UserStats }>("/users/stats");
     return response.data.data;
+  },
+
+  /**
+   * [ADMIN/MANAGER] Assign center to user
+   */
+  async assignCenter(userId: string, centerId: string): Promise<void> {
+    await api.put(`/users/${userId}/center/${centerId}`);
   },
 };

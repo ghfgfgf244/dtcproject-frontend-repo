@@ -1,411 +1,153 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/theory-exam.module.css";
-import Link from "next/link";
+import { setAuthToken } from "@/lib/api";
+import {
+  mockExamService,
+  SubmitMockExamResponse,
+} from "@/services/mockExamService";
+import { ExamQuestion } from "@/types/mock-exam-detail";
 
-const QUESTION_BANK = [
-  {
-    text: "Dải phân cách được lắp đặt để làm gì?",
-    answers: [
-      "Để phân chia các làn đường dành cho xe cơ giới và xe thô sơ trên đường cao tốc.",
-      "Để phân chia phần đường xe chạy thành hai chiều riêng biệt hoặc để phân chia phần đường dành cho xe cơ giới và xe thô sơ hoặc của nhiều loại xe khác nhau trên cùng một chiều đường.",
-      "Để phân tách phần đường xe chạy và hành lang an toàn giao thông.",
-      "Đáp án khác.",
-    ],
-    correct: 2,
-  },
-  {
-    text: "Biển báo hình tròn nền xanh có ý nghĩa gì?",
-    answers: [
-      "Biển hiệu lệnh bắt buộc phải chấp hành.",
-      "Biển cấm các loại xe.",
-      "Biển chỉ dẫn hướng đi.",
-      "Biển cảnh báo nguy hiểm.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi gặp đèn vàng nhấp nháy, người lái xe phải làm gì?",
-    answers: [
-      "Giảm tốc độ, chú ý quan sát và đi tiếp nếu an toàn.",
-      "Dừng lại ngay lập tức.",
-      "Tăng tốc để vượt qua nhanh.",
-      "Chỉ được rẽ trái.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khoảng cách an toàn khi lái xe trong điều kiện trời mưa là?",
-    answers: [
-      "Tăng khoảng cách so với điều kiện bình thường.",
-      "Giảm khoảng cách để tránh xe khác chen vào.",
-      "Giữ nguyên khoảng cách như bình thường.",
-      "Phụ thuộc vào màu xe.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi tham gia giao thông, người lái xe phải mang theo gì?",
-    answers: [
-      "Giấy phép lái xe phù hợp.",
-      "Giấy đăng ký xe.",
-      "Giấy chứng nhận kiểm định an toàn kỹ thuật (nếu có).",
-      "Tất cả các đáp án trên.",
-    ],
-    correct: 4,
-  },
-  {
-    text: "Tốc độ tối đa trong khu dân cư (trừ đường cao tốc) là?",
-    answers: [
-      "50 km/h.",
-      "60 km/h.",
-      "70 km/h.",
-      "80 km/h.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi vượt xe khác, người lái xe phải làm gì trước?",
-    answers: [
-      "Bật tín hiệu xin vượt và quan sát an toàn.",
-      "Bấm còi liên tục.",
-      "Tăng tốc đột ngột.",
-      "Đi sát vào xe phía trước.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Biển báo nào báo hiệu đường một chiều?",
-    answers: [
-      "Biển hình chữ nhật nền xanh có mũi tên trắng.",
-      "Biển tròn viền đỏ có số tốc độ.",
-      "Biển tam giác viền đỏ có biểu tượng.",
-      "Biển hình vuông nền vàng.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi qua nơi giao nhau không có đèn tín hiệu, quy tắc ưu tiên là?",
-    answers: [
-      "Nhường đường cho xe đến từ bên phải.",
-      "Nhường đường cho xe đến từ bên trái.",
-      "Xe lớn được ưu tiên.",
-      "Xe nhỏ được ưu tiên.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Trong hầm đường bộ, người lái xe không được làm gì?",
-    answers: [
-      "Dừng, đỗ xe trái quy định.",
-      "Giữ khoảng cách an toàn.",
-      "Bật đèn chiếu gần.",
-      "Giảm tốc độ.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi lùi xe, người lái xe cần làm gì?",
-    answers: [
-      "Quan sát phía sau và hai bên, nhường đường cho người đi bộ.",
-      "Bấm còi liên tục và lùi nhanh.",
-      "Chỉ cần nhìn gương chiếu hậu.",
-      "Tắt đèn tín hiệu.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Biển báo tam giác viền đỏ có ý nghĩa gì?",
-    answers: [
-      "Biển cảnh báo nguy hiểm.",
-      "Biển hiệu lệnh.",
-      "Biển cấm.",
-      "Biển chỉ dẫn.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi gặp người đi bộ qua đường, người lái xe phải?",
-    answers: [
-      "Giảm tốc độ, nhường đường.",
-      "Bấm còi thúc giục.",
-      "Tăng tốc để đi trước.",
-      "Chỉ dừng khi có đèn đỏ.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi xe bị nổ lốp, người lái xe nên?",
-    answers: [
-      "Giữ chặt vô lăng, giảm tốc từ từ và đưa xe vào lề.",
-      "Phanh gấp ngay lập tức.",
-      "Đánh lái mạnh sang trái.",
-      "Tắt máy ngay.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khoảng cách an toàn tối thiểu khi dừng xe sau xe khác là?",
-    answers: [
-      "Tối thiểu 2 mét.",
-      "Tối thiểu 1 mét.",
-      "Sát cản sau.",
-      "Không cần khoảng cách.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi gặp biển STOP, người lái xe phải?",
-    answers: [
-      "Dừng hẳn lại trước vạch dừng.",
-      "Giảm tốc độ và đi tiếp.",
-      "Bấm còi rồi đi.",
-      "Chỉ dừng khi có người qua đường.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Tác dụng của dây an toàn là?",
-    answers: [
-      "Giảm chấn thương khi va chạm.",
-      "Giúp xe đi nhanh hơn.",
-      "Tăng khả năng bám đường.",
-      "Giảm tiêu hao nhiên liệu.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi trời tối, người lái xe cần sử dụng đèn nào?",
-    answers: [
-      "Đèn chiếu gần và đèn hậu.",
-      "Chỉ đèn sương mù.",
-      "Chỉ đèn xi-nhan.",
-      "Không cần bật đèn nếu có đèn đường.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Biển báo cấm đỗ xe có nền màu gì?",
-    answers: [
-      "Nền xanh, viền đỏ, có gạch đỏ.",
-      "Nền vàng, viền đỏ.",
-      "Nền trắng, viền xanh.",
-      "Nền đen, chữ trắng.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi tránh xe ngược chiều trên đường hẹp, người lái xe cần?",
-    answers: [
-      "Giảm tốc độ, đi sát về bên phải.",
-      "Tăng tốc để vượt nhanh.",
-      "Đi sát về bên trái.",
-      "Bấm còi liên tục.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi vào đường cao tốc, người lái xe cần?",
-    answers: [
-      "Tăng tốc trên làn tăng tốc trước khi nhập làn.",
-      "Đi thẳng vào làn chạy.",
-      "Dừng lại quan sát rồi đi.",
-      "Bật đèn cảnh báo nguy hiểm.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Ý nghĩa của vạch kẻ đường màu vàng là?",
-    answers: [
-      "Phân chia hai chiều xe chạy ngược nhau.",
-      "Phân chia các làn xe cùng chiều.",
-      "Chỉ dẫn vị trí dừng.",
-      "Không có ý nghĩa.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi gặp xe ưu tiên đang làm nhiệm vụ, người lái xe phải?",
-    answers: [
-      "Nhanh chóng giảm tốc, tránh hoặc dừng lại.",
-      "Bấm còi xin vượt.",
-      "Tiếp tục chạy bình thường.",
-      "Chỉ nhường đường nếu có cảnh sát.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Người lái xe không được sử dụng rượu bia khi?",
-    answers: [
-      "Lái xe bất kỳ phương tiện nào.",
-      "Lái xe tải.",
-      "Lái xe khách.",
-      "Chỉ khi chạy đường dài.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi xe bị trượt nước, người lái xe nên?",
-    answers: [
-      "Giữ vô lăng thẳng, giảm ga từ từ.",
-      "Phanh gấp ngay.",
-      "Đánh lái mạnh.",
-      "Tăng ga để thoát nhanh.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Biển báo hiệu đường cấm xe máy là?",
-    answers: [
-      "Biển tròn viền đỏ, hình xe máy bị gạch chéo.",
-      "Biển tam giác viền đỏ có xe máy.",
-      "Biển nền xanh có xe máy.",
-      "Biển vuông nền vàng.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi điều khiển xe trên đường trơn, người lái xe cần?",
-    answers: [
-      "Đi chậm, giữ khoảng cách an toàn.",
-      "Đi nhanh để qua nhanh.",
-      "Phanh gấp khi cần.",
-      "Bấm còi liên tục.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Biển báo cấm quay đầu xe có dạng?",
-    answers: [
-      "Biển tròn viền đỏ, mũi tên quay đầu bị gạch chéo.",
-      "Biển tam giác viền đỏ.",
-      "Biển nền xanh có mũi tên.",
-      "Biển vuông nền trắng.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi điều khiển xe qua ngã tư, người lái xe cần?",
-    answers: [
-      "Giảm tốc độ, quan sát và nhường đường.",
-      "Tăng tốc để qua nhanh.",
-      "Bấm còi liên tục.",
-      "Đi giữa làn.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Ý nghĩa của biển báo tốc độ tối đa là?",
-    answers: [
-      "Giới hạn tốc độ xe được phép chạy.",
-      "Khuyến cáo tốc độ tối thiểu.",
-      "Cấm vượt.",
-      "Chỉ dẫn hướng đi.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi gặp chướng ngại vật trên đường, người lái xe phải?",
-    answers: [
-      "Giảm tốc độ và xử lý an toàn.",
-      "Tăng tốc vượt qua nhanh.",
-      "Đi sát lề trái.",
-      "Dừng đột ngột giữa đường.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi rẽ phải, người lái xe cần?",
-    answers: [
-      "Bật xi-nhan phải và quan sát người đi bộ.",
-      "Bật xi-nhan trái.",
-      "Không cần xi-nhan.",
-      "Bấm còi liên tục.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi vượt xe đạp, người lái xe cần?",
-    answers: [
-      "Giữ khoảng cách an toàn và vượt từ bên trái.",
-      "Vượt sát bên phải.",
-      "Bấm còi và vượt nhanh.",
-      "Chỉ vượt khi đường có 3 làn.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi dừng xe trên dốc, người lái xe nên?",
-    answers: [
-      "Kéo phanh tay và về số phù hợp.",
-      "Chỉ đạp phanh chân.",
-      "Tắt máy và thả trôi.",
-      "Bật đèn pha.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khi xe bị hỏng trên đường, người lái xe cần?",
-    answers: [
-      "Bật đèn cảnh báo, đặt biển báo nguy hiểm.",
-      "Dừng xe giữa đường.",
-      "Tắt hết đèn.",
-      "Rời xe ngay lập tức.",
-    ],
-    correct: 1,
-  },
-  {
-    text: "Khoảng cách tối thiểu để bật đèn báo nguy hiểm khi xe dừng là?",
-    answers: [
-      "Tùy điều kiện, đặt biển báo cách xe phù hợp.",
-      "Không cần đặt biển báo.",
-      "Chỉ bật đèn xi-nhan.",
-      "Chỉ cần đứng sau xe.",
-    ],
-    correct: 1,
-  },
-];
-
-const getRandomQuestions = () => {
-  const pool = [...QUESTION_BANK];
-  for (let i = pool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, 30).map((q, index) => ({
-    id: index + 1,
-    ...q,
-  }));
-};
+function answerToNumber(answer?: string) {
+  const normalized = (answer || "").trim().toUpperCase();
+  if (normalized === "A") return 1;
+  if (normalized === "B") return 2;
+  if (normalized === "C") return 3;
+  if (normalized === "D") return 4;
+  const numeric = Number.parseInt(normalized, 10);
+  return Number.isNaN(numeric) ? undefined : numeric;
+}
 
 export default function TheoryExamPage() {
-  const [questions] = useState(getRandomQuestions);
+  const searchParams = useSearchParams();
+  const { getToken, isLoaded } = useAuth();
+  const examRef = useRef<HTMLDivElement | null>(null);
+
+  const examId = searchParams.get("examId") || "";
+  const license = searchParams.get("license") || "Chưa chọn";
+  const examNo = searchParams.get("examNo") || "-";
+  const examTitle = searchParams.get("title") || "Đề thi thử";
+
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
+  const [durationMinutes, setDurationMinutes] = useState(20);
+  const [passingScore, setPassingScore] = useState(90);
   const [current, setCurrent] = useState(1);
   const [selected, setSelected] = useState<Record<number, number>>({});
   const [finished, setFinished] = useState(false);
-  const totalSeconds = 20 * 60;
-  const [remaining, setRemaining] = useState(totalSeconds);
   const [lockedKeys, setLockedKeys] = useState(true);
-  const examRef = useRef<HTMLDivElement | null>(null);
+  const [result, setResult] = useState<SubmitMockExamResponse | null>(null);
+  const [remaining, setRemaining] = useState(20 * 60);
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      if (!isLoaded || !examId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const token = await getToken();
+        setAuthToken(token);
+
+        const detail = await mockExamService.getDetail(examId);
+        const mapped = mockExamService.mapExamDetail(detail);
+        setQuestions(mapped.questions);
+        setDurationMinutes(mapped.info.durationMinutes);
+        setPassingScore(mapped.info.passingScore);
+        setRemaining(mapped.info.durationMinutes * 60);
+        setCurrent(mapped.questions[0]?.id ?? 1);
+      } catch (error) {
+        console.error("Failed to fetch sample exam detail:", error);
+        setQuestions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [examId, getToken, isLoaded]);
 
   const currentQuestion = useMemo(
-    () => questions.find((q) => q.id === current) ?? questions[0],
-    [current, questions]
+    () => questions.find((question) => question.id === current) ?? questions[0],
+    [current, questions],
   );
 
+  const totalSeconds = durationMinutes * 60;
+
+  const scoreSummary = useMemo(() => {
+    if (!result) {
+      return {
+        totalCorrect: 0,
+        progressPercent: totalSeconds > 0 ? (remaining / totalSeconds) * 100 : 0,
+      };
+    }
+
+    const totalCorrect = questions.reduce((count, question) => {
+      const selectedAnswer = selected[question.id];
+      const correctAnswer = answerToNumber(result.correctAnswers?.[question.id]);
+      return selectedAnswer === correctAnswer ? count + 1 : count;
+    }, 0);
+
+    return {
+      totalCorrect,
+      progressPercent: totalSeconds > 0 ? (remaining / totalSeconds) * 100 : 0,
+    };
+  }, [questions, remaining, result, selected, totalSeconds]);
+
   const pick = (choice: number) => {
-    if (finished) return;
-    setSelected((prev) => ({ ...prev, [current]: choice }));
+    if (finished || !currentQuestion) return;
+    setSelected((prev) => ({ ...prev, [currentQuestion.id]: choice }));
   };
+
+  const submitExam = useCallback(async (forcedDurationSeconds?: number) => {
+    if (!examId || questions.length === 0 || submitting || result) {
+      setFinished(true);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+
+      const usedSeconds =
+        forcedDurationSeconds ?? Math.max(totalSeconds - remaining, 0);
+
+      const answers = Object.fromEntries(
+        Object.entries(selected).map(([questionId, choice]) => [
+          Number(questionId),
+          String(choice),
+        ]),
+      );
+
+      const response = await mockExamService.submit(examId, {
+        durationSeconds: usedSeconds,
+        answers,
+      });
+
+      setResult(response);
+      setFinished(true);
+    } catch (error) {
+      console.error("Failed to submit sample exam:", error);
+      window.alert("Không thể nộp bài thi thử. Vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [examId, getToken, questions.length, remaining, result, selected, submitting, totalSeconds]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
-      if (!lockedKeys) {
-        return;
-      }
+      if (!lockedKeys || loading || !currentQuestion) return;
+
       if (
         event.key === "ArrowRight" ||
         event.key === "ArrowDown" ||
@@ -414,23 +156,27 @@ export default function TheoryExamPage() {
       ) {
         event.preventDefault();
       }
+
       if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-        setCurrent((prev) => Math.min(prev + 1, questions.length));
+        setCurrent((prev) => questions[Math.min(questions.length - 1, questions.findIndex((q) => q.id === prev) + 1)]?.id ?? prev);
       }
+
       if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-        setCurrent((prev) => Math.max(prev - 1, 1));
+        setCurrent((prev) => questions[Math.max(0, questions.findIndex((q) => q.id === prev) - 1)]?.id ?? prev);
       }
+
       if (["1", "2", "3", "4"].includes(event.key)) {
         pick(Number(event.key));
       }
+
       if (event.key === "Escape") {
-        setFinished(true);
+        void submitExam();
       }
     };
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [questions.length, current, finished, lockedKeys]);
+  }, [currentQuestion, loading, lockedKeys, questions, result, submitExam]);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -441,38 +187,57 @@ export default function TheoryExamPage() {
         setLockedKeys(false);
       }
     };
+
     window.addEventListener("click", handleClick);
     return () => window.removeEventListener("click", handleClick);
   }, []);
 
   useEffect(() => {
-    if (finished) return;
+    if (loading || finished || result || totalSeconds <= 0) return;
+
     const timer = window.setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {
-          setFinished(true);
+          void submitExam(totalSeconds);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
+
     return () => window.clearInterval(timer);
-  }, [finished]);
+  }, [finished, loading, result, submitExam, totalSeconds]);
 
-  const totalCorrect = useMemo(() => {
-    return questions.reduce((acc, q) => {
-      if (selected[q.id] === q.correct) {
-        return acc + 1;
-      }
-      return acc;
-    }, 0);
-  }, [questions, selected]);
-
-  const resultLabel = totalCorrect >= 27 ? "Đậu" : "Trượt";
   const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
   const seconds = String(remaining % 60).padStart(2, "0");
   const timeText = `${minutes}:${seconds}`;
-  const progressPercent = (remaining / totalSeconds) * 100;
+  const resultLabel = result?.isPassed ? "Đậu" : "Trượt";
+
+  if (loading) {
+    return (
+      <div className={shellStyles.page}>
+        <Sidebar activeKey="courses" />
+        <section className={shellStyles.content}>
+          <div className={styles.loadingState}>Đang tải đề thi thử...</div>
+        </section>
+      </div>
+    );
+  }
+
+  if (!examId || questions.length === 0 || !currentQuestion) {
+    return (
+      <div className={shellStyles.page}>
+        <Sidebar activeKey="courses" />
+        <section className={shellStyles.content}>
+          <div className={styles.emptyState}>
+            <h2>Không tìm thấy đề thi thử</h2>
+            <p>Vui lòng quay lại để chọn hạng GPLX và đề thi hợp lệ.</p>
+            <Link href="/courses/my-course/theory-practice">Quay lại chọn đề</Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={shellStyles.page}>
@@ -482,67 +247,92 @@ export default function TheoryExamPage() {
         <div className={styles.examLayout} ref={examRef}>
           <div className={styles.questionPanel}>
             <div className={styles.questionContent}>
-              <h1>{currentQuestion.text}</h1>
+              <div className={styles.questionMeta}>
+                <span>Câu {questions.findIndex((item) => item.id === currentQuestion.id) + 1}</span>
+                <span>{currentQuestion.category}</span>
+              </div>
+
+              <h1>{currentQuestion.content}</h1>
+
+              {currentQuestion.imageUrl && (
+                <div className={styles.questionImageWrap}>
+                  <img
+                    src={currentQuestion.imageUrl}
+                    alt="Hình minh họa câu hỏi"
+                    className={styles.questionImage}
+                  />
+                </div>
+              )}
+
               <ol>
-                {currentQuestion.answers.map((answer, index) => (
-                  <li
-                    key={answer}
-                    className={[
-                      selected[current] === index + 1 ? styles.activeAnswer : "",
-                      finished && currentQuestion.correct === index + 1
-                        ? styles.correctAnswer
-                        : "",
-                      finished &&
-                      selected[current] === index + 1 &&
-                      currentQuestion.correct !== index + 1
-                        ? styles.wrongAnswer
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <span className={styles.choiceCircle}>
-                      <input
-                        type="radio"
-                        checked={selected[current] === index + 1}
-                        onChange={() => pick(index + 1)}
-                      />
-                    </span>
-                    {answer}
-                  </li>
-                ))}
+                {currentQuestion.answers.map((answer, index) => {
+                  const selectedAnswer = selected[currentQuestion.id];
+                  const answerNumber = index + 1;
+                  const correctAnswer = answerToNumber(result?.correctAnswers?.[currentQuestion.id]);
+
+                  return (
+                    <li
+                      key={answer.id}
+                      className={[
+                        selectedAnswer === answerNumber ? styles.activeAnswer : "",
+                        finished && correctAnswer === answerNumber ? styles.correctAnswer : "",
+                        finished &&
+                        selectedAnswer === answerNumber &&
+                        correctAnswer !== answerNumber
+                          ? styles.wrongAnswer
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <label className={styles.answerLabel}>
+                        <span className={styles.choiceCircle}>
+                          <input
+                            type="radio"
+                            checked={selectedAnswer === answerNumber}
+                            onChange={() => pick(answerNumber)}
+                            disabled={finished}
+                          />
+                        </span>
+                        <span className={styles.answerContent}>
+                          <strong>{answer.label}.</strong> {answer.content}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
               </ol>
 
-              {finished && (
+              {finished && result && (
                 <div className={styles.resultBox}>
                   <p>
                     Đáp án đúng:{" "}
                     <strong>
-                      {currentQuestion.correct}.{" "}
-                      {currentQuestion.answers[currentQuestion.correct - 1]}
+                      {result.correctAnswers?.[currentQuestion.id] || "Chưa có"}
                     </strong>
                   </p>
                   <p>
                     Bạn chọn:{" "}
                     <strong>
-                      {selected[current]
-                        ? `${selected[current]}. ${currentQuestion.answers[selected[current] - 1]}`
+                      {selected[currentQuestion.id]
+                        ? selected[currentQuestion.id]
                         : "Chưa chọn"}
                     </strong>
                   </p>
                   <div className={styles.resultStatus}>
-                    Kết quả:{" "}
-                    <span
-                      className={
-                        resultLabel === "Đậu"
-                          ? styles.pass
-                          : styles.fail
-                      }
-                    >
+                    Kết quả hiện tại:{" "}
+                    <span className={result.isPassed ? styles.pass : styles.fail}>
                       {resultLabel}
                     </span>{" "}
-                    ({totalCorrect}/30 câu đúng)
+                    ({scoreSummary.totalCorrect}/{questions.length} câu đúng · {result.totalScore}/100 điểm)
                   </div>
+
+                  {currentQuestion.explanation && (
+                    <div className={styles.explanationBox}>
+                      <h4>Mẹo ghi nhớ / giải thích</h4>
+                      <p>{currentQuestion.explanation}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -551,74 +341,88 @@ export default function TheoryExamPage() {
               <div className={styles.progressTrack}>
                 <div
                   className={styles.progressFill}
-                  style={{ width: `${progressPercent}%` }}
+                  style={{ width: `${scoreSummary.progressPercent}%` }}
                 />
               </div>
               <div className={styles.statusInfo}>
                 <div className={styles.inlineTimer}>
                   ⏱ Thời gian còn lại: <strong>{timeText}</strong>
                 </div>
-                <p>Họ và tên: THÍ SINH SỐ 9</p>
-                <p>Hạng xe: B - ĐỀ NGẪU NHIÊN</p>
-                <p>Ngày thi: 23/03/2026</p>
-                <p>Trạng thái: <span>Đang thi</span></p>
-                <p>Bạn cần trả lời đúng: <strong>27/30 câu</strong></p>
+                <p>Đề thi: {examTitle}</p>
+                <p>Hạng GPLX: {license}</p>
+                <p>Mã đề: {examNo}</p>
+                <p>Trạng thái: <span>{finished ? "Đã nộp bài" : "Đang thi"}</span></p>
+                <p>
+                  Điều kiện đạt: <strong>{passingScore}/100 điểm</strong>
+                </p>
               </div>
               <div className={styles.qrBox}>
                 <div className={styles.qr} />
-                <p>Group: daotaolaixehd.com.vn</p>
+                <p>Drive Safe Academy</p>
               </div>
             </div>
           </div>
 
           <aside className={styles.sidebar}>
-            <div className={styles.timer}>
-              ⏱ THỜI GIAN THI CÒN LẠI: {timeText}
-            </div>
+            <div className={styles.timer}>⏱ THỜI GIAN THI CÒN LẠI: {timeText}</div>
 
             <div className={styles.questionGrid}>
-              {questions.map((q) => (
-                <button
-                  key={q.id}
-                  className={`${styles.questionBtn} ${
-                    current === q.id ? styles.activeQuestion : ""
-                  }`}
-                  onClick={() => setCurrent(q.id)}
-                >
-                  <span>{q.id}</span>
-                  <div className={styles.answerDots}>
-                    {[1, 2, 3, 4].map((item) => (
-                      <span
-                        key={item}
-                        className={
-                          selected[q.id] === item ? styles.filledDot : ""
-                        }
-                      />
-                    ))}
-                  </div>
-                </button>
-              ))}
+              {questions.map((question, index) => {
+                const selectedAnswer = selected[question.id];
+                const correctAnswer = answerToNumber(result?.correctAnswers?.[question.id]);
+                const navClass = [
+                  styles.questionBtn,
+                  current === question.id ? styles.activeQuestion : "",
+                  finished && selectedAnswer && selectedAnswer === correctAnswer
+                    ? styles.questionCorrect
+                    : "",
+                  finished && selectedAnswer && selectedAnswer !== correctAnswer
+                    ? styles.questionWrong
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+
+                return (
+                  <button
+                    key={question.id}
+                    type="button"
+                    className={navClass}
+                    onClick={() => setCurrent(question.id)}
+                  >
+                    <span>{index + 1}</span>
+                    <div className={styles.answerDots}>
+                      {[1, 2, 3, 4].map((item) => (
+                        <span
+                          key={item}
+                          className={selectedAnswer === item ? styles.filledDot : ""}
+                        />
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
             <button
+              type="button"
               className={styles.finishBtn}
-              onClick={() => setFinished(true)}
+              onClick={() => void submitExam()}
+              disabled={finished || submitting}
             >
-              KẾT THÚC
+              {submitting ? "Đang nộp bài..." : "KẾT THÚC"}
             </button>
 
             <div className={styles.quickGuide}>
               <h4>Hướng dẫn nhanh:</h4>
-              <p>Di chuyển câu dùng phím (← ↑ ↓ →) hoặc dùng chuột trái.</p>
-              <p>Để chọn đáp án dùng chuột hoặc phím 1,2,3,4.</p>
-              <p>Kết thúc thi nhấn ESC hoặc nút KẾT THÚC.</p>
-              <p>Nhấn Ctrl + - để thu nhỏ giao diện.</p>
+              <p>Di chuyển câu bằng phím mũi tên hoặc dùng chuột.</p>
+              <p>Chọn đáp án bằng chuột hoặc phím 1, 2, 3, 4.</p>
+              <p>Mẹo giải sẽ chỉ hiển thị sau khi bạn nộp bài.</p>
+              <p>Các câu đúng và sai sẽ được tô màu để bạn review.</p>
             </div>
 
             <div className={styles.sideActions}>
-              <Link href="/courses/my-course/theory-practice">
-                Đổi đề/hạng khác
-              </Link>
+              <Link href="/courses/my-course/theory-practice">Đổi đề/hạng khác</Link>
             </div>
           </aside>
         </div>

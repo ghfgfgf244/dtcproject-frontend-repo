@@ -6,8 +6,8 @@ import { MOCK_NOTIFICATIONS, MOCK_ALERTS } from '@/constants/notification-data';
 
 export default function NotificationsPage() {
   const breadcrumbItems = [
-    { label: 'Dashboard', href: '/training-manager/dashboard' },
-    { label: 'Notifications Center' }
+    { label: 'Trang chủ', href: '/training-manager/dashboard' },
+    { label: 'Thông báo' }
   ];
 
   return (
@@ -16,7 +16,11 @@ export default function NotificationsPage() {
         <Breadcrumbs items={breadcrumbItems} />
       </div>
 
-      <NotificationClientView />
+      <NotificationClientView 
+        initialNotifications={MOCK_NOTIFICATIONS} 
+        alerts={MOCK_ALERTS} 
+        isAdmin={true}
+      />
     </div>
   );
 }

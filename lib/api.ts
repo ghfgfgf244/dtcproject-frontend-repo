@@ -35,7 +35,19 @@ if (typeof window === "undefined") {
   });
 }
 
-// Optional: Add axios interceptors for auth tokens if needed in the future
-// api.interceptors.request.use((config) => { ... });
+// Optional: Add axios interceptors for auth tokens
+api.interceptors.request.use(async (config) => {
+  if (typeof window !== "undefined" && (window as any).Clerk && (window as any).Clerk.session) {
+    try {
+      const token = await (window as any).Clerk.session.getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      // Handle silently
+    }
+  }
+  return config;
+});
 
 export default api;

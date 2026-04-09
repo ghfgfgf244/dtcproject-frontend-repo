@@ -5,8 +5,8 @@ import { ExamQuestion } from "@/types/mock-exam-detail";
 
 interface Props {
   question: ExamQuestion;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onEdit: (id: number) => void;
+  onDelete: (id: number) => void;
 }
 
 export default function QuestionCard({ question, onEdit, onDelete }: Props) {
@@ -76,13 +76,13 @@ export default function QuestionCard({ question, onEdit, onDelete }: Props) {
                 <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50 p-2 flex items-center justify-center h-48">
                   <img
                     src={question.imageUrl}
-                    alt={question.imageAlt || "Question image"}
+                    alt="Question image"
                     className="max-w-full max-h-full object-contain rounded"
                   />
                 </div>
-                {question.imageCaption && (
+                {question.explanation && (
                   <p className="text-[10px] text-center text-slate-400 mt-2 italic">
-                    {question.imageCaption}
+                    {question.explanation}
                   </p>
                 )}
               </div>

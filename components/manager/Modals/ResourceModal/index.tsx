@@ -1,208 +1,270 @@
-// src/components/manager/LearningResource/ResourceModal/index.tsx
 "use client";
 
-import React, { useState } from 'react';
-import { X, ChevronDown, Link as LinkIcon, CloudUpload } from 'lucide-react';
-import { LearningResource, ResourceType } from '@/types/learning-resource';
+import React, { useEffect, useMemo, useState } from "react";
+import { ChevronDown, CloudUpload, Link as LinkIcon, Loader2, X } from "lucide-react";
+import { LearningResource, ResourceType } from "@/types/learning-resource";
+import { fileUploadService } from "@/services/fileUploadService";
+import { toast } from "react-hot-toast";
 
 export interface ResourceFormData {
   title: string;
   type: ResourceType;
-  courseName: string;
+  courseId: string;
   url: string;
+}
+
+interface CourseOption {
+  id: string;
+  courseName: string;
 }
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialData: LearningResource | null;
-  onSubmit: (data: ResourceFormData) => void;
+  onSubmit: (data: ResourceFormData) => Promise<void> | void;
+  courses: CourseOption[];
 }
 
-export default function ResourceModal({ isOpen, onClose, initialData, onSubmit }: Props) {
-  // --- FORM STATES ---
-  const [title, setTitle] = useState('');
-  const [type, setType] = useState<ResourceType>('Video');
-  const [courseName, setCourseName] = useState('');
-  const [url, setUrl] = useState('');
-  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url');
+const RESOURCE_UPLOAD_TYPE: Record<ResourceType, "image" | "video" | "raw"> = {
+  Video: "video",
+  Pdf: "raw",
+  Link: "raw",
+  Slide: "raw",
+  Image: "image",
+};
 
-  // --- SYNC STATE (Tránh lỗi set-state-in-effect) ---
-  const [prevIsOpen, setPrevIsOpen] = useState(false);
-  const [prevInitialData, setPrevInitialData] = useState<LearningResource | null>(null);
+export default function ResourceModal({ isOpen, onClose, initialData, onSubmit, courses }: Props) {
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState<ResourceType>("Video");
+  const [courseId, setCourseId] = useState("");
+  const [url, setUrl] = useState("");
+  const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  if (isOpen !== prevIsOpen || initialData !== prevInitialData) {
-    setPrevIsOpen(isOpen);
-    setPrevInitialData(initialData);
-    
-    if (isOpen) {
-      if (initialData) {
-        // Chế độ Edit
-        setTitle(initialData.title);
-        setType(initialData.type);
-        setCourseName(initialData.courseName);
-        setUrl(initialData.url);
-        setUploadMode('url');
-      } else {
-        // Chế độ Create
-        setTitle('');
-        setType('Video');
-        setCourseName('');
-        setUrl('');
-        setUploadMode('url');
-      }
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialData) {
+      setTitle(initialData.title);
+      setType(initialData.type);
+      setCourseId(initialData.courseId);
+      setUrl(initialData.url);
+      setUploadMode("url");
+    } else {
+      setTitle("");
+      setType("Video");
+      setCourseId("");
+      setUrl("");
+      setUploadMode("url");
     }
-  }
+
+    setSelectedFile(null);
+    setSubmitting(false);
+  }, [initialData, isOpen]);
+
+  const today = useMemo(() => new Date().toLocaleDateString("vi-VN"), []);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      title,
-      type,
-      courseName,
-      // Giả lập lưu URL nếu chọn 'file' mà chưa có backend
-      url: uploadMode === 'file' ? 'assets/uploaded-file...' : url 
-    });
+
+    try {
+      setSubmitting(true);
+
+      let finalUrl = url.trim();
+      if (uploadMode === "file") {
+        if (!selectedFile) {
+          toast.error("Vui long chon tep tai nguyen tu may tinh.");
+          return;
+        }
+
+        finalUrl = await fileUploadService.uploadPublic(selectedFile, {
+          folder: "learning_resources",
+          resourceType: RESOURCE_UPLOAD_TYPE[type],
+        });
+      }
+
+      if (!finalUrl) {
+        toast.error("Vui long nhap hoac tai len tep tai nguyen.");
+        return;
+      }
+
+      await onSubmit({
+        title: title.trim(),
+        type,
+        courseId,
+        url: finalUrl,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const today = new Date().toLocaleDateString('vi-VN');
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
-      
-      {/* Modal Container */}
-      <div className="relative bg-white w-full max-w-xl rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* Header */}
-        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div>
-            <h2 className="text-xl font-black tracking-tight text-slate-900">
-              {initialData ? 'Cập nhật Tài nguyên' : 'Thêm mới Tài nguyên'}
-            </h2>
-            <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1">Resource Management Portal</p>
-          </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-colors active:scale-95">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[100] overflow-y-auto p-4">
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
 
-        {/* Body Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="p-8 space-y-6">
-            
-            {/* Course Selection */}
-            <div>
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Khóa học liên kết</label>
-              <div className="relative">
-                <select 
-                  required value={courseName} onChange={(e) => setCourseName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 px-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none appearance-none transition-all cursor-pointer"
-                >
-                  <option value="" disabled>-- Chọn khóa học --</option>
-                  <option value="B2 - Lái xe hạng nhẹ">B2 - Lái xe hạng nhẹ</option>
-                  <option value="C - Lái xe tải">C - Lái xe tải</option>
-                  <option value="Luật giao thông ĐB">Luật giao thông ĐB</option>
-                  <option value="Biển báo cơ bản">Biển báo cơ bản</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Title Input */}
-            <div>
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Tiêu đề tài nguyên</label>
-              <input 
-                required type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-                placeholder="Nhập tên tài nguyên học tập..." 
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 px-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none transition-all" 
-              />
-            </div>
-
-            {/* Type & Date */}
-            <div className="grid grid-cols-2 gap-4">
+      <div className="relative mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-xl items-center justify-center py-4">
+        <div className="relative flex max-h-[calc(100vh-48px)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+          <div className="shrink-0 border-b border-slate-100 bg-slate-50/50 px-8 py-6">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Loại tài nguyên</label>
+                <h2 className="text-xl font-black tracking-tight text-slate-900">
+                  {initialData ? "Cap nhat tai nguyen" : "Them moi tai nguyen"}
+                </h2>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-600">Quan ly tai nguyen hoc tap</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 active:scale-95"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-8">
+              <div>
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Khoa hoc lien ket</label>
                 <div className="relative">
-                  <select 
-                    required value={type} onChange={(e) => setType(e.target.value as ResourceType)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 px-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none appearance-none transition-all cursor-pointer"
+                  <select
+                    required
+                    value={courseId}
+                    onChange={(e) => setCourseId(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:ring-2 focus:ring-blue-600"
                   >
-                    <option value="Video">Video (MP4, YouTube)</option>
-                    <option value="PDF">PDF Document</option>
-                    <option value="Document">Word / Text Document</option>
-                    <option value="Image">Hình ảnh</option>
+                    <option value="" disabled>
+                      -- Chon khoa hoc --
+                    </option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.courseName}
+                      </option>
+                    ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 </div>
               </div>
+
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Ngày tải lên (Auto)</label>
-                <input 
-                  disabled type="text" value={initialData ? initialData.uploadDate : today}
-                  className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-sm font-medium text-slate-400 italic cursor-not-allowed" 
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Tieu de tai nguyen</label>
+                <input
+                  required
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Nhap ten tai nguyen hoc tap..."
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:ring-2 focus:ring-blue-600"
                 />
               </div>
-            </div>
 
-            {/* URL / File Upload Area */}
-            <div className="space-y-4">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Đường dẫn / Tệp tin</label>
-              
-              <div className="flex items-center gap-2 mb-2 bg-slate-100 p-1 rounded-lg w-fit border border-slate-200">
-                <button 
-                  type="button" onClick={() => setUploadMode('url')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${uploadMode === 'url' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Dán URL
-                </button>
-                <button 
-                  type="button" onClick={() => setUploadMode('file')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${uploadMode === 'file' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Tải tệp lên
-                </button>
-              </div>
-
-              {uploadMode === 'url' ? (
-                <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <input 
-                    required={uploadMode === 'url'} type="url" value={url} onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://example.com/resource/file.pdf" 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 pl-10 pr-4 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 outline-none transition-all" 
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Loai tai nguyen</label>
+                  <div className="relative">
+                    <select
+                      required
+                      value={type}
+                      onChange={(e) => setType(e.target.value as ResourceType)}
+                      className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:ring-2 focus:ring-blue-600"
+                    >
+                      <option value="Video">Video</option>
+                      <option value="Pdf">PDF</option>
+                      <option value="Link">Lien ket</option>
+                      <option value="Slide">Slide</option>
+                      <option value="Image">Hinh anh</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Ngay tai len</label>
+                  <input
+                    disabled
+                    type="text"
+                    value={initialData ? initialData.uploadDate : today}
+                    className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-medium italic text-slate-400"
                   />
                 </div>
-              ) : (
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-blue-50/50 group hover:border-blue-400 transition-colors cursor-pointer">
-                  <CloudUpload className="text-slate-400 group-hover:text-blue-500 transition-colors w-10 h-10 mb-3" />
-                  <p className="text-sm font-bold text-slate-700 group-hover:text-blue-700">Kéo và thả tệp vào đây hoặc Bấm để chọn</p>
-                  <p className="text-xs text-slate-400 mt-1">Hỗ trợ PDF, MP4, DOCX (Tối đa 50MB)</p>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Duong dan / tep tin</label>
+
+                <div className="flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode("url")}
+                    className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${uploadMode === "url" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Dan URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode("file")}
+                    className={`rounded-md px-4 py-1.5 text-xs font-bold transition-all ${uploadMode === "file" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Tai tep len
+                  </button>
                 </div>
-              )}
+
+                {uploadMode === "url" ? (
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      required={uploadMode === "url"}
+                      type="url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://example.com/resource/file.pdf"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition-all focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                ) : (
+                  <label className="block cursor-pointer rounded-xl border-2 border-dashed border-blue-300 bg-slate-50 p-8 text-center transition-colors hover:bg-blue-50/50">
+                    <CloudUpload className="mx-auto mb-3 h-10 w-10 text-blue-500" />
+                    <p className="text-sm font-bold text-blue-700">Keo tha tep vao day hoac bam de chon</p>
+                    <p className="mt-1 text-xs text-slate-400">Ho tro PDF, MP4, DOCX, PPTX, JPG, PNG</p>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.mp4,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.webp"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    />
+                    {selectedFile && (
+                      <p className="mt-3 text-xs font-semibold text-slate-600">Da chon: {selectedFile.name}</p>
+                    )}
+                  </label>
+                )}
+              </div>
             </div>
 
-          </div>
-
-          {/* Footer */}
-          <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 rounded-b-xl">
-            <button 
-              type="button" onClick={onClose}
-              className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors active:scale-95"
-            >
-              Hủy bỏ
-            </button>
-            <button 
-              type="submit"
-              className="bg-blue-600 text-white px-8 py-2.5 rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all font-black text-sm uppercase tracking-wider"
-            >
-              Lưu tài nguyên
-            </button>
-          </div>
-        </form>
+            <div className="shrink-0 border-t border-slate-100 bg-slate-50 px-8 py-5">
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-lg border border-slate-200 px-6 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200 active:scale-95"
+                >
+                  Huy bo
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {submitting ? "Dang luu..." : "Luu tai nguyen"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

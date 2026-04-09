@@ -1,19 +1,16 @@
-// types/schedule.ts
-
 export type SessionCategory = "Theory" | "Practice" | "Simulator" | "Exam";
 
 export interface ClassScheduleDTO {
-  id: string; // ClassSchedules.Id
-  classId: string; // Classes.Id
-  className: string; // Classes.ClassName
-  instructorName: string; // Users.FullName (Instructor)
-  startTime: string; // ClassSchedules.StartTime (ISO String)
-  endTime: string; // ClassSchedules.EndTime (ISO String)
-  addressId: number; // ClassSchedules.AddressId
-  addressName: string; // Mongo Addresses.AddressName
-  location: string; // Alias of addressName for legacy UI
-  category: SessionCategory; // Logic mapping từ ClassName hoặc Course
-  equipment?: string; // Thông tin bổ sung (Xe/Thiết bị)
+  id: string;
+  classId: string;
+  className: string;
+  instructorId: string;
+  instructorName: string;
+  startTime: string;
+  endTime: string;
+  addressId: number;
+  addressName: string;
+  location: string;
 }
 
 export interface UpcomingScheduleDTO {
@@ -23,20 +20,25 @@ export interface UpcomingScheduleDTO {
   details: string;
 }
 
-// src/types/schedule.ts
-export type ScheduleEventType = 'Lý thuyết' | 'Thực hành' | 'Mô phỏng';
-export type CourseStatusType = 'Hoàn thành' | 'Đang diễn ra' | 'Sắp diễn ra';
+export type ScheduleEventType = "Theory" | "Practice" | "Simulator" | "Exam";
+export type CourseStatusType = "Completed" | "InProgress" | "Pending" | "Cancelled";
 
 export interface ScheduleEvent {
   id: string;
+  classId: string;
+  className: string;
   courseId: string;
   courseName: string;
+  instructorId: string;
+  instructorName: string;
   eventType: ScheduleEventType;
   startTime: string;
   endTime: string;
-  instructorName: string;
-  date: number;
-  // --- Các trường bổ sung cho Lịch Ngày ---
+  startDateTime: string;
+  endDateTime: string;
+  dateKey: string;
+  addressId: number;
+  addressName: string;
   location?: string;
   description?: string;
   studentCount?: number;
@@ -44,6 +46,8 @@ export interface ScheduleEvent {
 
 export interface CourseStatusItem {
   id: string;
+  classId: string;
+  className: string;
   courseCode: string;
   courseName: string;
   instructorName: string;
@@ -58,11 +62,9 @@ export interface WeeklyInsight {
   pendingCourses: number;
 }
 
-// --- Type mới cho Thống kê Ngày ---
 export interface DailyInsight {
   theoryCount: number;
   practiceCount: number;
   simulationCount: number;
   totalStudents: number;
 }
-

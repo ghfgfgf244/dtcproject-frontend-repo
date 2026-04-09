@@ -1,25 +1,110 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/theory-practice.module.css";
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { setAuthToken } from "@/lib/api";
+import { mockExamService } from "@/services/mockExamService";
+import { courseService } from "@/services/courseService";
+import {
+  EXAM_LEVEL_LABEL_BY_VALUE,
+  EXAM_LEVEL_OPTIONS,
+  EXAM_LEVEL_VALUE_BY_LABEL,
+} from "@/constants/exam-levels";
+
+type CourseLite = {
+  id: string;
+  courseName: string;
+  licenseType: number;
+};
+
+type SampleExamLite = {
+  id: string;
+  courseId: string;
+  examNo: number;
+  level: number;
+  durationMinutes: number;
+  passingScore: number;
+  totalQuestions: number;
+  isActive: boolean;
+};
 
 export default function TheoryPracticePage() {
   const router = useRouter();
-  const [unit, setUnit] = useState("");
-  const [course, setCourse] = useState("");
+  const { isLoaded, getToken, userId } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [unit, setUnit] = useState("TRUNG TÂM ĐÀO TẠO DTC");
+  const [courseInput, setCourseInput] = useState("TỰ LUYỆN LÝ THUYẾT");
   const [license, setLicense] = useState("");
-  const [examChoice, setExamChoice] = useState("");
   const [candidateNo, setCandidateNo] = useState("");
+  const [examChoice, setExamChoice] = useState("");
   const [checked, setChecked] = useState(false);
+  const [courses, setCourses] = useState<CourseLite[]>([]);
+  const [allExams, setAllExams] = useState<SampleExamLite[]>([]);
 
-  const canCheck =
-    unit && course && license && examChoice && candidateNo.trim().length > 0;
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!isLoaded) return;
+
+      try {
+        setLoading(true);
+        const token = await getToken();
+        setAuthToken(token);
+
+        const [courseData, examData] = await Promise.all([
+          courseService.getAvailableCourses(),
+          mockExamService.getAll(),
+        ]);
+
+        setCourses(
+          (courseData || []).map((course) => ({
+            id: course.id,
+            courseName: course.courseName,
+            licenseType: Number(course.licenseType),
+          })),
+        );
+        setAllExams((examData || []).filter((exam) => exam.isActive));
+      } catch (error) {
+        console.error("Failed to load sample exams:", error);
+        setCourses([]);
+        setAllExams([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [getToken, isLoaded]);
+
+  const selectedLicenseValue = license ? EXAM_LEVEL_VALUE_BY_LABEL[license] : undefined;
+
+  const availableExams = useMemo(() => {
+    if (!selectedLicenseValue) return [];
+
+    return allExams
+      .filter((exam) => Number(exam.level) === selectedLicenseValue)
+      .sort((left, right) => left.examNo - right.examNo)
+      .map((exam) => {
+        const course = courses.find((item) => item.id === exam.courseId);
+        return {
+          ...exam,
+          courseName: course?.courseName || `Đề thi số ${exam.examNo}`,
+        };
+      });
+  }, [allExams, courses, selectedLicenseValue]);
+
+  const selectedExam = useMemo(
+    () => availableExams.find((exam) => exam.id === examChoice) ?? null,
+    [availableExams, examChoice],
+  );
+
+  const canCheck = Boolean(license && examChoice);
 
   const info = useMemo(() => {
-    if (!checked) {
+    if (!checked || !selectedExam) {
       return {
         licenseType: "-",
         name: "-",
@@ -28,14 +113,15 @@ export default function TheoryPracticePage() {
         address: "-",
       };
     }
+
     return {
       licenseType: license,
-      name: "Nguyễn Văn A",
-      birth: "01/01/1999",
-      id: "01234567",
-      address: "Việt Nam",
+      name: "Học viên DTC",
+      birth: "Đang cập nhật",
+      id: candidateNo.trim() || userId || "Tự động tạo",
+      address: "Thông tin chỉ để làm quen giao diện thi",
     };
-  }, [checked, license]);
+  }, [candidateNo, checked, license, selectedExam, userId]);
 
   const handleCheck = () => {
     if (!canCheck) return;
@@ -43,8 +129,16 @@ export default function TheoryPracticePage() {
   };
 
   const handleStart = () => {
-    if (!checked) return;
-    router.push("/courses/my-course/theory-practice/exam");
+    if (!checked || !selectedExam) return;
+
+    const params = new URLSearchParams({
+      examId: selectedExam.id,
+      license,
+      examNo: String(selectedExam.examNo),
+      title: selectedExam.courseName,
+    });
+
+    router.push(`/courses/my-course/theory-practice/exam?${params.toString()}`);
   };
 
   return (
@@ -54,16 +148,17 @@ export default function TheoryPracticePage() {
       <section className={shellStyles.content}>
         <header className={styles.pageHeader}>
           <h1>Lý thuyết lái xe</h1>
-          <p>Chọn đề thi và kiểm tra thông tin thí sinh trước khi bắt đầu.</p>
+          <p>
+            Chọn hạng GPLX và đề thi để vào làm bài. Các thông tin còn lại chỉ dùng để
+            bạn làm quen với màn hình sát hạch.
+          </p>
         </header>
 
         <div className={styles.panel}>
           <div className={styles.bannerTop}>
             PHẦN MỀM TỰ LUYỆN SÁT HẠCH LÝ THUYẾT MỚI NHẤT 2026
           </div>
-          <div className={styles.bannerMain}>
-            TỰ LUYỆN SÁT HẠCH LÝ THUYẾT 600 CÂU
-          </div>
+          <div className={styles.bannerMain}>TỰ LUYỆN SÁT HẠCH LÝ THUYẾT</div>
 
           <div className={styles.formArea}>
             <div className={styles.formGrid}>
@@ -73,17 +168,18 @@ export default function TheoryPracticePage() {
                 value={unit}
                 onChange={(event) => setUnit(event.target.value)}
               >
-                <option value="">Chọn đơn vị</option>
-                <option value="TRUNG TÂM SÁT HẠCH LÁI XE HẢI PHÒNG">
-                  TRUNG TÂM SÁT HẠCH LÁI XE HẢI PHÒNG
+                <option value="TRUNG TÂM ĐÀO TẠO DTC">TRUNG TÂM ĐÀO TẠO DTC</option>
+                <option value="TRUNG TÂM SÁT HẠCH LÁI XE KHU VỰC 1">
+                  TRUNG TÂM SÁT HẠCH LÁI XE KHU VỰC 1
                 </option>
-                <option value="TRUNG TÂM SÁT HẠCH LÁI XE ĐÀ NẴNG">
-                  TRUNG TÂM SÁT HẠCH LÁI XE ĐÀ NẴNG
+                <option value="TRUNG TÂM SÁT HẠCH LÁI XE KHU VỰC 2">
+                  TRUNG TÂM SÁT HẠCH LÁI XE KHU VỰC 2
                 </option>
               </select>
               <button
+                type="button"
                 className={styles.checkBtn}
-                disabled={!canCheck}
+                disabled={!canCheck || loading}
                 onClick={handleCheck}
               >
                 Kiểm tra thông tin thí sinh
@@ -92,10 +188,9 @@ export default function TheoryPracticePage() {
               <label className={styles.label}>Khóa:</label>
               <select
                 className={styles.control}
-                value={course}
-                onChange={(event) => setCourse(event.target.value)}
+                value={courseInput}
+                onChange={(event) => setCourseInput(event.target.value)}
               >
-                <option value="">Chọn khóa</option>
                 <option value="TỰ LUYỆN LÝ THUYẾT">TỰ LUYỆN LÝ THUYẾT</option>
                 <option value="ĐỀ THI TỔNG HỢP">ĐỀ THI TỔNG HỢP</option>
               </select>
@@ -104,7 +199,7 @@ export default function TheoryPracticePage() {
               <label className={styles.label}>Số báo danh:</label>
               <input
                 className={styles.control}
-                placeholder="9"
+                placeholder="Nhập để làm quen giao diện"
                 value={candidateNo}
                 onChange={(event) => setCandidateNo(event.target.value)}
               />
@@ -114,22 +209,39 @@ export default function TheoryPracticePage() {
               <select
                 className={styles.control}
                 value={license}
-                onChange={(event) => setLicense(event.target.value)}
+                onChange={(event) => {
+                  setLicense(event.target.value);
+                  setExamChoice("");
+                  setChecked(false);
+                }}
               >
                 <option value="">Chọn hạng GPLX</option>
-                <option value="Ô tô hạng B">Ô tô hạng B</option>
-                <option value="Ô tô hạng C">Ô tô hạng C</option>
+                {EXAM_LEVEL_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.label}>
+                    {item.label}
+                  </option>
+                ))}
               </select>
+
               <div className={styles.inlineField}>
-                <span>Lựa chọn Đề:</span>
+                <span>Lựa chọn đề:</span>
                 <select
                   className={styles.control}
                   value={examChoice}
-                  onChange={(event) => setExamChoice(event.target.value)}
+                  onChange={(event) => {
+                    setExamChoice(event.target.value);
+                    setChecked(false);
+                  }}
+                  disabled={!license || loading}
                 >
-                  <option value="">-&gt;Ngẫu nhiên</option>
-                  <option value="Đề 1">Đề 1</option>
-                  <option value="Đề 2">Đề 2</option>
+                  <option value="">
+                    {loading ? "Đang tải đề..." : "Chọn đề thi thử"}
+                  </option>
+                  {availableExams.map((exam) => (
+                    <option key={exam.id} value={exam.id}>
+                      Đề {exam.examNo} · {exam.totalQuestions} câu · {exam.durationMinutes} phút
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -155,20 +267,37 @@ export default function TheoryPracticePage() {
                   <strong>{info.birth}</strong>
                 </div>
                 <div className={styles.infoRow}>
-                  <span>Số CMT:</span>
+                  <span>Số CMT/CCCD:</span>
                   <strong>{info.id}</strong>
                 </div>
                 <div className={styles.infoRow}>
                   <span>Địa chỉ:</span>
                   <strong>{info.address}</strong>
                 </div>
+                {selectedExam && (
+                  <>
+                    <div className={styles.infoRow}>
+                      <span>Đề đã chọn:</span>
+                      <strong>Đề {selectedExam.examNo}</strong>
+                    </div>
+                    <div className={styles.infoRow}>
+                      <span>Thời gian:</span>
+                      <strong>{selectedExam.durationMinutes} phút</strong>
+                    </div>
+                    <div className={styles.infoRow}>
+                      <span>Điểm đạt:</span>
+                      <strong>{selectedExam.passingScore}/100</strong>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             <div className={styles.actions}>
               <button
+                type="button"
                 className={styles.startBtn}
-                disabled={!checked}
+                disabled={!checked || !selectedExam}
                 onClick={handleStart}
               >
                 » Bắt đầu thi
@@ -176,9 +305,16 @@ export default function TheoryPracticePage() {
             </div>
 
             <p className={styles.note}>
-              * Lưu ý: Bạn phải nhấn vào "Kiểm tra thông tin thí sinh" mới có
-              thể nhấn được nút "Bắt đầu thi".
+              * Học viên chỉ cần chọn hạng GPLX và đề thi. Sau khi nộp bài, hệ thống mới
+              hiển thị câu đúng, câu sai và mẹo giải thích từng câu để bạn review lại.
             </p>
+
+            {license && !loading && availableExams.length === 0 && (
+              <p className={styles.note}>
+                * Hiện chưa có đề thi thử hoạt động cho hạng {license}. Vui lòng chọn hạng
+                khác hoặc quay lại sau.
+              </p>
+            )}
           </div>
         </div>
       </section>

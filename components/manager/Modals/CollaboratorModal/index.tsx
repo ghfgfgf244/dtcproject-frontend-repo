@@ -1,16 +1,15 @@
-// components/manager/Modals/CollaboratorModal/index.tsx
 "use client";
 
-import React, { useState } from 'react';
-import { X, QrCode, User, Mail, Phone, Save } from 'lucide-react';
-import { Collaborator } from '@/types/collaborator';
+import React, { useEffect, useState } from "react";
+import { X, QrCode, User, Mail, Phone, Save, RefreshCw } from "lucide-react";
+import { Collaborator } from "@/types/collaborator";
 
 export interface CollabFormData {
   fullName: string;
   email: string;
   phone: string;
   referralCode: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: "ACTIVE" | "INACTIVE";
 }
 
 interface Props {
@@ -20,136 +19,223 @@ interface Props {
   onSubmit: (data: CollabFormData) => void;
 }
 
-export default function CollaboratorModal({ isOpen, onClose, initialData, onSubmit }: Props) {
-  // --- STATES ---
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [referralCode, setReferralCode] = useState('');
+const createSeed = () =>
+  Math.random().toString(36).slice(2, 6).toUpperCase();
+
+const buildReferralCode = (fullName: string, seed: string) => {
+  const year = new Date().getFullYear();
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+
+  const namePart = initials || "CTV";
+  return `REF-${year}-${namePart}-${seed}`;
+};
+
+export default function CollaboratorModal({
+  isOpen,
+  onClose,
+  initialData,
+  onSubmit,
+}: Props) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [seed, setSeed] = useState(createSeed());
 
-  // --- FIX LỖI ESLINT: ĐỒNG BỘ STATE NGAY TRONG RENDER ---
-  // Sử dụng một state tạm thời để theo dõi sự thay đổi của Props
-  const [prevIsOpen, setPrevIsOpen] = useState(false);
-  const [prevInitialData, setPrevInitialData] = useState<Collaborator | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
 
-  // Kỹ thuật đồng bộ hóa state của React (thay thế cho useEffect)
-  if (isOpen !== prevIsOpen || initialData !== prevInitialData) {
-    setPrevIsOpen(isOpen);
-    setPrevInitialData(initialData);
-
-    if (isOpen) {
-      if (initialData) {
-        setFullName(initialData.fullName);
-        setEmail(initialData.email);
-        setPhone(initialData.phone);
-        setReferralCode(initialData.referralCode);
-        setIsActive(initialData.status === 'ACTIVE');
-      } else {
-        setFullName('');
-        setEmail('');
-        setPhone('');
-        setReferralCode(`REF-${new Date().getFullYear()}-`);
-        setIsActive(true);
-      }
+    if (initialData) {
+      setFullName(initialData.fullName);
+      setEmail(initialData.email);
+      setPhone(initialData.phone);
+      setReferralCode(initialData.referralCode);
+      setIsActive(initialData.status === "ACTIVE");
+      setSeed(createSeed());
+      return;
     }
-  }
+
+    const nextSeed = createSeed();
+    setSeed(nextSeed);
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setReferralCode(buildReferralCode("", nextSeed));
+    setIsActive(true);
+  }, [initialData, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || initialData) return;
+    setReferralCode(buildReferralCode(fullName, seed));
+  }, [fullName, initialData, isOpen, seed]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRegenerateCode = () => {
+    const nextSeed = createSeed();
+    setSeed(nextSeed);
+    setReferralCode(buildReferralCode(fullName, nextSeed));
+  };
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     onSubmit({
       fullName,
       email,
       phone,
       referralCode,
-      status: isActive ? 'ACTIVE' : 'INACTIVE'
+      status: isActive ? "ACTIVE" : "INACTIVE",
     });
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose}></div>
-      <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* Header */}
-        <div className="px-8 pt-8 pb-4 flex justify-between items-start">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between px-8 pb-4 pt-8">
           <div>
-            <h3 className="text-xl font-black text-slate-900 tracking-tight">
-              {initialData ? 'Cập nhật Cộng tác viên' : 'Thêm mới Cộng tác viên'}
+            <h3 className="text-xl font-black tracking-tight text-slate-900">
+              {initialData ? "Cập nhật Cộng tác viên" : "Thêm mới Cộng tác viên"}
             </h3>
-            <p className="text-slate-500 text-xs mt-1 font-medium">Nhập thông tin chi tiết cho tài khoản cộng tác viên.</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              Nhập thông tin chi tiết cho tài khoản cộng tác viên.
+            </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full transition-all">
-            <X className="w-5 h-5" />
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-slate-400 transition-all hover:text-slate-600"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
-          <div className="px-8 py-4 space-y-5">
+          <div className="space-y-5 px-8 py-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Họ và tên</label>
-              <div className="relative group">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <input 
-                  required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-sm font-medium" 
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Họ và tên
+              </label>
+              <div className="group relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
+                <input
+                  required
+                  type="text"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  className="w-full rounded-lg border-none bg-slate-100 py-3 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Email</label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-sm font-medium" 
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  Email
+                </label>
+                <div className="group relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="w-full rounded-lg border-none bg-slate-100 py-3 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Số điện thoại</label>
-                <div className="relative group">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                  <input required type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-sm font-medium" 
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  Số điện thoại
+                </label>
+                <div className="group relative">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
+                  <input
+                    required
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    className="w-full rounded-lg border-none bg-slate-100 py-3 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Mã giới thiệu</label>
-              <div className="relative group">
-                <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-blue-600 transition-colors" />
-                <input required type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-sm font-mono font-medium" 
+              <div className="flex items-center justify-between">
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  Mã giới thiệu
+                </label>
+                {!initialData && (
+                  <button
+                    type="button"
+                    onClick={handleRegenerateCode}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 transition hover:text-blue-700"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Tạo mã mới
+                  </button>
+                )}
+              </div>
+              <div className="group relative">
+                <QrCode className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
+                <input
+                  required
+                  type="text"
+                  value={referralCode}
+                  readOnly={!initialData}
+                  onChange={(event) => setReferralCode(event.target.value.toUpperCase())}
+                  className="w-full rounded-lg border-none bg-slate-100 py-3 pl-10 pr-4 text-sm font-mono font-medium uppercase outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
+              {!initialData && (
+                <p className="text-[11px] text-slate-500">
+                  Mã được tự động tạo theo năm hiện tại, tên cộng tác viên và chuỗi ngẫu nhiên.
+                </p>
+              )}
             </div>
 
-            <div className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
               <div>
-                <span className="text-xs font-bold text-slate-700">Trạng thái hoạt động</span>
-                <p className="text-[10px] text-slate-500 uppercase tracking-tight">Tài khoản có quyền truy cập hệ thống</p>
+                <span className="text-xs font-bold text-slate-700">
+                  Trạng thái hoạt động
+                </span>
+                <p className="text-[10px] uppercase tracking-tight text-slate-500">
+                  Tài khoản có quyền truy cập hệ thống
+                </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" checked={isActive} onChange={() => setIsActive(!isActive)} />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={isActive}
+                  onChange={() => setIsActive(!isActive)}
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-['']"></div>
               </label>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="px-8 py-6 bg-slate-50 flex items-center justify-end gap-3 border-t border-slate-100 mt-4">
-            <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-all">
+          <div className="mt-4 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-8 py-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-bold text-slate-700 transition-all hover:bg-slate-50"
+            >
               Hủy
             </button>
-            <button type="submit" className="px-8 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2">
-              <Save className="w-4 h-4" /> Lưu thông tin
+            <button
+              type="submit"
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95"
+            >
+              <Save className="h-4 w-4" /> Lưu thông tin
             </button>
           </div>
         </form>

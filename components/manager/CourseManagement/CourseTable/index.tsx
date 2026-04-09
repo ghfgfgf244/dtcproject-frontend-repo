@@ -38,6 +38,7 @@ export default function CourseTable({ data, loading, onToggleStatus, onViewDetai
           <tr>
             <th className="px-6 py-5 text-[11px] font-black uppercase tracking-wider text-slate-400">STT</th>
             <th className="px-6 py-5 text-[11px] font-black uppercase tracking-wider text-slate-400">Tên khóa đào tạo</th>
+            <th className="px-6 py-5 text-[11px] font-black uppercase tracking-wider text-slate-400">Cơ sở</th>
             <th className="px-6 py-5 text-[11px] font-black uppercase tracking-wider text-slate-400">Hạng bằng</th>
             <th className="px-6 py-5 text-[11px] font-black uppercase tracking-wider text-slate-400 text-right">Giá tiền (VND)</th>
             <th className="px-6 py-5 text-[11px] font-black uppercase tracking-wider text-slate-400 text-center">Học viên tối đa</th>
@@ -54,6 +55,11 @@ export default function CourseTable({ data, loading, onToggleStatus, onViewDetai
               <td className="px-6 py-5">
                 <span className="text-sm font-black text-slate-800 group-hover:text-blue-600 transition-colors uppercase leading-tight tracking-tight">
                   {course.courseName}
+                </span>
+              </td>
+              <td className="px-6 py-5">
+                <span className="text-xs font-bold text-slate-500">
+                  {course.centerName || "Chưa xác định"}
                 </span>
               </td>
               <td className="px-6 py-5">

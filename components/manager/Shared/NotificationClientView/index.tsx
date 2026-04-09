@@ -60,7 +60,7 @@ export default function NotificationClientView({
       }
 
       // Fallback to initialNotifications if API returns empty for testing/demo
-      if (data.length === 0 && initialNotifications.length > 0) {
+      if (data.length === 0 && initialNotifications?.length > 0) {
         setNotifications(initialNotifications);
       } else {
         setNotifications(data);
@@ -68,11 +68,12 @@ export default function NotificationClientView({
     } catch (err) {
       console.error("Error fetching notifications:", err);
       // Fallback on error too
-      if (initialNotifications.length > 0) setNotifications(initialNotifications);
+      if (initialNotifications?.length > 0) setNotifications(initialNotifications);
     } finally {
       setLoading(false);
     }
-  }, [getToken, isAdmin, initialNotifications]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getToken, isAdmin]);
 
   useEffect(() => {
     fetchNotifications();

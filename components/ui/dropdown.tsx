@@ -1,73 +1,202 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { Bell, CalendarX, FileText, Loader2, RefreshCw, Settings, UserPlus } from "lucide-react";
+import { setAuthToken } from "@/lib/api";
+import { notificationService } from "@/services/notificationService";
+import { NotificationRecord } from "@/types/notification";
 import styles from "@/styles/header.module.css";
-import { Bell } from "lucide-react";
+
+function getItemIcon(type: string) {
+  switch (type) {
+    case "Registration":
+      return {
+        icon: <UserPlus size={16} />,
+        className: `${styles.notiIcon} ${styles.green}`,
+      };
+    case "Class":
+    case "Attendance":
+      return {
+        icon: <CalendarX size={16} />,
+        className: `${styles.notiIcon} ${styles.blue}`,
+      };
+    case "Exam":
+    case "ExamResult":
+      return {
+        icon: <FileText size={16} />,
+        className: `${styles.notiIcon} ${styles.yellow}`,
+      };
+    case "RoleChanged":
+    case "Referral":
+      return {
+        icon: <RefreshCw size={16} />,
+        className: `${styles.notiIcon} ${styles.blue}`,
+      };
+    default:
+      return {
+        icon: <Settings size={16} />,
+        className: `${styles.notiIcon} ${styles.blue}`,
+      };
+  }
+}
 
 export default function NotificationDropdown() {
+  const { getToken } = useAuth();
+  const { isSignedIn, user } = useUser();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications]
+  );
+
+  const fetchNotifications = useCallback(async () => {
+    if (!isSignedIn || !user?.id) {
+      setNotifications([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        setNotifications([]);
+        return;
+      }
+
+      setAuthToken(token);
+      const data = await notificationService.getMyNotifications();
+      setNotifications(data.slice(0, 6));
+    } catch {
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, isSignedIn, user?.id]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    fetchNotifications();
+  }, [fetchNotifications, mounted]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const handleMarkAllAsRead = async () => {
+    const unreadIds = notifications.filter((notification) => !notification.isRead).map((notification) => notification.id);
+    if (unreadIds.length === 0) return;
+
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      setAuthToken(token);
+      await Promise.all(unreadIds.map((id) => notificationService.markAsRead(id)));
+      setNotifications((current) => current.map((notification) => ({ ...notification, isRead: true })));
+    } catch {
+      // silent in header
+    }
+  };
+
+  const handleOpenNotification = async (notification: NotificationRecord) => {
+    if (notification.isRead) return;
+
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      setAuthToken(token);
+      await notificationService.markAsRead(notification.id);
+      setNotifications((current) =>
+        current.map((item) => (item.id === notification.id ? { ...item, isRead: true } : item))
+      );
+    } catch {
+      // silent in header
+    }
+  };
+
+  if (!mounted || !isSignedIn) {
+    return null;
+  }
 
   return (
-    <div className={styles.notiWrapper}>
-      
-      {/* Bell button */}
-      <button
-        className={styles.notiBell}
-        onClick={() => setOpen(!open)}
-      >
+    <div className={styles.notiWrapper} ref={wrapperRef}>
+      <button type="button" className={styles.notiBell} onClick={() => setOpen((current) => !current)}>
         <Bell size={18} />
-        <span className={styles.notiBadge}></span>
+        {unreadCount > 0 ? <span className={styles.notiBadge} /> : null}
       </button>
 
-      {/* Dropdown */}
-      <div
-        className={`${styles.notiDropdown} ${
-          open ? styles.show : ""
-        }`}
-      >
+      {open ? (
+        <div className={`${styles.notiDropdown} ${styles.show}`}>
+          <div className={styles.notiHeader}>
+            <div>
+              <span>Thong bao</span>
+              <small className={styles.notiSubtext}>
+                {unreadCount > 0
+                  ? `Ban co ${unreadCount} thong bao chua doc`
+                  : "Ban da doc het thong bao"}
+              </small>
+            </div>
+            {unreadCount > 0 ? (
+              <button type="button" className={styles.notiAction} onClick={handleMarkAllAsRead}>
+                Danh dau da doc
+              </button>
+            ) : null}
+          </div>
 
-        <div className={styles.notiHeader}>
-          <span>Notifications</span>
-        </div>
-
-        <div className={styles.notiItem}>
-          <div className={`${styles.notiIcon} ${styles.blue}`}>📅</div>
-          <div>
-            <p>New driving lesson scheduled for tomorrow</p>
-            <span>2 mins ago</span>
+          <div className={styles.notiList}>
+            {loading ? (
+              <div className={styles.notiState}>
+                <Loader2 size={16} className={styles.notiSpinner} />
+                <span>Dang tai thong bao...</span>
+              </div>
+            ) : notifications.length > 0 ? (
+              notifications.map((notification) => {
+                const icon = getItemIcon(notification.type);
+                return (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    className={`${styles.notiItem} ${notification.isRead ? styles.notiItemRead : ""}`}
+                    onClick={() => handleOpenNotification(notification)}
+                  >
+                    <div className={icon.className}>{icon.icon}</div>
+                    <div className={styles.notiBody}>
+                      <p>{notification.title}</p>
+                      <span>{notification.timeAgo}</span>
+                      <small>{notification.message}</small>
+                    </div>
+                    {!notification.isRead ? <span className={styles.notiUnreadDot} /> : null}
+                  </button>
+                );
+              })
+            ) : (
+              <div className={styles.notiState}>
+                <span>Chua co thong bao nao.</span>
+              </div>
+            )}
           </div>
         </div>
-
-        <div className={styles.notiItem}>
-          <div className={`${styles.notiIcon} ${styles.yellow}`}>📄</div>
-          <div>
-            <p>B2 Theory Exam results are out</p>
-            <span>1 hour ago</span>
-          </div>
-        </div>
-
-        <div className={styles.notiItem}>
-          <div className={`${styles.notiIcon} ${styles.green}`}>✔</div>
-          <div>
-            <p>Tuition payment successful</p>
-            <span>3 hours ago</span>
-          </div>
-        </div>
-
-        <div className={styles.notiItem}>
-          <img
-            src="https://i.pravatar.cc/40"
-            className={styles.notiAvatar}
-            alt="avatar"
-          />
-          <div>
-            <p>New message from Instructor Nam</p>
-            <span>5 hours ago</span>
-          </div>
-        </div>
-
-      </div>
-
+      ) : null}
     </div>
   );
 }

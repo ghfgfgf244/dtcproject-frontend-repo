@@ -28,7 +28,7 @@ export default function ExamClientView() {
 
   // 2. State quản lý UI cơ bản
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<string | number>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedLicenseType, setSelectedLicenseType] = useState<string>("all");
 
@@ -162,20 +162,11 @@ export default function ExamClientView() {
       const token = await getToken();
       setAuthToken(token);
       
-      // Ensure score defaults and courseId
-      const submissionData = {
-        ...data,
-        totalScore: data.totalScore || 100,
-        passScore: data.passScore || 40
-      };
-
-      console.log("POST /api/Exam Payload:", submissionData);
-
       if (data.id) {
-        const updated = await examService.updateExam(data.id, submissionData);
+        const updated = await examService.updateExam(data.id, data);
         setExams(prev => prev.map(e => e.id === updated.id ? updated : e));
       } else {
-        const created = await examService.createExam(submissionData);
+        const created = await examService.createExam(data);
         setExams(prev => [...prev, created]);
       }
       setIsExamModalOpen(false);
@@ -205,7 +196,7 @@ export default function ExamClientView() {
   const selectedBatch = batches.find((b) => b.id === currentBatchId);
   const currentExams = exams
     .filter((ex) => ex.examBatchId === currentBatchId)
-    .filter((ex) => selectedLicenseType === "all" || ex.licenseType === selectedLicenseType);
+    .filter((ex) => selectedLicenseType === "all" || String(ex.licenseType) === selectedLicenseType);
 
   if (loading) {
     return (

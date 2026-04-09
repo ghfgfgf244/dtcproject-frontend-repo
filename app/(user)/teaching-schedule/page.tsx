@@ -2,35 +2,56 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 import Sidebar from "@/components/ui/sidebar";
+import { setAuthToken } from "@/lib/api";
+import { ClassSchedule, scheduleService } from "@/services/scheduleService";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/teaching-schedule.module.css";
-import { scheduleService, ClassSchedule } from "@/services/scheduleService";
-import { useAuth } from "@clerk/nextjs";
-import { setAuthToken } from "@/lib/api";
 
-const dayLabels = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+const dayLabels = [
+  "Chủ nhật",
+  "Thứ 2",
+  "Thứ 3",
+  "Thứ 4",
+  "Thứ 5",
+  "Thứ 6",
+  "Thứ 7",
+];
 
-/* ===== UTIL ===== */
+type ScheduleBuckets = {
+  morning: ClassSchedule[];
+  afternoon: ClassSchedule[];
+  evening: ClassSchedule[];
+};
+
 function startOfWeek(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const next = new Date(date);
+  const day = next.getDay();
+  next.setDate(next.getDate() - day);
+  next.setHours(0, 0, 0, 0);
+  return next;
 }
 
 function addDays(date: Date, offset: number) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + offset);
-  return d;
+  const next = new Date(date);
+  next.setDate(next.getDate() + offset);
+  return next;
+}
+
+function getLocalDateKey(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function formatRange(start: Date) {
   const end = addDays(start, 6);
-  const opts: Intl.DateTimeFormatOptions = { month: "long", day: "numeric" };
-  return `${start.toLocaleDateString("vi-VN", opts)} - ${end.toLocaleDateString("vi-VN", opts)}`;
+  const options: Intl.DateTimeFormatOptions = { month: "long", day: "numeric" };
+  return `${start.toLocaleDateString("vi-VN", options)} - ${end.toLocaleDateString("vi-VN", options)}`;
 }
 
 export default function TeachingSchedulePage() {
@@ -38,61 +59,71 @@ export default function TeachingSchedulePage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [rawSchedules, setRawSchedules] = useState<ClassSchedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // ===== FETCH DATA =====
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
+        setError(null);
         const token = await getToken();
-        setAuthToken(token);
+        setAuthToken(token ?? null);
         const data = await scheduleService.getTeachingSchedule();
         setRawSchedules(data);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        setError("Không thể tải lịch dạy. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);
       }
     }
+
     loadData();
   }, [getToken]);
 
-  const weekDays = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = addDays(weekStart, i);
-      return {
-        day: dayLabels[date.getDay()],
-        date,
-        isToday: new Date().toDateString() === date.toDateString(),
-      };
-    });
-  }, [weekStart]);
+  const weekDays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const date = addDays(weekStart, index);
+        return {
+          label: dayLabels[date.getDay()],
+          date,
+          dateKey: getLocalDateKey(date),
+          isToday: getLocalDateKey(new Date()) === getLocalDateKey(date),
+        };
+      }),
+    [weekStart]
+  );
 
-  // Organize schedules by date and time of day
   const organizedSchedules = useMemo(() => {
-    const map: Record<string, { morning: ClassSchedule[]; afternoon: ClassSchedule[]; evening: ClassSchedule[] }> = {};
-    
-    rawSchedules.forEach(s => {
-      const dateKey = new Date(s.startTime).toDateString();
-      if (!map[dateKey]) {
-        map[dateKey] = { morning: [], afternoon: [], evening: [] };
-      }
-      
-      const hour = new Date(s.startTime).getHours();
-      if (hour < 12) map[dateKey].morning.push(s);
-      else if (hour < 18) map[dateKey].afternoon.push(s);
-      else map[dateKey].evening.push(s);
-    });
-    
-    return map;
-  }, [rawSchedules]);
+    const weekKeys = new Set(weekDays.map((day) => day.dateKey));
+    const grouped: Record<string, ScheduleBuckets> = {};
+
+    rawSchedules
+      .filter((schedule) => weekKeys.has(getLocalDateKey(schedule.startTime)))
+      .sort((left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime())
+      .forEach((schedule) => {
+        const dateKey = getLocalDateKey(schedule.startTime);
+        grouped[dateKey] ??= { morning: [], afternoon: [], evening: [] };
+
+        const hour = new Date(schedule.startTime).getHours();
+        if (hour < 12) {
+          grouped[dateKey].morning.push(schedule);
+        } else if (hour < 18) {
+          grouped[dateKey].afternoon.push(schedule);
+        } else {
+          grouped[dateKey].evening.push(schedule);
+        }
+      });
+
+    return grouped;
+  }, [rawSchedules, weekDays]);
 
   const renderSlots = (slots: ClassSchedule[]) => {
     if (!slots.length) {
       return <div className={styles.noSession}>Không có tiết dạy</div>;
     }
 
-    return slots.map(slot => (
+    return slots.map((slot) => (
       <Link
         key={slot.id}
         href={`/teaching-schedule/class/${slot.classId}?scheduleId=${slot.id}`}
@@ -100,16 +131,15 @@ export default function TeachingSchedulePage() {
         style={{ textDecoration: "none", display: "block" }}
       >
         <div className={styles.sessionTime}>
-          {new Date(slot.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })} - 
-          {new Date(slot.endTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+          {new Date(slot.startTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+          {" - "}
+          {new Date(slot.endTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
         </div>
 
-        <div className={styles.sessionTitle}>
-          {slot.className}
-        </div>
+        <div className={styles.sessionTitle}>{slot.className}</div>
 
         <div className={styles.tagRow}>
-          <span className={styles.tag}>{slot.location || slot.addressName}</span>
+          <span className={styles.tag}>{slot.addressName || slot.location || "Chưa cập nhật địa điểm"}</span>
         </div>
       </Link>
     ));
@@ -136,7 +166,7 @@ export default function TeachingSchedulePage() {
           <header className={styles.header}>
             <div>
               <h1>Lịch dạy của tôi</h1>
-              <p>Quản lý các buổi thực hành và bài giảng lý thuyết trong tuần.</p>
+              <p>Quản lý các buổi dạy lý thuyết và thực hành theo từng ngày trong tuần.</p>
             </div>
 
             <div className={styles.rangeControl}>
@@ -163,20 +193,25 @@ export default function TeachingSchedulePage() {
             </div>
           </header>
 
+          {error ? <div className={styles.noSession}>{error}</div> : null}
+
           <div className={styles.weekGrid}>
             {weekDays.map((day) => {
-              const dateKey = day.date.toDateString();
-              const dayData = organizedSchedules[dateKey] || { morning: [], afternoon: [], evening: [] };
+              const dayData = organizedSchedules[day.dateKey] ?? {
+                morning: [],
+                afternoon: [],
+                evening: [],
+              };
 
               return (
                 <div
-                  key={day.date.toISOString()}
+                  key={day.dateKey}
                   className={`${styles.dayColumn} ${day.isToday ? styles.focus : ""}`}
                 >
                   <div className={styles.dayHeader}>
-                    <span>{day.day}</span>
+                    <span>{day.label}</span>
                     <strong>{day.date.getDate()}</strong>
-                    {day.isToday && <span className={styles.today}>Hôm nay</span>}
+                    {day.isToday ? <span className={styles.today}>Hôm nay</span> : null}
                   </div>
 
                   <div className={styles.sessionBlock}>
@@ -201,4 +236,4 @@ export default function TeachingSchedulePage() {
       </section>
     </div>
   );
-}
+}

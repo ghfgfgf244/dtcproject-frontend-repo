@@ -1,280 +1,369 @@
-// src/app/(manager)/training-manager/classes/_components/Modals/ClassModal/index.tsx
 "use client";
 
-import React, { useState } from 'react';
-import { X, Calendar, Info, CalendarClock, PlusCircle, Trash2 } from 'lucide-react';
-import { ClassFormData, ClassSession, ClassStatus } from '@/types/class';
-import styles from '@/components/manager/Modals/modal.module.css';
+import { useEffect, useMemo, useState } from "react";
+import { Calendar, Download, PlusCircle, Trash2, Upload, X } from "lucide-react";
+import { ClassFormData, ClassSession, ClassType } from "@/types/class";
+import { TermRecord } from "@/types/term";
+import { UserListItem } from "@/services/userService";
+import { AddressOption } from "@/services/addressService";
+import { scheduleService } from "@/services/scheduleService";
+import styles from "@/components/manager/Modals/modal.module.css";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialData?: ClassFormData | null;
-  onSubmit: (data: ClassFormData) => void;
+  terms: TermRecord[];
+  instructors: UserListItem[];
+  addresses: AddressOption[];
+  onSubmit: (data: ClassFormData) => Promise<void>;
 }
 
-// Dữ liệu mẫu (Thực tế sẽ fetch từ API)
-const MOCK_TERMS = [
-  { id: 't1', name: 'Học kỳ I - 2024' },
-  { id: 't2', name: 'Học kỳ II - 2024' },
-  { id: 't3', name: 'Học kỳ III - 2024' },
-];
-
-const MOCK_INSTRUCTORS = [
-  { id: 'ins1', name: 'Nguyễn Văn An' },
-  { id: 'ins2', name: 'Trần Minh Tâm' },
-  { id: 'ins3', name: 'Lê Thị Thu' },
-];
-
-const DEFAULT_FORM_DATA: ClassFormData = {
-  name: '',
-  termId: MOCK_TERMS[0].id,
-  maxStudents: 30,
-  status: 'Đang tuyển',
-  sessions: []
+const defaultFormData: ClassFormData = {
+  className: "",
+  termId: "",
+  instructorId: "",
+  classType: "Theory",
+  maxStudents: 25,
+  schedules: [],
 };
 
-export default function ClassModal({ isOpen, onClose, initialData, onSubmit }: Props) {
-  const [formData, setFormData] = useState<ClassFormData>(initialData || DEFAULT_FORM_DATA);
+export default function ClassModal({ isOpen, onClose, initialData, terms, instructors, addresses, onSubmit }: Props) {
+  const [formData, setFormData] = useState<ClassFormData>(defaultFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isEditMode = Boolean(initialData?.id);
 
-  // Sync state when Modal opens/closes
-  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  useEffect(() => {
+    if (!isOpen) return;
 
-  if (isOpen !== prevIsOpen || initialData !== prevInitialData) {
-    setPrevIsOpen(isOpen);
-    setPrevInitialData(initialData);
-    if (isOpen) {
-      setFormData(initialData || DEFAULT_FORM_DATA);
-    }
-  }
+    const firstTerm = terms[0]?.id ?? "";
+    const firstInstructor = instructors[0]?.id ?? "";
+
+    setFormData(
+      initialData ?? {
+        ...defaultFormData,
+        termId: firstTerm,
+        instructorId: firstInstructor,
+      }
+    );
+    setError(null);
+  }, [initialData, instructors, isOpen, terms]);
+
+  const addressMap = useMemo(() => new Map(addresses.map((address) => [address.id, address.addressName])), [addresses]);
+  const instructorMap = useMemo(() => new Map(instructors.map((instructor) => [instructor.id, instructor.fullName])), [instructors]);
 
   if (!isOpen) return null;
 
-  // --- HÀM XỬ LÝ LỊCH HỌC (SESSIONS) ---
-  const handleAddSession = () => {
-    const newSession: ClassSession = {
-      id: Math.random().toString(36).substring(7), // Random ID
-      instructorId: MOCK_INSTRUCTORS[0].id,
-      startTime: '',
-      endTime: ''
-    };
-    setFormData({ ...formData, sessions: [...formData.sessions, newSession] });
+  const addSession = () => {
+    setFormData((prev) => ({
+      ...prev,
+      schedules: [
+        ...prev.schedules,
+        {
+          instructorId: prev.instructorId || instructors[0]?.id || "",
+          startTime: "",
+          endTime: "",
+          addressId: addresses[0]?.id || 0,
+        },
+      ],
+    }));
   };
 
-  const handleUpdateSession = (id: string, field: keyof ClassSession, value: string) => {
-    const updatedSessions = formData.sessions.map(session => 
-      session.id === id ? { ...session, [field]: value } : session
-    );
-    setFormData({ ...formData, sessions: updatedSessions });
+  const updateSession = (index: number, field: keyof ClassSession, value: string | number) => {
+    setFormData((prev) => ({
+      ...prev,
+      schedules: prev.schedules.map((session, sessionIndex) => (sessionIndex === index ? { ...session, [field]: value } : session)),
+    }));
   };
 
-  const handleRemoveSession = (id: string) => {
-    setFormData({ ...formData, sessions: formData.sessions.filter(s => s.id !== id) });
+  const removeSession = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      schedules: prev.schedules.filter((_, sessionIndex) => sessionIndex !== index),
+    }));
   };
 
-  // --- HÀM SUBMIT ---
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setError(null);
+
+    try {
+      const preview = await scheduleService.importPreview(file);
+      setFormData((prev) => ({
+        ...prev,
+        schedules: preview.schedules.map((schedule) => ({
+          instructorId: schedule.instructorId,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          addressId: schedule.addressId,
+        })),
+      }));
+
+      if (preview.warnings.length > 0) {
+        setError(preview.warnings.join(" "));
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Khong the nhap file lich hoc.");
+    } finally {
+      setIsImporting(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const csvContent = [
+      "InstructorId,StartTime,EndTime,AddressId",
+      "11111111-1111-1111-1111-111111111111,2026-04-10T08:00,2026-04-10T10:00,1",
+      "11111111-1111-1111-1111-111111111111,2026-04-12T13:00,2026-04-12T15:00,2",
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mau-import-lich-lop.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await onSubmit(formData);
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || "Khong the luu lop hoc.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.backdrop} onClick={onClose} />
-      
-      <div className={`${styles.modalContainer} max-w-2xl flex flex-col max-h-[90vh]`}>
-        
-        {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-              <Calendar className="w-6 h-6" />
+      <div className={styles.backdrop} onClick={!isSubmitting ? onClose : undefined} />
+
+      <div className={`${styles.modalContainer} flex max-h-[90vh] max-w-4xl flex-col`}>
+        <div className="shrink-0 border-b border-slate-100 bg-white p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Calendar className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black leading-tight text-slate-900">{isEditMode ? "Cap nhat lop hoc" : "Them lop hoc thu cong"}</h3>
+                <p className="text-xs font-medium text-slate-500">
+                  {isEditMode ? "Cap nhat thong tin lop hoc va giang vien phu trach." : "Tao lop hoc, sau do them lich thu cong hoac nhap tu file Excel/CSV."}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-900 leading-tight">
-                {initialData?.id ? 'Cập nhật Lớp học' : 'Tạo Lớp học mới'}
-              </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                {initialData?.id ? 'Chỉnh sửa chi tiết lớp đào tạo lái xe và lịch học' : 'Thiết lập thông tin cơ bản và phân bổ giảng viên'}
-              </p>
-            </div>
+
+            <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600">
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        {/* Body (Scrollable) */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-          <div className="p-8 space-y-8 flex-1">
-            
-            {/* Section 1: Thông tin cơ bản */}
-            <section className="space-y-6">
-              <div className="flex items-center gap-2 text-blue-600">
-                <Info className="w-5 h-5" />
-                <h4 className="text-xs font-black uppercase tracking-widest">Thông tin cơ bản</h4>
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-y-auto">
+          <div className="flex-1 space-y-8 p-8">
+            <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Ten lop hoc</label>
+                <input
+                  required
+                  type="text"
+                  className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-blue-600"
+                  value={formData.className}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, className: event.target.value }))}
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider">Tên lớp học <span className="text-red-500">*</span></label>
-                  <input 
-                    required
-                    type="text" 
-                    className="w-full bg-slate-100 border-none rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 transition-all outline-none" 
-                    placeholder="VD: B2-K24/01" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Ky hoc</label>
+                <select
+                  className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+                  value={formData.termId}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, termId: event.target.value }))}
+                  disabled={isEditMode}
+                >
+                  {terms.map((term) => (
+                    <option key={term.id} value={term.id}>
+                      {term.name} - {term.courseName}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider">Chọn học kỳ</label>
-                  <select 
-                    className="w-full bg-slate-100 border-none rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 appearance-none cursor-pointer outline-none"
-                    value={formData.termId}
-                    onChange={(e) => setFormData({...formData, termId: e.target.value})}
-                  >
-                    {MOCK_TERMS.map(term => (
-                      <option key={term.id} value={term.id}>{term.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Giang vien phu trach</label>
+                <select
+                  className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+                  value={formData.instructorId}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, instructorId: event.target.value }))}
+                >
+                  {instructors.map((instructor) => (
+                    <option key={instructor.id} value={instructor.id}>
+                      {instructor.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider">Số lượng tối đa</label>
-                  <div className="relative">
-                    <input 
-                      required
-                      type="number" 
-                      min="1"
-                      className="w-full bg-slate-100 border-none rounded-lg pl-4 pr-20 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" 
-                      value={formData.maxStudents}
-                      onChange={(e) => setFormData({...formData, maxStudents: Number(e.target.value)})}
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 uppercase pointer-events-none">Học viên</span>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Loai lop hoc</label>
+                <select
+                  className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+                  value={formData.classType}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, classType: event.target.value as ClassType }))}
+                >
+                  <option value="Theory">Ly thuyet</option>
+                  <option value="Practice">Thuc hanh</option>
+                </select>
+              </div>
 
-                <div className="col-span-2 md:col-span-1 space-y-2">
-                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider">Trạng thái</label>
-                  <div className="flex gap-2">
-                    {(['Đang tuyển', 'Đang học', 'Kết thúc'] as ClassStatus[]).map(status => (
-                      <label key={status} className="flex-1 cursor-pointer">
-                        <input 
-                          type="radio" 
-                          name="status" 
-                          className="hidden peer" 
-                          checked={formData.status === status}
-                          onChange={() => setFormData({...formData, status})}
-                        />
-                        <div className="text-center py-2.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-500 peer-checked:bg-blue-50 peer-checked:border-blue-600 peer-checked:text-blue-600 transition-all select-none">
-                          {status}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Si so toi da</label>
+                <input
+                  required
+                  type="number"
+                  min={1}
+                  className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+                  value={formData.maxStudents}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, maxStudents: Number(event.target.value) }))}
+                />
               </div>
             </section>
 
-            <div className="h-px bg-slate-100 my-8"></div>
+            {!isEditMode && (
+              <section className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-600">Lich hoc cua lop</h4>
+                    <p className="mt-1 text-sm text-slate-500">Co the them tung dong lich hoc hoac nhap nhanh tu file Excel/CSV.</p>
+                  </div>
 
-            {/* Section 2: Lịch học chi tiết */}
-            <section className="space-y-6">
-              <div className="flex flex-wrap gap-4 items-center justify-between">
-                <div className="flex items-center gap-2 text-blue-600">
-                  <CalendarClock className="w-5 h-5" />
-                  <h4 className="text-xs font-black uppercase tracking-widest">Lịch học chi tiết</h4>
-                </div>
-                <button type="button" className="text-[10px] font-black text-blue-600 border border-blue-200 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors uppercase tracking-widest">
-                  Nhập file Excel
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {formData.sessions.length === 0 && (
-                  <p className="text-sm text-slate-400 font-medium italic text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    Chưa có lịch học nào. Bấm &quot;Thêm buổi học&quot; để bắt đầu.
-                  </p>
-                )}
-
-                {/* Danh sách các buổi học */}
-                {formData.sessions.map((session, index) => (
-                  <div key={session.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl relative group">
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveSession(session.id)}
-                      className="absolute -right-2 -top-2 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10"
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleDownloadTemplate}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Download className="h-4 w-4" />
+                      Tai file Excel mau
                     </button>
-                    
-                    <div className="grid grid-cols-12 gap-4">
-                      <div className="col-span-12 md:col-span-4 space-y-1.5">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase">Buổi {index + 1} - Giảng viên</label>
-                        <select 
-                          className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-medium focus:ring-1 focus:ring-blue-600 shadow-sm outline-none cursor-pointer"
-                          value={session.instructorId}
-                          onChange={(e) => handleUpdateSession(session.id, 'instructorId', e.target.value)}
-                        >
-                          {MOCK_INSTRUCTORS.map(ins => <option key={ins.id} value={ins.id}>{ins.name}</option>)}
-                        </select>
+
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100">
+                      <Upload className="h-4 w-4" />
+                      {isImporting ? "Dang nhap file..." : "Nhap file Excel"}
+                      <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={isImporting} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {formData.schedules.map((session, index) => (
+                    <div key={`${session.startTime}-${index}`} className="relative rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <button
+                        type="button"
+                        onClick={() => removeSession(index)}
+                        className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Giang vien</label>
+                          <select
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                            value={session.instructorId}
+                            onChange={(event) => updateSession(index, "instructorId", event.target.value)}
+                          >
+                            {instructors.map((instructor) => (
+                              <option key={instructor.id} value={instructor.id}>
+                                {instructor.fullName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dia diem</label>
+                          <select
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                            value={session.addressId}
+                            onChange={(event) => updateSession(index, "addressId", Number(event.target.value))}
+                          >
+                            {addresses.map((address) => (
+                              <option key={address.id} value={address.id}>
+                                {address.addressName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bat dau</label>
+                          <input
+                            type="datetime-local"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                            value={session.startTime}
+                            onChange={(event) => updateSession(index, "startTime", event.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ket thuc</label>
+                          <input
+                            type="datetime-local"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                            value={session.endTime}
+                            onChange={(event) => updateSession(index, "endTime", event.target.value)}
+                          />
+                        </div>
                       </div>
-                      <div className="col-span-6 md:col-span-4 space-y-1.5">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase">Thời gian bắt đầu</label>
-                        <input 
-                          type="datetime-local" 
-                          required
-                          className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-medium focus:ring-1 focus:ring-blue-600 shadow-sm outline-none" 
-                          value={session.startTime}
-                          onChange={(e) => handleUpdateSession(session.id, 'startTime', e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-6 md:col-span-4 space-y-1.5">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase">Thời gian kết thúc</label>
-                        <input 
-                          type="datetime-local" 
-                          required
-                          className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-medium focus:ring-1 focus:ring-blue-600 shadow-sm outline-none" 
-                          value={session.endTime}
-                          onChange={(e) => handleUpdateSession(session.id, 'endTime', e.target.value)}
-                        />
+
+                      <div className="mt-3 text-xs text-slate-500">
+                        {instructorMap.get(session.instructorId) ?? "Chua ro giang vien"} / {addressMap.get(session.addressId) ?? "Chua ro dia diem"}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                {/* Add Session Button */}
-                <button 
-                  type="button" 
-                  onClick={handleAddSession}
-                  className="w-full py-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 group"
-                >
-                  <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                  <span className="text-xs font-bold uppercase tracking-widest">Thêm buổi học</span>
-                </button>
-              </div>
-            </section>
+                  <button
+                    type="button"
+                    onClick={addSession}
+                    className="group flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-4 text-slate-400 transition-all hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600"
+                  >
+                    <PlusCircle className="h-5 w-5 transition-transform group-hover:scale-110" />
+                    <span className="text-xs font-bold uppercase tracking-widest">Them dong lich hoc</span>
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
           </div>
 
-          {/* Footer (Sticky bottom inside modal) */}
-          <div className="p-6 border-t border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-            <p className="text-[10px] text-slate-400 font-medium italic hidden sm:block">
-              {initialData?.id ? '* Bấm Lưu để cập nhật thay đổi lên hệ thống' : '* Các trường có dấu (*) là bắt buộc'}
-            </p>
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-              <button type="button" onClick={onClose} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-colors uppercase tracking-widest">
-                Hủy bỏ
-              </button>
-              <button type="submit" className="px-8 py-2.5 bg-blue-600 text-white text-xs font-black rounded-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-widest">
-                Lưu thông tin
-              </button>
-            </div>
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 p-6">
+            <button type="button" onClick={onClose} className="rounded-lg px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-500 transition-colors hover:bg-slate-200">
+              Huy bo
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || isImporting}
+              className="rounded-lg bg-blue-600 px-8 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-60"
+            >
+              {isSubmitting ? "Dang luu..." : "Luu lop hoc"}
+            </button>
           </div>
         </form>
-
       </div>
     </div>
   );
