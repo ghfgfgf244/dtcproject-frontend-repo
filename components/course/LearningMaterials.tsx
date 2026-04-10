@@ -5,20 +5,20 @@ export default function LearningMaterials() {
   return (
     <div className={styles.card}>
 
-      <h3>Learning Materials</h3>
+      <h3>Tài Liệu Học Tập</h3>
 
       <div className={styles.materialGrid}>
 
         <Link href="/courses/my-course/theory-practice" className={styles.materialCard}>
-          Theory questions and answers
+          Câu hỏi và đáp án lý thuyết
         </Link>
 
         <div className={styles.materialCard}>
-          Simulation test and tips
+          Bài thi mô phỏng và mẹo
         </div>
 
         <div className={styles.materialCard}>
-          Practical driving, tips and tricks
+          Thực hành lái xe, mẹo và kỹ năng
         </div>
 
       </div>
