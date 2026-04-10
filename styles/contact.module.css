@@ -1,0 +1,320 @@
+.page {
+  width: 100%;
+  padding: 0 24px 40px;
+  color: #1f2a44;
+}
+
+.heroSection {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 36px;
+}
+
+.heroCopy {
+  grid-column: span 7;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.heroCopy h1 {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.1;
+  color: #1f2a44;
+}
+
+.heroCopy h1 span {
+  color: #006591;
+  font-style: italic;
+}
+
+.heroCopy p {
+  color: #5b6b84;
+  font-size: 15px;
+  max-width: 520px;
+}
+
+.contactCard {
+  background: #ffffff;
+  padding: 20px 22px;
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e6edf5;
+}
+
+.cardTitle {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #006591;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.contactItem {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.iconChip {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #e6f7ff;
+  color: #006591;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+.contactItem span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7b8aa5;
+}
+
+.contactItem strong {
+  display: block;
+  margin-top: 4px;
+  color: #1f2a44;
+  font-size: 13px;
+}
+
+.mapCard {
+  grid-column: span 5;
+  border-radius: 22px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #e6edf5;
+  background: #e1e5ea;
+  min-height: 360px;
+}
+
+.mapCard iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.mapBadge {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.mapBadge strong {
+  display: block;
+  margin-top: 4px;
+  color: #1f2a44;
+  letter-spacing: 0.18em;
+}
+
+.contactPurpose {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #8b98b2;
+}
+
+.purposeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.purposeCard {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid #e6edf5;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.purposeTag {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #006591;
+  font-weight: 700;
+}
+
+.purposeCard h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1f2a44;
+}
+
+.purposeCard p {
+  margin: 0;
+  color: #6c7a96;
+  font-size: 14px;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pillRow span {
+  background: #eef6ff;
+  color: #006591;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.messageSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.messageIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+  text-align: center;
+}
+
+.messageIntro h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.messageIntro p {
+  margin: 0;
+  color: #6c7a96;
+  font-size: 14px;
+}
+
+.messageBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e6f7ff;
+  color: #006591;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  width: fit-content;
+}
+
+.messageForm {
+  background: #ffffff;
+  padding: 22px 24px;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7b8aa5;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.messageForm input,
+.messageForm select,
+.messageForm textarea {
+  border: none;
+  background: #eef1f4;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  text-transform: none;
+  color: #1f2a44;
+}
+
+.messageForm textarea {
+  resize: vertical;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.formActions button {
+  border: none;
+  background: #0ea5e9;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .heroSection,
+  .purposeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroCopy,
+  .mapCard {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 720px) {
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}

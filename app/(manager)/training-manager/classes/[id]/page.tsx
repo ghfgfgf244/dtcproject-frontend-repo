@@ -1,63 +1,28 @@
-import React from 'react';
-import { ClassDetailData } from '@/types/class';
-import { ClassDetailHeader } from '@/components/manager/ClassManagement/ClassDetail/ClassDetailHeader';
-import { ClassInfoCard } from '@/components/manager/ClassManagement/ClassDetail/ClassInfoCard';
-import { EnrolledStudents } from '@/components/manager/ClassManagement/ClassDetail/EnrolledStudents';
-import { ClassSidePanel } from '@/components/manager/ClassManagement/ClassDetail/ClassSidePanel';
-import styles from './ClassDetail.module.css';
+import React from "react";
+import { Breadcrumbs } from "@/components/manager/Shared/Breadcrumbs";
+import ClassDetailClientView from "@/components/manager/ClassManagement/ClassDetailClientView";
 
-// Mock Data chuẩn Domain Lái Xe
-const getMockClassDetail = async (id: string): Promise<ClassDetailData> => {
-  return {
-    id: id,
-    courseId: 'c1',
-    className: 'Class B2-Jan2026',
-    startDate: '2026-01-05',
-    endDate: '2026-03-30',
-    courseName: 'Standard Car B2',
-    licenseType: 'B2',
-    studentCount: 24,
-    location: 'Yard A - Practice Track',
-    progressPercent: 44,
-    instructor: {
-      id: 'inst-1',
-      fullName: 'Marcus Johnson',
-      email: 'marcus.j@drivemaster.com',
-      phone: '+1 (555) 123-4567'
-    },
-    students: [
-      { id: 's1', fullName: 'Jane Smith', email: 'jane.smith@example.com', enrollDate: '2025-12-12' },
-      { id: 's2', fullName: 'Michael Chen', email: 'm.chen@university.edu', enrollDate: '2025-12-15' },
-      { id: 's3', fullName: 'Robert Wilson', email: 'robert.wilson@corp.com', enrollDate: '2026-01-02' },
-      { id: 's4', fullName: 'Sarah Garcia', email: 'sarah.g@designstudio.io', enrollDate: '2026-01-05' },
-    ]
-  };
-};
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default async function ClassDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> // 🚀 1. Định nghĩa params là một Promise
-}) {
-  const resolvedParams = await params; // 🚀 2. Dùng await để lấy id ra
-  const data = await getMockClassDetail(resolvedParams.id); // 🚀 3. Truyền id đã resolve vào hàm get
+export default async function ClassDetailPage({ params }: PageProps) {
+  const resolvedParams = await params;
+
+  const breadcrumbsItems = [
+    { label: "Trang chủ", href: "/training-manager/dashboard" },
+    { label: "Lớp học", href: "/training-manager/classes" },
+    { label: "Chi tiết lớp học" },
+  ];
 
   return (
-    <div className={styles.pageWrapper}>
-      {/* Header đã bao gồm Breadcrumbs, Tiêu đề và Nút Edit (kèm Modal) */}
-      <ClassDetailHeader data={data} />
-
-      <div className={styles.contentGrid}>
-        {/* Cột trái (Rộng hơn) */}
-        <div className={styles.mainContent}>
-          <ClassInfoCard data={data} />
-          <EnrolledStudents students={data.students} totalCount={data.studentCount} />
+    <div className="p-6 md:p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <Breadcrumbs items={breadcrumbsItems} />
         </div>
 
-        {/* Cột phải (Sidebar hẹp) */}
-        <div>
-          <ClassSidePanel data={data} />
-        </div>
+        <ClassDetailClientView classId={resolvedParams.id} />
       </div>
     </div>
   );

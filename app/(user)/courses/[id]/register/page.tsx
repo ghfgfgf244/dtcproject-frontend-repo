@@ -1,192 +1,363 @@
+// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\app\(user)\courses\[id]\register\page.tsx
+
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
+import Link from "next/link";
+import { courseService } from "@/services/courseService";
+import { registrationService } from "@/services/registrationService";
+import { documentService } from "@/services/documentService";
+import { setAuthToken } from "@/lib/api";
+import { Course } from "@/types/course";
 
 export default function RegisterPage() {
   const params = useParams();
   const router = useRouter();
-  const courseId = params.id;
+  const { getToken } = useAuth();
+  const courseId = params.id as string;
+
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form states
+  const [notes, setNotes] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+  const [agreed, setAgreed] = useState(false);
+
+  // Document states
+  const [docs, setDocs] = useState<{
+    photo: { file: File | null; existingUrl?: string; status: 'idle' | 'loading' | 'success' | 'error' };
+    idFront: { file: File | null; existingUrl?: string; status: 'idle' | 'loading' | 'success' | 'error' };
+    idBack: { file: File | null; existingUrl?: string; status: 'idle' | 'loading' | 'success' | 'error' };
+  }>({
+    photo: { file: null, status: 'idle' },
+    idFront: { file: null, status: 'idle' },
+    idBack: { file: null, status: 'idle' },
+  });
+
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        const token = await getToken();
+        setAuthToken(token);
+
+        const data = await courseService.getCourseById(courseId);
+        setCourse(data);
+
+        // Fetch existing documents to pre-fill
+        const myDocs = await documentService.getMyDocuments();
+        
+        // Helper to find latest doc by keyword
+        const findDoc = (keywords: string[]) => {
+          return myDocs
+            .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())
+            .find(d => keywords.some(k => d.fileName.toLowerCase().includes(k.toLowerCase())));
+        };
+
+        const existingPhoto = findDoc(['photo', 'avatar', 'profile', 'chân dung']);
+        const existingFront = findDoc(['front', 'mặt trước', 'id_front', 'truoc']);
+        const existingBack = findDoc(['back', 'mặt sau', 'id_back', 'sau']);
+
+        setDocs(prev => ({
+          photo: { ...prev.photo, existingUrl: existingPhoto?.fileUrl, status: existingPhoto ? 'success' : 'idle' },
+          idFront: { ...prev.idFront, existingUrl: existingFront?.fileUrl, status: existingFront ? 'success' : 'idle' },
+          idBack: { ...prev.idBack, existingUrl: existingBack?.fileUrl, status: existingBack ? 'success' : 'idle' },
+        }));
+
+      } catch (err: any) {
+        console.error("Fetch error:", err);
+        setError("Không thể tải thông tin khóa học. Vui lòng kiểm tra kết nối mạng.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourse();
+  }, [courseId, getToken]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: keyof typeof docs) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDocs(prev => ({ 
+        ...prev, 
+        [type]: { ...prev[type], file, status: 'success' } 
+      }));
+    }
+  };
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!course) return;
+    if (!agreed) {
+      alert("Bạn phải đồng ý với điều khoản dịch vụ.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    // Document Validation
+    const missing = [];
+    if (!docs.photo.file && !docs.photo.existingUrl) missing.push("Ảnh chân dung");
+    if (!docs.idFront.file && !docs.idFront.existingUrl) missing.push("CCCD mặt trước");
+    if (!docs.idBack.file && !docs.idBack.existingUrl) missing.push("CCCD mặt sau");
+
+    if (missing.length > 0) {
+      setError(`Vui lòng cung cấp đầy đủ: ${missing.join(", ")}`);
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      // 1. Ensure token is fresh for registration
+      const token = await getToken();
+      setAuthToken(token);
+
+      // 2. Build FormData
+      const formData = new FormData();
+      formData.append("CourseId", course.id);
+      formData.append("TotalFee", course.price.toString());
+      if (notes) formData.append("Notes", notes);
+      if (referralCode) formData.append("ReferralCode", referralCode);
+
+      // Append files if they exist
+      if (docs.photo.file) formData.append("Photo", docs.photo.file);
+      if (docs.idFront.file) formData.append("IdFront", docs.idFront.file);
+      if (docs.idBack.file) formData.append("IdBack", docs.idBack.file);
+
+      // 3. Submit registration package
+      const registration = await registrationService.registerCourse(formData);
+      if (false)
+
+      alert("Đăng ký thành công!");
+      const placementNotice = registration?.placementMessage
+        ? `\n\n${registration.placementMessage}`
+        : registration?.suggestedTermName
+          ? `\n\nDu kien he thong se xep ban vao ky ${registration.suggestedTermName}. Neu ky nay da du cho, trung tam se uu tien ky tiep theo phu hop.`
+          : "\n\nNeu ky hien tai da du cho, trung tam se xep ban vao ky tiep theo phu hop.";
+
+      alert(placementNotice.trim());
+      router.push("/courses");
+    } catch (err: any) {
+      console.error("Submit error:", err);
+      const msg = err.response?.data?.message || err.message || "Đã xảy ra lỗi khi đăng ký khóa học.";
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Đang tải...</div>;
+  if (!course) return <div className="min-h-screen flex items-center justify-center">Không tìm thấy khóa học</div>;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-6 flex justify-center">
+    <div className="min-h-screen bg-white text-slate-900 p-6 flex justify-center">
       <div className="w-full max-w-5xl space-y-8">
 
         {/* COURSE HERO */}
-        <div className="relative rounded-2xl overflow-hidden border border-slate-700">
+        <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
           <img
-            src="/CourseImage.jpg"
-            className="w-full h-56 object-cover opacity-60"
+            src={course.thumbnailUrl || "/CourseImage.jpg"}
+            className="w-full h-56 object-cover opacity-70"
           />
 
-          <div className="absolute inset-0 p-6 flex flex-col justify-end bg-linear-to-t from-black/70">
-
-            <span className="bg-cyan-500 text-black text-xs px-3 py-1 rounded-full w-fit mb-2 font-semibold">
-              BẰNG LÁI CHUYÊN NGHIỆP
+          <div className="absolute inset-0 p-6 flex flex-col justify-end bg-gradient-to-t from-white/80">
+            <span className="bg-sky-100 text-sky-700 text-xs px-3 py-1 rounded-full w-fit mb-2 font-semibold uppercase">
+              Hạng {course.licenseType}
             </span>
 
             <h1 className="text-3xl font-bold">
-              Khóa học lái xe B2
+              {course.courseName}
             </h1>
 
-            {/* course info grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-sm">
-
-              <div className="bg-slate-800/60 p-3 rounded-xl">
-                <p className="text-slate-400">Thời gian</p>
-                <p className="font-semibold">3 tháng</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-sm text-slate-700">
+              <div className="bg-white/80 p-3 rounded-xl border border-slate-200">
+                <p className="text-slate-500 text-xs">Thời gian</p>
+                <p className="font-semibold">{course.durationInWeeks} tuần</p>
               </div>
 
-              <div className="bg-slate-800/60 p-3 rounded-xl">
-                <p className="text-slate-400">Học phí</p>
-                <p className="font-semibold">12.000.000 VNĐ</p>
+              <div className="bg-white/80 p-3 rounded-xl border border-slate-200">
+                <p className="text-slate-500 text-xs">Học phí</p>
+                <p className="font-semibold text-sky-600">{course.price.toLocaleString()}đ</p>
               </div>
 
-              <div className="bg-slate-800/60 p-3 rounded-xl">
-                <p className="text-slate-400">Ngày khai giảng</p>
-                <p className="font-semibold">15/04/2026</p>
+              <div className="bg-white/80 p-3 rounded-xl border border-slate-200">
+                <p className="text-slate-500 text-xs">Cơ sở</p>
+                <p className="font-semibold">{course.centerName || "Đang cập nhật"}</p>
               </div>
 
-              <div className="bg-slate-800/60 p-3 rounded-xl">
-                <p className="text-slate-400">Địa điểm</p>
-                <p className="font-semibold">Hà Nội Campus</p>
+              <div className="bg-white/80 p-3 rounded-xl border border-slate-200">
+                <p className="text-slate-500 text-xs">Hỗ trợ</p>
+                <p className="font-semibold">Trọn gói</p>
               </div>
-
             </div>
           </div>
         </div>
 
         {/* FORM */}
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8">
-
-          <h2 className="text-2xl font-semibold mb-2">
-            Thông tin học viên
-          </h2>
-
-          <p className="text-slate-400 mb-6 text-sm">
-            Vui lòng cung cấp thông tin chính xác như trên giấy tờ tùy thân của bạn.
+        <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+          <h2 className="text-2xl font-semibold mb-2">Thông Tin Đăng Ký</h2>
+          <p className="text-slate-500 mb-6 text-sm">
+            Vui lòng điền thông tin và tải lên các giấy tờ cần thiết để hoàn tất thủ tục.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
-
-            {/* Personal Info Section */}
+            {/* Notes & Referral */}
             <div className="md:col-span-2">
-              <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4 border-b border-slate-700 pb-2">
-                Thông tin cá nhân
+              <h3 className="text-sm font-semibold text-sky-600 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
+                Thông Tin Bổ Sung
               </h3>
             </div>
 
-            <input
-              placeholder="Họ và tên"
-              className="input"
-            />
-
-            <input
-              type="date"
-              className="input uppercase text-slate-400"
-            />
-
-            <div className="flex items-center gap-6 text-sm bg-slate-900/50 p-3 rounded-xl border border-slate-700">
-              <span className="text-slate-400 font-medium">Giới tính:</span>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="gender" className="accent-cyan-500 w-4 h-4" />
-                Nam
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="gender" className="accent-cyan-500 w-4 h-4" />
-                Nữ
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="gender" className="accent-cyan-500 w-4 h-4" />
-                Khác
-              </label>
+            <div className="flex flex-col gap-2">
+               <label className="text-sm font-medium text-slate-600">Mã giới thiệu (nếu có)</label>
+               <input
+                placeholder="Ví dụ: REF123"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:border-sky-400 outline-none transition"
+              />
             </div>
 
-            <input
-              placeholder="Số điện thoại"
-              className="input"
-            />
-
-            <input
-              placeholder="Địa chỉ Email"
-              className="input"
-            />
-
-            <input
-              placeholder="Địa chỉ thường trú"
-              className="input"
-            />
+            <div className="flex flex-col gap-2 md:col-span-2">
+               <label className="text-sm font-medium text-slate-600">Ghi chú thêm</label>
+               <textarea
+                placeholder="Ghi chú về lịch học hoặc yêu cầu khác..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-4 py-3 h-24 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:border-sky-400 outline-none transition resize-none"
+              />
+            </div>
 
             {/* Documents Section */}
             <div className="md:col-span-2 mt-4">
-              <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4 border-b border-slate-700 pb-2">
-                Tài liệu bắt buộc
+              <h3 className="text-sm font-semibold text-sky-600 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
+                Giấy Tờ Yêu Cầu
               </h3>
-              <p className="text-xs text-slate-400 mb-4">
-                Vui lòng tải lên ảnh rõ nét. Kích thước tối đa 5MB mỗi file.
+              <p className="text-xs text-slate-500 mb-4 italic">
+                * Vui lòng tải lên ảnh chụp bản gốc rõ nét. Dung lượng tối đa 5MB/file.
               </p>
             </div>
 
             {/* Upload Grids */}
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-300">Ảnh chân dung (Thẻ)</span>
-              <label className="border border-dashed border-slate-600 rounded-xl p-4 text-center hover:bg-slate-700/50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-900/30">
-                <span className="text-2xl mb-1">📸</span>
-                <span className="text-xs text-slate-400">Nhấp để tải ảnh lên</span>
-                <input type="file" accept="image/*" className="hidden" />
+              <span className="text-sm font-medium text-slate-600">Ảnh chân dung (3x4)</span>
+              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden group">
+                {(docs.photo.file || docs.photo.existingUrl) ? (
+                  <div className="w-full h-full relative">
+                    <img 
+                      src={docs.photo.file ? URL.createObjectURL(docs.photo.file) : docs.photo.existingUrl} 
+                      className="w-full h-full object-contain"
+                      alt="Profile preview"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold bg-sky-600 px-3 py-1 rounded-full">Thay đổi ảnh</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-2xl mb-1">📸</span>
+                    <span className="text-xs text-slate-500">Tải ảnh chân dung</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'photo')} className="hidden" />
               </label>
             </div>
 
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-300">CCCD/CMND (Mặt trước)</span>
-              <label className="border border-dashed border-slate-600 rounded-xl p-4 text-center hover:bg-slate-700/50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-900/30">
-                <span className="text-2xl mb-1">🪪</span>
-                <span className="text-xs text-slate-400">Tải lên mặt trước</span>
-                <input type="file" accept="image/*" required className="hidden" />
+              <span className="text-sm font-medium text-slate-600">CCCD/CMND (Mặt trước)</span>
+              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden group">
+                 {(docs.idFront.file || docs.idFront.existingUrl) ? (
+                  <div className="w-full h-full relative">
+                    <img 
+                      src={docs.idFront.file ? URL.createObjectURL(docs.idFront.file) : docs.idFront.existingUrl} 
+                      className="w-full h-full object-contain"
+                      alt="ID Front preview"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold bg-sky-600 px-3 py-1 rounded-full">Thay đổi ảnh</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-2xl mb-1">🪪</span>
+                    <span className="text-xs text-slate-500">Tải mặt trước</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'idFront')} className="hidden" />
               </label>
             </div>
 
-            <div className="flex flex-col gap-2 md:col-span-2 md:w-1/2 md:pr-3">
-              <span className="text-sm font-medium text-slate-300">CCCD/CMND (Mặt sau)</span>
-              <label className="border border-dashed border-slate-600 rounded-xl p-4 text-center hover:bg-slate-700/50 transition cursor-pointer flex flex-col items-center justify-center h-32 bg-slate-900/30">
-                <span className="text-2xl mb-1">🪪</span>
-                <span className="text-xs text-slate-400">Tải lên mặt sau</span>
-                <input type="file" accept="image/*" required className="hidden" />
+            <div className="flex flex-col gap-2 md:col-span-2 md:w-1/2">
+              <span className="text-sm font-medium text-slate-600">CCCD/CMND (Mặt sau)</span>
+              <label className="border border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden group">
+                 {(docs.idBack.file || docs.idBack.existingUrl) ? (
+                  <div className="w-full h-full relative">
+                    <img 
+                      src={docs.idBack.file ? URL.createObjectURL(docs.idBack.file) : docs.idBack.existingUrl} 
+                      className="w-full h-full object-contain"
+                      alt="ID Back preview"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-bold bg-sky-600 px-3 py-1 rounded-full">Thay đổi ảnh</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-2xl mb-1">🪪</span>
+                    <span className="text-xs text-slate-500">Tải mặt sau</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'idBack')} className="hidden" />
               </label>
             </div>
-
           </div>
 
+          {error && <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">{error}</div>}
+
           {/* terms */}
-          <div className="mt-8 pt-4 border-t border-slate-700">
-            <label className="flex items-center gap-3 text-sm text-slate-300 cursor-pointer w-fit">
-              <input type="checkbox" className="w-4 h-4 accent-cyan-500 rounded border-slate-600 bg-slate-900" />
-              <span>
-                Tôi đồng ý với các <span className="text-cyan-400 hover:underline">điều khoản và điều kiện</span> của trung tâm đào tạo.
+          <div className="mt-8 pt-4 border-t border-slate-200">
+            <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer w-fit group">
+              <input 
+                type="checkbox" 
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="w-4 h-4 accent-sky-500 rounded border-slate-300 bg-white" 
+              />
+              <span className="group-hover:text-slate-900 transition">
+                Tôi đồng ý với các <span className="text-sky-600 hover:underline">điều khoản và chính sách</span> của trung tâm đào tạo.
               </span>
             </label>
           </div>
 
           {/* buttons */}
           <div className="flex justify-end gap-4 mt-8">
-
             <button
+              type="button"
               onClick={() => router.back()}
-              className="px-5 py-2 rounded-xl border border-slate-600 hover:bg-slate-700"
+              className="px-6 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm font-medium"
             >
-              Quay lại
+              Hủy
             </button>
 
             <button
-              className="px-6 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-black font-semibold"
+              type="submit"
+              disabled={submitting}
+              className={`px-8 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold transition shadow-md shadow-sky-100 flex items-center gap-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              Đăng ký ngay
+              {submitting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : "Đăng Ký Ngay"}
             </button>
-
           </div>
-
-        </div>
+        </form>
       </div>
     </div>
   );

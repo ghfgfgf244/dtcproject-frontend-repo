@@ -1,45 +1,37 @@
-// types/class.ts
-import { LicenseType } from './course';
+export type ClassTheme = "blue" | "emerald" | "orange" | "slate";
+export type ClassType = "Theory" | "Practice";
+export type ClassStatus = "Pending" | "InProgress" | "Completed" | "Cancelled";
 
-export interface ClassItem {
-  id: string;               // UNIQUEIDENTIFIER
-  courseId: string;         // UNIQUEIDENTIFIER FK
-  className: string;        // NVARCHAR(255)
-  startDate: string;        // DATE
-  endDate: string;          // DATE
-  
-  // Các trường join từ bảng Courses để hiển thị UI
-  courseName: string;       
-  licenseType: LicenseType; 
-  
-  // Lấy từ Count() bảng ClassStudents
-  studentCount: number;     
-}
-export interface UserBasicInfo {
+export interface ClassRecord {
   id: string;
-  fullName: string;
-  email: string;
-  phone?: string;
-  avatarUrl?: string;
+  code: string;
+  name: string;
+  courseName: string;
+  termName: string;
+  classType: ClassType;
+  status: ClassStatus;
+  currentStudents: number;
+  maxStudents: number;
+  instructorName: string;
+  startDate: string;
+  endDate: string;
+  theme: ClassTheme;
 }
 
-export interface EnrolledStudent extends UserBasicInfo {
-  enrollDate: string;
+export interface ClassSession {
+  id?: string;
+  instructorId: string;
+  startTime: string;
+  endTime: string;
+  addressId: number;
 }
 
-export interface ClassDetailData extends ClassItem {
-  location?: string;
-  progressPercent?: number;
-  instructor?: {
-    id: string;
-    fullName: string;
-    email: string;
-    phone: string;
-  };
-  students: Array<{
-    id: string;
-    fullName: string;
-    email: string;
-    enrollDate: string;
-  }>;
+export interface ClassFormData {
+  id?: string;
+  className: string;
+  termId: string;
+  instructorId: string;
+  classType: ClassType;
+  maxStudents: number;
+  schedules: ClassSession[];
 }

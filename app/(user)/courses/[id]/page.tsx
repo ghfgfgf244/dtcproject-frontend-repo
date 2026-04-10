@@ -1,4 +1,6 @@
-import { mockCourses } from "@/lib/mockCourses";
+// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\app\(user)\courses\[id]\page.tsx
+
+import { courseService } from "@/services/courseService";
 import Link from "next/link";
 
 interface PageProps {
@@ -7,63 +9,70 @@ interface PageProps {
 
 export default async function CourseDetail({ params }: PageProps) {
   const { id } = await params;
+  console.log(`DTC: [Server] Rendering course detail for ID: ${id}`);
 
-  const course = mockCourses.find(
-    (c) => c.courseId === Number(id)
-  );
+  let course = null;
+  try {
+    course = await courseService.getCourseById(id);
+    if (course) {
+      console.log(`DTC: [Server] Found course: ${course.courseName}`);
+    } else {
+      console.warn(`DTC: [Server] Course ${id} not found.`);
+    }
+  } catch (err: any) {
+    console.error(`DTC: [Server] Critical error fetching course ${id}:`, err.message || err);
+  }
 
   if (!course) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+      <div className="min-h-screen flex items-center justify-center bg-white text-slate-900">
         Không tìm thấy khóa học
       </div>
     );
   }
 
+  const { courseName, description, price, centerName, centerAddress, learningRoadmap, licenseType } = course;
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-
-
+    <div className="min-h-screen bg-white text-slate-900">
       {/* HERO SECTION */}
-      <div className="relative h-[420px] rounded-b-3xl overflow-hidden">
+      <div className="relative h-[420px] rounded-b-3xl overflow-hidden bg-slate-100">
         <Link
           href="/courses"
-          className="absolute top-6 left-6 z-20 px-4 py-2  bg-black/60 backdrop-blur-md  text-white rounded-full  hover:bg-black/80  transition">
+          className="absolute top-6 left-6 z-20 px-4 py-2 bg-white/80 backdrop-blur-md text-slate-900 rounded-full border border-slate-200 hover:bg-white transition">
           ← Quay lại
         </Link>
         <img
-          src="/CourseImage.jpg"
-          alt="Course Banner"
-          className="w-full h-full object-cover opacity-60"
-
+          src={course.thumbnailUrl || "/CourseImage.jpg"}
+          alt={courseName}
+          className="w-full h-full object-cover opacity-70"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent p-10 flex flex-col justify-end">
-          <span className="bg-cyan-500 text-black text-xs px-3 py-1 rounded-full w-fit mb-4 font-semibold">
-            KHÓA HỌC LÁI XE
+        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent p-10 flex flex-col justify-end">
+          <span className="bg-sky-100 text-sky-700 text-xs px-3 py-1 rounded-full w-fit mb-4 font-semibold uppercase">
+            Hạng {licenseType || 'Khác'}
           </span>
 
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            {course.name}
+            {courseName}
           </h1>
 
-          <p className="max-w-2xl text-slate-300">
-            Đào tạo bài bản từ lý thuyết đến thực hành, cam kết thi đậu và
-            hỗ trợ học viên tận tình trong suốt quá trình học.
+          <p className="max-w-2xl text-slate-600">
+            {description || "Đào tạo bài bản từ lý thuyết đến thực hành, cam kết thi đậu và hỗ trợ học viên tận tình trong suốt quá trình học."}
           </p>
         </div>
 
         {/* PRICE BOX */}
-        <div className="absolute right-10 bottom-10 bg-slate-900/90 backdrop-blur-md p-6 rounded-2xl shadow-xl w-[260px]">
-          <div className="text-3xl font-bold text-cyan-400 mb-1">
-            {course.price?.toLocaleString()}đ
+        <div className="absolute right-10 bottom-10 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl w-[260px] border border-slate-200">
+          <div className="text-3xl font-bold text-sky-600 mb-1">
+            {price?.toLocaleString()}đ
           </div>
-          <p className="text-sm text-slate-400 mb-4">
+          <p className="text-sm text-slate-500 mb-4">
             Trọn gói – Không phát sinh
           </p>
 
           <Link href={`/courses/${id}/register`}>
-            <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black py-2 rounded-xl font-semibold transition">
+            <button className="w-full bg-sky-600 hover:bg-sky-700 text-white py-2 rounded-xl font-semibold transition">
               Đăng ký ngay
             </button>
           </Link>
@@ -77,68 +86,61 @@ export default async function CourseDetail({ params }: PageProps) {
         <div className="md:col-span-2 space-y-6">
 
           {/* Course Info */}
-          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">
               Thông tin khóa học
             </h2>
 
-            <ul className="space-y-2 text-slate-300">
-              <li>🚗 Hạng bằng: B1 / B2 / C</li>
-              <li>📅 Thời gian đào tạo: 3 – 6 tháng</li>
+            <ul className="space-y-2 text-slate-600">
+              <li>🚗 Hạng bằng: {licenseType || 'Chưa cập nhật'}</li>
+              <li>📅 Thời gian đào tạo: {course.durationInWeeks || '3-6'} tuần</li>
               <li>📍 Địa điểm học thực hành: Sân tập chuẩn Sở GTVT</li>
               <li>🧑‍🏫 Giảng viên: Hơn 5 năm kinh nghiệm</li>
               <li>🎯 Tỷ lệ đậu: 95%+</li>
             </ul>
           </div>
 
-          {/* Modules */}
-          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+          {/* Roadmap */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">
               Lộ trình học
             </h2>
 
             <div className="space-y-4">
-
-              <div className="bg-slate-800 p-4 rounded-xl">
-                <h3 className="font-semibold mb-2">
-                  01 – Học lý thuyết & biển báo
-                </h3>
-                <p className="text-sm text-slate-400">
-                  Học 600 câu hỏi luật giao thông, mẹo làm bài thi,
-                  thi thử trên phần mềm chuẩn.
-                </p>
-              </div>
-
-              <div className="bg-slate-800 p-4 rounded-xl">
-                <h3 className="font-semibold mb-2">
-                  02 – Thực hành sa hình
-                </h3>
-                <p className="text-sm text-slate-400">
-                  Tập 11 bài sa hình chuẩn thi sát hạch,
-                  hướng dẫn chi tiết từng lỗi thường gặp.
-                </p>
-              </div>
-
-              <div className="bg-slate-800 p-4 rounded-xl">
-                <h3 className="font-semibold mb-2">
-                  03 – Thực hành đường trường
-                </h3>
-                <p className="text-sm text-slate-400">
-                  Thực hành xử lý tình huống giao thông thực tế,
-                  kỹ năng lái xe an toàn.
-                </p>
-              </div>
-
+              {learningRoadmap && learningRoadmap.length > 0 ? (
+                learningRoadmap.map((item, index) => (
+                  <div key={item.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-sky-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                      {String(index + 1).padStart(2, '0')}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">{item.title}</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        {item.content || "Nội dung chi tiết đang được cập nhật."}
+                      </p>
+                      {item.attachmentUrl && (
+                        <a href={item.attachmentUrl} target="_blank" className="text-xs text-sky-600 hover:underline mt-2 block">
+                          Tài liệu đi kèm
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-slate-500 py-4 text-center border border-dashed rounded-xl">
+                  Lộ trình học đang được cập nhật.
+                </div>
+              )}
             </div>
           </div>
 
           {/* Policy */}
-          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">
               Chính sách & Cam kết
             </h2>
 
-            <ul className="list-disc ml-5 space-y-2 text-slate-300">
+            <ul className="list-disc ml-5 space-y-2 text-slate-600">
               <li>Hỗ trợ học lại miễn phí nếu thi rớt lần đầu</li>
               <li>Không phát sinh chi phí ngoài hợp đồng</li>
               <li>Hỗ trợ đăng ký hồ sơ và khám sức khỏe</li>
@@ -150,30 +152,36 @@ export default async function CourseDetail({ params }: PageProps) {
         {/* RIGHT SIDEBAR */}
         <div className="space-y-6">
 
-          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 text-center">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
             <h3 className="font-semibold mb-3">
               Trung tâm đào tạo
             </h3>
 
-            <p className="text-slate-300 text-sm">
-              Trung tâm Đào tạo & Sát hạch Lái Xe Thành Công
+            <p className="text-slate-800 font-medium">
+              {centerName || "Đang cập nhật trung tâm"}
             </p>
 
-            <p className="text-slate-500 text-xs mt-2">
-              Địa chỉ: Nha Trang, Khánh Hòa
-            </p>
+            {centerAddress && (
+              <p className="text-slate-500 text-xs mt-2 italic">
+                {centerAddress}
+              </p>
+            )}
+            
+            <Link href={`/centers/${course.centerId}`} className="text-xs text-sky-600 hover:underline mt-4 block">
+              Xem chi tiết trung tâm
+            </Link>
           </div>
 
-          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 text-center">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
             <h3 className="font-semibold mb-3">
               Hỗ trợ tư vấn
             </h3>
 
-            <p className="text-slate-300 text-sm">
+            <p className="text-slate-600 text-sm">
               Hotline: 0900 000 000
             </p>
 
-            <button className="mt-4 w-full bg-cyan-500 hover:bg-cyan-600 text-black py-2 rounded-xl font-semibold transition">
+            <button className="mt-4 w-full bg-sky-600 hover:bg-sky-700 text-white py-2 rounded-xl font-semibold transition">
               Gọi ngay
             </button>
           </div>

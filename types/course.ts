@@ -1,17 +1,43 @@
-export type LicenseType = 'A1' | 'A2' | 'B1' | 'B2' | 'C' | 'D' | 'E' | 'F' | string;
+// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\types\course.ts
 
-export interface CourseItem {
+import { ExamLevelLabel } from "@/constants/exam-levels";
+
+export type LicenseType = ExamLevelLabel;
+export type CourseStatus = 'Hoạt động' | 'Ngừng hoạt động';
+
+export interface LearningRoadmapItem {
   id: string;
-  centerId?: string;
+  courseId: string;
+  orderNo: number;
+  title: string;
+  description: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Course {
+  id: string;
+  centerId: string;
   courseName: string;
-  licenseType: string; // VD: B1, B2, C
+  licenseType: string;
+  durationInWeeks: number;
+  maxStudents: number;
+  thumbnailUrl?: string;
   description: string;
   price: number;
-  isActive: boolean; // Thay thế cho status kiểu string
-  
-  // Các trường Audit
-  createdAt?: string;
-  createdBy?: string;
-  updatedAt?: string;
-  updatedBy?: string;
+  isActive: boolean;
+  centerName?: string;
+  centerAddress?: string;
+  learningRoadmap?: LearningRoadmapItem[];
+  createdAt: string;
+}
+
+// Keeping CourseRecord for potential internal usage (if any)
+export interface CourseRecord {
+  id: string;
+  name: string;
+  description: string;
+  licenseType: LicenseType;
+  price: number; 
+  status: CourseStatus;
 }

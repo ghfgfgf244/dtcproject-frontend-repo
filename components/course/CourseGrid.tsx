@@ -1,15 +1,8 @@
-import CourseCard from "./CourseCard";
+// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\components\course\CourseGrid.tsx
 
-interface Course {
-  courseId: number;
-  name: string;
-  description: string;
-  price: number;
-  center: {
-    name: string;
-    address: string;
-  };
-}
+import CourseCard from "./CourseCard";
+import styles from "@/styles/course-grid.module.css";
+import { Course } from "@/types/course";
 
 interface Props {
   courses: Course[];
@@ -17,9 +10,9 @@ interface Props {
 
 export default function CourseGrid({ courses }: Props) {
   return (
-    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className={styles.grid}>
       {courses.map((course) => (
-        <CourseCard key={course.courseId} course={course} />
+        <CourseCard key={course.id} course={course} />
       ))}
     </div>
   );

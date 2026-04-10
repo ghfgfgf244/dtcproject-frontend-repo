@@ -1,0 +1,255 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #17213a;
+  margin: 0;
+}
+
+.subtitle {
+  color: #6c7a96;
+  font-size: 14px;
+  margin: 0;
+}
+
+.monthRow {
+  margin-bottom: 18px;
+}
+
+.month {
+  font-size: 18px;
+  font-weight: 700;
+  color: #18233a;
+  margin-bottom: 10px;
+}
+
+.weekRow {
+  display: flex;
+  gap: 10px;
+  background: #f4f7fb;
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.weekDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 56px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.weekDay strong {
+  font-size: 14px;
+  color: #1c2a44;
+}
+
+.weekDayActive {
+  background: #e6f7ff;
+  color: #1a8ed1;
+  font-weight: 600;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.todayButton {
+  border: none;
+  background: #f0f3f9;
+  color: #17213a;
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.todayButton:hover {
+  background: #e5ebf5;
+  transform: translateY(-1px);
+}
+
+.addButton {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: #1ca7ec;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(28, 167, 236, 0.2);
+}
+
+.addButton:hover {
+  background: #0f78b5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(28, 167, 236, 0.3);
+}
+
+.addButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.section {
+  margin-top: 18px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a96ab;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.emptyGroup {
+  color: #8a96ab;
+  font-size: 13px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  width: 100%;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card h3 {
+  font-size: 15px;
+  color: #18233a;
+  margin: 0;
+}
+
+.attendanceRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.attendanceBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+}
+
+.attendancePresent {
+  background: #e8f8ef;
+  color: #1b8f5a;
+}
+
+.attendanceAbsent {
+  background: #ffe9ea;
+  color: #d64545;
+}
+
+.meta {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #6c7a96;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tag {
+  background: #1ca7ec;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tagMuted {
+  background: #eef2f7;
+  color: #8a96ab;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.badge {
+  background: #2bb673;
+  color: #ffffff;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cardHighlight {
+  border: 2px solid #1ca7ec;
+  background: #f1fbff;
+}
+
+.cardMuted {
+  opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    justify-content: flex-start;
+  }
+
+  .weekRow {
+    flex-wrap: wrap;
+  }
+}

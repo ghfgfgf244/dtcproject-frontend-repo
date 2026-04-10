@@ -16,5 +16,5 @@
 .contentArea {
   flex: 1;
   overflow-y: auto;
-  z-index: 0;
+  /* z-index: 40; */
 }

@@ -1,0 +1,11 @@
+/* src/components/manager/ScheduleManagement/ScheduleDailyCalendar/daily.module.css */
+.timelineGrid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+}
+
+@media (max-width: 640px) {
+  .timelineGrid {
+    grid-template-columns: 70px 1fr; /* Thu nhỏ cột giờ trên mobile */
+  }
+}

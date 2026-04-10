@@ -1,0 +1,71 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { authService } from "@/services/authService";
+import { setAuthToken } from "@/lib/api";
+import { useUserRole } from "@/contexts/UserRoleContext";
+
+export default function SyncUser() {
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { getToken } = useAuth();
+  const { setRole } = useUserRole();
+  const lastSyncedClerkId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const syncWithBackend = async () => {
+      if (!isLoaded || !isSignedIn || !user || lastSyncedClerkId.current === user.id) {
+        return;
+      }
+
+      try {
+        const token = await getToken();
+        if (!token) {
+          return;
+        }
+
+        setAuthToken(token);
+
+        const email = user.primaryEmailAddress?.emailAddress || "";
+        const fullName =
+          user.fullName ||
+          [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+          email.split("@")[0] ||
+          "DTC User";
+
+        const syncData = {
+          clerkId: user.id,
+          email,
+          fullName,
+          avatarUrl: user.imageUrl,
+          phone: user.primaryPhoneNumber?.phoneNumber,
+          role: undefined,
+          centerId: user.publicMetadata?.centerId as string,
+        };
+
+        const response = await authService.syncUser(syncData);
+        if (!response) {
+          return;
+        }
+
+        lastSyncedClerkId.current = user.id;
+
+        if (response.role) {
+          setRole(response.role);
+        }
+      } catch {
+      }
+    };
+
+    void syncWithBackend();
+  }, [getToken, isLoaded, isSignedIn, setRole, user]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      lastSyncedClerkId.current = null;
+      setRole("");
+    }
+  }, [isSignedIn, setRole]);
+
+  return null;
+}

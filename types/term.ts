@@ -10,3 +10,15 @@ export interface TermItem {
   courseName?: string;
   classCount?: number; // Số lượng lớp học đang mở trong khóa này
 }
+
+export interface TermRecord {
+  id: string;
+  courseId: string;
+  name: string;
+  courseName: string;
+  startDate: string;
+  endDate: string;
+  currentStudents: number;
+  maxStudents: number;
+  isActive: boolean;
+}

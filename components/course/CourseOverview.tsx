@@ -1,48 +1,55 @@
 import styles from "@/styles/mycourse.module.css";
 
-export default function CourseOverview() {
+interface CourseOverviewProps {
+  courseName: string;
+  description: string;
+  centerName: string;
+  startDate?: string;
+  endDate?: string;
+  imageUrl?: string;
+}
+
+export default function CourseOverview({
+  courseName,
+  description,
+  centerName,
+  startDate,
+  endDate,
+  imageUrl = "https://images.unsplash.com/photo-1511919884226-fd3cad34687c"
+}: CourseOverviewProps) {
   return (
     <div className={styles.card}>
-
       <div className={styles.courseOverview}>
-
         <img
-          src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c"
+          src={imageUrl}
           className={styles.courseImage}
+          alt={courseName}
         />
 
         <div className={styles.courseInfo}>
-
-          <h3>Tổng Quan Khóa Học</h3>
+          <h3>Tổng quan khóa học</h3>
+          <p className={styles.courseDesc}>
+            {description}
+          </p>
 
           <div className={styles.infoGrid}>
-
             <div>
-              <span>Giáo Viên</span>
-              <p>Nguyen Van A</p>
+              <span>Tên khóa học</span>
+              <p>{courseName}</p>
             </div>
 
             <div>
-              <span>Trung Tâm Đào Tạo</span>
-              <p>Nha Trang Training Center</p>
+              <span>Trung tâm đào tạo</span>
+              <p>{centerName}</p>
             </div>
 
             <div>
-              <span>Thời Gian</span>
-              <p>20 Aug 2023 - 20 Dec 2023</p>
+              <span>Thời gian học</span>
+              <p>{startDate && endDate ? `${startDate} - ${endDate}` : "Chưa xác định"}</p>
             </div>
-
-            <div>
-              <span>Tổng Số Học Viên</span>
-              <p>24 Đã đăng ký</p>
-            </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

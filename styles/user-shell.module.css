@@ -1,0 +1,42 @@
+.page {
+  display: flex;
+  gap: 24px;
+  padding: 24px 24px 40px 24px;
+  width: 100%;
+  margin: 0;
+  align-items: flex-start;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.loadingContainer {
+  flex: 1;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #5f6f8e;
+  text-align: center;
+}
+
+.feedOverride {
+  max-width: 720px;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .page {
+    flex-direction: column;
+    padding: 20px 16px 32px;
+  }
+
+  .feedOverride {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,10 @@
+.statsWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #eff6ff; /* blue-50 */
+  border: 1px solid #dbeafe; /* blue-100 */
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  gap: 1.5rem;
+}

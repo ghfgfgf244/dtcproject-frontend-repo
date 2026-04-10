@@ -1,0 +1,52 @@
+DANH SÁCH ENDPOINT FRONTEND (Next.js App Router)
+
+1. PUBLIC ROUTES
+-----------------
+- /                      : Trang chủ (Redirect hoặc Home)
+- /contact               : Trang liên hệ
+- /access-denied         : Trang báo lỗi truy cập
+
+2. ADMIN ROUTES (app/(admin)/admin)
+------------------------------------
+- /admin                 : Dashboard Tổng quan Admin
+- /admin/collaborators   : Quản lý Cộng tác viên
+- /admin/enrollment-managers : Quản lý Trưởng phòng Tuyển sinh
+- /admin/instructors     : Quản lý Giảng viên
+- /admin/students        : Quản lý Học viên
+- /admin/training-managers : Quản lý Trưởng phòng Đào tạo
+
+3. TRAINING MANAGER ROUTES (app/(manager)/training-manager)
+------------------------------------------------------------
+- /training-manager/dashboard    : Dashboard Quản lý Đào tạo
+- /training-manager/courses      : Quản lý Khóa học
+- /training-manager/courses/[id] : Chi tiết Khóa học
+- /training-manager/classes      : Quản lý Lớp học
+- /training-manager/classes/[id] : Chi tiết Lớp học & Điểm danh
+- /training-manager/exams        : Quản lý Kỳ thi & Lịch thi
+- /training-manager/instructors  : Quản lý Giảng viên & Phân lịch
+- /training-manager/documents    : Quản lý Tài liệu Đào tạo
+- /training-manager/notifications : Thông báo nội bộ
+
+4. ENROLLMENT MANAGER ROUTES (app/(manager)/enrollment-manager)
+------------------------------------------------------------------
+- /enrollment-manager/dashboard     : Dashboard Quản lý Tuyển sinh
+- /enrollment-manager/posts         : Quản lý Bài đăng tuyển sinh (Blog)
+- /enrollment-manager/profiles      : Hồ sơ học viên đăng ký
+- /enrollment-manager/commissions     : Quản lý Hoa hồng Cộng tác viên
+- /enrollment-manager/terms         : Quản lý Học kỳ/Đợt tuyển sinh
+- /enrollment-manager/documents     : Hồ sơ/Chứng từ tuyển sinh
+- /enrollment-manager/reports       : Báo cáo Tuyển sinh
+- /enrollment-manager/notifications : Thông báo tuyển sinh
+
+5. USER/PARTNER ROUTES (app/(user))
+------------------------------------
+- /user                     : Dashboard Cá nhân
+- /user/homepage            : Trang chủ người dùng
+- /user/profile             : Cài đặt thông tin cá nhân
+- /user/courses             : Khóa học của tôi
+- /user/exams               : Lịch thi & Kết quả thi của tôi
+- /user/schedule            : Lịch học của tôi
+- /user/attendance          : Xem điểm danh
+- /user/report              : Báo cáo cá nhân
+- /user/partner-dashboard   : Dashboard cho Cộng tác viên
+- /user/teaching-schedule   : Lịch dạy (dành cho Giảng viên)
