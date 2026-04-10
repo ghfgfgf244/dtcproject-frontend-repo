@@ -14,7 +14,7 @@ export default function MyCoursePage() {
       
       <div className={styles.container}>
 
-        <h1 className={styles.title}>My Course</h1>
+        <h1 className={styles.title}>Khóa học của tôi</h1>
 
         <div className={styles.grid}>
 

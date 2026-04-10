@@ -13,28 +13,28 @@ export default function CourseOverview() {
 
         <div className={styles.courseInfo}>
 
-          <h3>Course Overview</h3>
+          <h3>Tổng Quan Khóa Học</h3>
 
           <div className={styles.infoGrid}>
 
             <div>
-              <span>Instructor</span>
+              <span>Giáo Viên</span>
               <p>Nguyen Van A</p>
             </div>
 
             <div>
-              <span>Training Center</span>
+              <span>Trung Tâm Đào Tạo</span>
               <p>Nha Trang Training Center</p>
             </div>
 
             <div>
-              <span>Duration</span>
+              <span>Thời Gian</span>
               <p>20 Aug 2023 - 20 Dec 2023</p>
             </div>
 
             <div>
-              <span>Total Students</span>
-              <p>24 Enrolled</p>
+              <span>Tổng Số Học Viên</span>
+              <p>24 Đã đăng ký</p>
             </div>
 
           </div>

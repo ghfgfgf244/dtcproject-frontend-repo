@@ -4,11 +4,11 @@ export default function DrivingMetrics() {
   return (
     <div className={styles.card}>
 
-      <h3>Driving Metrics</h3>
+      <h3>Chỉ Số Lái Xe</h3>
 
       <div className={styles.metric}>
         <div className={styles.metricLabel}>
-          <span>Day Driving</span>
+          <span>Lái Xe Ban Ngày</span>
           <span>180 / 300 km</span>
         </div>
 
@@ -19,7 +19,7 @@ export default function DrivingMetrics() {
 
       <div className={styles.metric}>
         <div className={styles.metricLabel}>
-          <span>Night Driving</span>
+          <span>Lái Xe Ban Đêm</span>
           <span>30 / 50 km</span>
         </div>
 

@@ -5,8 +5,8 @@ export default function LearningRoadmap() {
     <div className={styles.card}>
 
       <div className={styles.roadmapHeader}>
-        <h3>Learning Roadmap</h3>
-        <span>70% Complete</span>
+        <h3>Lộ Trình Học Tập</h3>
+        <span>Hoàn thành 70%</span>
       </div>
 
       <div className={styles.progress}>
@@ -14,15 +14,15 @@ export default function LearningRoadmap() {
       </div>
 
       <div className={styles.roadmapItem}>
-        ✔ Basic driving skills
+        ✔ Kỹ năng lái xe cơ bản
       </div>
 
       <div className={styles.roadmapItem}>
-        ✔ Parking practice
+        ✔ Thực hành đỗ xe
       </div>
 
       <div className={styles.roadmapItemActive}>
-        City driving
+        Lái xe trong thành phố
       </div>
 
     </div>
