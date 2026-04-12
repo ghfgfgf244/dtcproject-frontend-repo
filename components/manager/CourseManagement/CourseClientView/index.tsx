@@ -273,12 +273,7 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
                               </button>
                             </div>
                           </div>
-                          {/* <div className="flex gap-2 items-center mt-1 mb-2">
-                          <span className="text-[10px] font-black uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{rm.type}</span>
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${rm.status ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                            {rm.status ? 'Hoạt động' : 'Tạm ẩn'}
-                          </span>
-                        </div> */}
+                          
                           <p className="text-xs text-slate-600">
                             {rm.description}
                           </p>
