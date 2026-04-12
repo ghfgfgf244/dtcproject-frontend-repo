@@ -3,15 +3,15 @@ import { Breadcrumbs } from "@/components/manager/Shared/Breadcrumbs";
 import ScheduleClientView from "@/components/manager/ScheduleManagement/ScheduleClientView";
 
 export const metadata = {
-  title: "Lich hoc | Quan ly dao tao",
-  description: "Quan ly lich hoc va phan cong giang day",
+  title: "Lịch học | Quản lý đào tạo",
+  description: "Quản lý lịch học và phân công giảng dạy",
 };
 
 export default function SchedulePage() {
   const breadcrumbsItems = [
-    { label: "Trang chu", href: "/training-manager/dashboard" },
-    { label: "Quan ly lop hoc", href: "/training-manager/classes" },
-    { label: "Lich hoc" },
+    { label: "Trang chủ", href: "/training-manager/dashboard" },
+    { label: "Quản lý lớp học", href: "/training-manager/classes" },
+    { label: "ịch học" },
   ];
 
   return (

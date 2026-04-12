@@ -20,3 +20,13 @@ export interface InstructorFormData {
   isActive: boolean;
   avatarUrl?: string;
 }
+
+// FIX: Added missing InstructorStatsData interface used by InstructorStats component and constants
+export interface InstructorStatsData {
+  total: number;
+  newThisMonth: number;
+  activeToday: number;
+  capacityPercent: number;
+  avgRating: number;
+  pendingCerts: number;
+}

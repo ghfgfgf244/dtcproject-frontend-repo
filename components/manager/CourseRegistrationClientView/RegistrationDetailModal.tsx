@@ -89,7 +89,7 @@ export default function RegistrationDetailModal({ registration, isOpen, onClose 
                   </div>
                   <div className="flex justify-between items-center pt-2 mt-2 border-t border-slate-200 gap-4">
                     <span className="text-xs text-slate-700 font-bold">Tong hoc phi:</span>
-                    <span className="text-base font-black text-blue-600">{formatCurrency(registration.totalFee)}</span>
+                    <span className="text-base font-black text-blue-600">{formatCurrency(registration.totalFee ?? 0)}</span>
                   </div>
                 </div>
               </div>

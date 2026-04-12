@@ -3,12 +3,14 @@ import { DocumentRecord } from "@/types/document";
 
 // Đưa object default ra đây và export nó
 export const DEFAULT_DOCUMENT_FORM: DocumentRecord = {
-  userId: '', // Lát nữa Component sẽ ghi đè vào
+  id: '',              // FIX: required field — will be overwritten after save
+  userId: '',          // Component will overwrite this
   documentType: 'CCCD / CMND',
   fileUrl: '',
   fileName: '',
   fileExtension: '',
   fileSize: 0,
+  uploadDate: '',      // FIX: required field — will be set on upload
   isVerified: false,
 };
 

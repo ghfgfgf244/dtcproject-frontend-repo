@@ -267,7 +267,7 @@ export default function RegistrationClientView() {
                     <div className="text-[10px] text-slate-400 font-medium mt-1">ID: {reg.studentId}</div>
                   </td>
                   <td className="px-6 py-5">
-                    <div className="text-sm font-black text-slate-900">{formatCurrency(reg.totalFee)}</div>
+                     <div className="text-sm font-black text-slate-900">{formatCurrency(reg.totalFee ?? 0)}</div>
                   </td>
                   <td className="px-6 py-5 text-right">
                     <div className="flex items-center justify-end gap-2">

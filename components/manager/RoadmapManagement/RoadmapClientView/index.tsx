@@ -4,7 +4,8 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Zap, TrendingUp, Search, Filter, Download, Edit, Trash2, ChevronLeft, ChevronRight, ArrowRight, HelpCircle, FileText, Headphones } from 'lucide-react';
 import { Roadmap, RoadmapStats } from '@/types/roadmap';
-import RoadmapModal, { RoadmapFormData } from '@/components/manager/Modals/RoadmapModal';
+import RoadmapModal, { RoadmapSubmitData } from '@/components/manager/Modals/RoadmapModal';
+import { LearningRoadmapItem } from '@/types/course';
 import ConfirmModal from '@/components/ui/confirm-modal';
 
 interface Props {
@@ -26,9 +27,18 @@ export default function RoadmapClientView({ initialRoadmaps, stats }: Props) {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   // --- LỌC DỮ LIỆU EDIT ---
-  const editingRoadmap = useMemo(() => {
+  // FIX: convert Roadmap to LearningRoadmapItem shape that RoadmapModal expects
+  const editingRoadmap = useMemo((): LearningRoadmapItem | null => {
     if (!editingId) return null;
-    return roadmaps.find(r => r.id === editingId) || null;
+    const found = roadmaps.find(r => r.id === editingId);
+    if (!found) return null;
+    return {
+      id: found.id,
+      courseId: found.relatedCourses,
+      orderNo: 1,
+      title: found.title,
+      description: found.description,
+    };
   }, [editingId, roadmaps]);
 
   // --- LOGIC: SEARCH ---
@@ -55,35 +65,25 @@ export default function RoadmapClientView({ initialRoadmaps, stats }: Props) {
     setIsModalOpen(true);
   };
 
-  const handleSubmitRoadmap = (formData: RoadmapFormData) => {
-    // Tự động tạo code ngắn từ Course ID (VD: "FIN-101" -> "FIN")
-    const shortCode = formData.courseId.split('-')[0] || 'RM';
-    
-    // Random màu cho đẹp mắt khi thêm mới
+  // FIX: changed to RoadmapSubmitData and returns Promise<void> to match RoadmapModal.onSubmit signature
+  const handleSubmitRoadmap = async (formData: RoadmapSubmitData): Promise<void> => {
+    const shortCode = `RM-${Date.now().toString().slice(-4)}`;
     const themes: ('blue' | 'emerald' | 'orange' | 'purple')[] = ['blue', 'emerald', 'orange', 'purple'];
     const randomTheme = themes[Math.floor(Math.random() * themes.length)];
 
     if (editingId) {
-      // Cập nhật
-      setRoadmaps(prev => prev.map(item => 
-        item.id === editingId 
-          ? { 
-              ...item, 
-              title: formData.title,
-              description: formData.description,
-              relatedCourses: formData.courseId,
-              code: shortCode
-            } 
+      setRoadmaps(prev => prev.map(item =>
+        item.id === editingId
+          ? { ...item, title: formData.title, description: formData.description }
           : item
       ));
     } else {
-      // Thêm mới
       const newRoadmap: Roadmap = {
         id: `RM-${Date.now()}`,
         code: shortCode,
         title: formData.title,
         description: formData.description,
-        relatedCourses: formData.courseId,
+        relatedCourses: '',
         theme: randomTheme,
         createdAt: new Date().toLocaleDateString('vi-VN')
       };

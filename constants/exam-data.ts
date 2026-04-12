@@ -1,4 +1,4 @@
-import { ExamBatch, Exam } from "@/types/exam";
+import { ExamBatch, Exam, ExamType, ExamStatus } from "@/types/exam";
 
 // Cấu hình các Tabs lọc dựa trên backend enum names
 export const EXAM_TABS = [
@@ -36,5 +36,6 @@ export const MOCK_BATCHES: ExamBatch[] = [
 ];
 
 export const MOCK_EXAMS: Exam[] = [
-  { id: "ex-4", examBatchId: "88888888-8888-8888-8888-888888888882", courseId: "44444444-4444-4444-4444-444444444441", examName: "Thực hành vòng số 8", examType: "Practice", examDate: "2024-12-05", durationMinutes: 90, totalScore: 100, passScore: 80 },
+  // FIX: examType must be ExamType enum (Theory=1, Simulation=2, Practice=3); added required addressId and status
+  { id: "ex-4", examBatchId: "88888888-8888-8888-8888-888888888882", courseId: "44444444-4444-4444-4444-444444444441", addressId: 1, examName: "Thực hành vòng số 8", examType: ExamType.Practice, examDate: "2024-12-05", durationMinutes: 90, totalScore: 100, passScore: 80, status: ExamStatus.Scheduled },
 ];
