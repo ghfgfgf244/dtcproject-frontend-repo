@@ -5,7 +5,7 @@ import { Camera, GraduationCap, Lock, Loader2 } from "lucide-react";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/profile.module.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PostModal from "@/components/ui/post-modal";
 import EditProfileModal from "@/components/ui/edit-profile-modal";
 import { useUser, useAuth } from "@clerk/nextjs";
@@ -13,7 +13,6 @@ import { userService, UserProfile, UpdateProfileRequest } from "@/services/userS
 import { blogService, Blog } from "@/services/blogService";
 import { registrationService } from "@/services/registrationService";
 import { RegistrationResponse } from "@/types/registration";
-import { setAuthToken } from "@/lib/api";
 
 export default function ProfilePage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
@@ -26,64 +25,71 @@ export default function ProfilePage() {
   const [editingPost, setEditingPost] = useState<null | Blog>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!isClerkLoaded || !clerkUser) return;
+  // FIX 1: Wrap fetchData in useCallback to safely include getToken in deps
+  const fetchData = useCallback(async () => {
+    if (!isClerkLoaded || !clerkUser) return;
+    
+    try {
+      setLoading(true);
+
+      // 1. Fetch backend profile
+      const userProfile = await userService.getMe();
       
-      try {
-        setLoading(true);
-        const token = await getToken();
-        setAuthToken(token);
-
-        // 1. Fetch backend profile
-        const userProfile = await userService.getMe();
+      if (userProfile) {
+        setProfile(userProfile);
         
-        if (userProfile) {
-          setProfile(userProfile);
-          
-          const roles = userProfile.roles || [];
-          if (userProfile.roleName) roles.push(userProfile.roleName);
-          
-          const isStudent = roles.includes("Student") || roles.includes("6");
-          const isManager = roles.some(r => ["Admin", "TrainingManager", "EnrollmentManager", "1", "2", "4"].includes(r));
-          const isCollaborator = roles.includes("Collaborator") || roles.includes("5");
-          const canPost = isManager || isCollaborator;
-
-          // 2. Fetch data based on roles
-          const promises: Promise<any>[] = [];
-          
-          if (canPost) {
-            promises.push(blogService.getByUserId(userProfile.id));
-          } else {
-            promises.push(Promise.resolve([]));
-          }
-
-          if (isStudent) {
-            promises.push(registrationService.getMyRegistrations());
-          } else {
-            promises.push(Promise.resolve([]));
-          }
-
-          const [userPosts, userRegs] = await Promise.all(promises);
-          setPosts(userPosts || []);
-          setRegistrations(userRegs || []);
+        const roles: string[] = [...(userProfile.roles || [])];
+        if (userProfile.roleName && !roles.includes(userProfile.roleName)) {
+          roles.push(userProfile.roleName);
         }
-      } catch (error) {
-        console.error("Error fetching profile data:", error);
-      } finally {
-        setLoading(false);
+        
+        const isStudent = roles.includes("Student") || roles.includes("6");
+        const isManager = roles.some(r => ["Admin", "TrainingManager", "EnrollmentManager", "1", "2", "4"].includes(r));
+        const isCollaborator = roles.includes("Collaborator") || roles.includes("5");
+        const canPost = isManager || isCollaborator;
+
+        // 2. Fetch data based on roles
+        const promises: Promise<any>[] = [];
+        
+        if (canPost) {
+          promises.push(blogService.getByUserId(userProfile.id));
+        } else {
+          promises.push(Promise.resolve([]));
+        }
+
+        if (isStudent) {
+          promises.push(registrationService.getMyRegistrations());
+        } else {
+          promises.push(Promise.resolve([]));
+        }
+
+        const [userPosts, userRegs] = await Promise.all(promises);
+        setPosts(userPosts || []);
+        setRegistrations(userRegs || []);
       }
+    } catch (error) {
+      console.error("Error fetching profile data:", error);
+    } finally {
+      setLoading(false);
     }
+  }, [isClerkLoaded, clerkUser, getToken]);
 
+  useEffect(() => {
     fetchData();
-  }, [isClerkLoaded, clerkUser]);
+  }, [fetchData]);
 
-  const handleUpdatePost = async (content: string) => {
+  // FIX 2: handleUpdatePost now accepts BlogEditorValues to match PostModal.onSubmit signature
+  const handleUpdatePost = async (values: { title?: string; content: string; categoryId?: number; summary?: string; avatar?: string; status?: boolean }) => {
     if (!editingPost) return;
     try {
-      const token = await getToken();
-      setAuthToken(token);
-      const updated = await blogService.update(editingPost.id, { content });
+      const updated = await blogService.update(editingPost.id, {
+        title: values.title,
+        content: values.content,
+        summary: values.summary,
+        avatar: values.avatar,
+        categoryId: values.categoryId,
+        status: values.status,
+      });
       if (updated) {
         setPosts((prev) =>
           prev.map((post) => (post.id === editingPost.id ? updated : post))
@@ -98,8 +104,6 @@ export default function ProfilePage() {
   const handleDeletePost = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa bài viết này?")) return;
     try {
-      const token = await getToken();
-      setAuthToken(token);
       await blogService.delete(id);
       setPosts((prev) => prev.filter((post) => post.id !== id));
     } catch (error) {
@@ -109,8 +113,6 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async (data: UpdateProfileRequest) => {
     try {
-      const token = await getToken();
-      setAuthToken(token);
       const updated = await userService.updateMe(data);
       if (updated) {
         setProfile(updated);
@@ -124,7 +126,7 @@ export default function ProfilePage() {
   };
 
   // Role Logic
-  const getRoles = () => {
+  const getRoles = (): string[] => {
     const roles = [...(profile?.roles || [])];
     if (profile?.roleName && !roles.includes(profile.roleName)) {
       roles.push(profile.roleName);
@@ -140,6 +142,12 @@ export default function ProfilePage() {
 
   // Active registration for students
   const activeReg = registrations.find(r => r.status === 'Approved') || registrations[0];
+
+  // FIX 3: Helper to safely strip HTML tags and truncate text content
+  const getPlainTextPreview = (html: string, maxLen = 150): string => {
+    const text = html.replace(/<[^>]*>/g, "").trim();
+    return text.length > maxLen ? text.substring(0, maxLen) + "..." : text;
+  };
 
   if (loading || !isClerkLoaded) {
     return (
@@ -207,7 +215,6 @@ export default function ProfilePage() {
                   <strong>{profile?.phone || "Chưa cập nhật"}</strong>
                 </div>
                 
-                {/* Enrich from Clerk if available */}
                 {(clerkUser as any)?.birthday && (
                     <div>
                         <span className={styles.label}>Ngày sinh</span>
@@ -247,9 +254,6 @@ export default function ProfilePage() {
                   <strong>{profile?.email || clerkUser?.primaryEmailAddress?.emailAddress}</strong>
                 </div>
               </div>
-
-              {/* Password managed by Clerk, so we don't need a custom button here unless it links to Clerk Profile */}
-              {/* <button type="button" className={styles.passwordBtn}>Thay đổi mật khẩu</button> */}
             </div>
 
             {canPost && (
@@ -280,7 +284,10 @@ export default function ProfilePage() {
                             </button>
                             </div>
                         </div>
-                        <p className={styles.myPostContent}>{post.summary || post.content.substring(0, 150) + '...'}</p>
+                        {/* FIX 3: Strip HTML tags before previewing content */}
+                        <p className={styles.myPostContent}>
+                          {post.summary || getPlainTextPreview(post.content)}
+                        </p>
                         </div>
                     ))
                     )}
@@ -308,7 +315,8 @@ export default function ProfilePage() {
 
                 <div className={styles.statusItem}>
                     <span className={styles.label}>Mã học viên</span>
-                    <strong>{profile?.id.substring(0, 8).toUpperCase() || "N/A"}</strong>
+                    {/* FIX 4: Use optional chaining on profile?.id to prevent crash */}
+                    <strong>{profile?.id?.substring(0, 8).toUpperCase() || "N/A"}</strong>
                 </div>
                 <div className={styles.statusItem}>
                     <span className={styles.label}>Khóa học</span>
@@ -344,11 +352,19 @@ export default function ProfilePage() {
         </div>
       </section>
 
+      {/* FIX 2: Pass initialValues matching BlogEditorValues shape instead of initialContent */}
       <PostModal
         open={Boolean(editingPost)}
         title="Chỉnh sửa bài viết"
         submitLabel="CẬP NHẬT"
-        initialContent={editingPost?.content}
+        initialValues={editingPost ? {
+          title: editingPost.title,
+          content: editingPost.content,
+          summary: editingPost.summary,
+          avatar: editingPost.avatar,
+          categoryId: editingPost.categoryId,
+          status: editingPost.status,
+        } : undefined}
         onClose={() => setEditingPost(null)}
         onSubmit={handleUpdatePost}
       />

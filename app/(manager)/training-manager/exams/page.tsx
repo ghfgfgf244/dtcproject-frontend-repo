@@ -31,6 +31,7 @@ export default async function ExamManagementPage() {
         </div>
 
         {/* Đẩy data xuống Client Component để xử lý tương tác */}
+
         <ExamClientView/>
       </div>
     </div>
