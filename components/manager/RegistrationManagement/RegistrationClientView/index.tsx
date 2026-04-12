@@ -29,17 +29,34 @@ const statusOptions = [
   { value: "cancelled", label: "Đã hủy" },
 ];
 
-const getStatusKey = (status: ExamRegistrationStatus) => {
-  switch (status) {
-    case ExamRegistrationStatus.Approved:
-      return "approved";
-    case ExamRegistrationStatus.Rejected:
-      return "rejected";
-    case ExamRegistrationStatus.Cancelled:
-      return "cancelled";
-    default:
-      return "pending";
+// FIX: status can be either ExamRegistrationStatus (number) or CourseRegistrationStatus (string)
+// Handle both variants to ensure filters work correctly
+const getStatusKey = (status: ExamRegistrationStatus | string): string => {
+  // Numeric enum path (ExamRegistration)
+  if (typeof status === "number") {
+    switch (status) {
+      case ExamRegistrationStatus.Approved:  return "approved";
+      case ExamRegistrationStatus.Rejected:  return "rejected";
+      case ExamRegistrationStatus.Cancelled: return "cancelled";
+      default:                               return "pending";
+    }
   }
+  // String path (CourseRegistration)
+  switch (status.toLowerCase()) {
+    case "approved":  return "approved";
+    case "rejected":  return "rejected";
+    case "cancelled": return "cancelled";
+    default:          return "pending";
+  }
+};
+
+// FIX: normalize status to ExamRegistrationStatus for numeric comparisons
+const isStatusEqual = (
+  status: ExamRegistrationStatus | string,
+  target: ExamRegistrationStatus,
+): boolean => {
+  if (typeof status === "number") return status === target;
+  return getStatusKey(status) === getStatusKey(target);
 };
 
 export default function RegistrationClientView({ initialData = [] }: Props) {
@@ -210,10 +227,11 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
   };
 
   const handleApproveAll = async () => {
+    // FIX: use isStatusEqual() so both string and numeric status are handled correctly
     const eligibleIds = registrations
       .filter(
         (record) =>
-          record.status === ExamRegistrationStatus.Pending &&
+          isStatusEqual(record.status, ExamRegistrationStatus.Pending) &&
           record.isPaid === true &&
           (record.attendanceRate ?? 0) >= 80,
       )
@@ -263,11 +281,14 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
     setCurrentPage(1);
   }, [batchFilter, statusFilter]);
 
+  // FIX: use isStatusEqual() to handle both string and numeric status
   const pendingCount = registrations.filter(
-    (record) => record.status === ExamRegistrationStatus.Pending,
+    (record) => isStatusEqual(record.status, ExamRegistrationStatus.Pending),
   ).length;
   const eligibleCount = registrations.filter(
-    (record) => record.status === ExamRegistrationStatus.Pending && record.isEligibleForApproval === true,
+    (record) =>
+      isStatusEqual(record.status, ExamRegistrationStatus.Pending) &&
+      record.isEligibleForApproval === true,
   ).length;
 
   if (loadingPage) {
