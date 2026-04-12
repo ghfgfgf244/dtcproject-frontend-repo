@@ -31,10 +31,7 @@ export default async function ExamManagementPage() {
         </div>
 
         {/* Đẩy data xuống Client Component để xử lý tương tác */}
-        <ExamClientView
-          {/* initialBatches={MOCK_BATCHES}
-          initialExams={MOCK_EXAMS} */}
-        />
+        <ExamClientView/>
       </div>
     </div>
   );
