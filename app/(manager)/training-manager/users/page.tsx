@@ -25,7 +25,7 @@ export default function UserManagementPage() {
           <Breadcrumbs items={breadcrumbsItems} />
         </div>
 
-        <UserClientView initialUsers={combinedUsers} />
+        <UserClientView  />
       </div>
     </div>
   );
