@@ -116,13 +116,9 @@ export default async function CourseDetail({ params }: PageProps) {
                     <div>
                       <h3 className="font-semibold mb-1">{item.title}</h3>
                       <p className="text-sm text-slate-600 leading-relaxed">
-                        {item.content || "Nội dung chi tiết đang được cập nhật."}
+                        {item.description || "Nội dung chi tiết đang được cập nhật."}
                       </p>
-                      {item.attachmentUrl && (
-                        <a href={item.attachmentUrl} target="_blank" className="text-xs text-sky-600 hover:underline mt-2 block">
-                          Tài liệu đi kèm
-                        </a>
-                      )}
+                      
                     </div>
                   </div>
                 ))
