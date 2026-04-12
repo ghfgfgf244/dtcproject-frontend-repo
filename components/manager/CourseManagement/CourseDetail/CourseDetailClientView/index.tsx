@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ArrowLeft, Edit3, FileText, Banknote, ShieldCheck, IdCard } from 'lucide-react';
 import CourseModal, { CourseSubmitData } from '@/components/manager/Modals/CourseModal';
-import { LicenseType, CourseStatus, Course, CourseRecord } from '@/types/course';
+import { Course } from '@/types/course';
 import { courseService } from '@/services/courseService';
 
 interface Props {
@@ -21,32 +21,24 @@ export default function CourseDetailClientView({ course: initialCourse }: Props)
   const [course, setCourse] = useState<Course>(initialCourse);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Ép kiểu dữ liệu để truyền vào Modal (Dùng CourseRecord cho tính tương thích)
-  const mapToFormRecord = (c: Course): CourseRecord => {
-    return {
-      id: c.id,
-      name: c.courseName,
-      description: c.description, 
-      licenseType: c.licenseType as LicenseType,
-      price: c.price,
-      status: c.isActive ? 'Hoạt động' : 'Ngừng hoạt động'
-    };
-  };
-
+  // FIX 1: handleUpdate — dùng đúng fields từ CourseSubmitData (courseName, isActive)
+  // FIX 2: thêm isActive vào payload (đã bị comment sai)
   const handleUpdate = async (data: CourseSubmitData) => {
     try {
+      if (!data.id) return;
+
       const payload = {
-        courseName: data.name,
+        courseName: data.courseName,
         description: data.description,
         price: Number(data.price),
-        isActive: data.status === 'Hoạt động'
+        durationInWeeks: data.durationInWeeks,
+        maxStudents: data.maxStudents,
+        isActive: data.isActive,
       };
-      
-      if (data.id) {
-        const updated = await courseService.updateCourse(data.id, payload);
-        setCourse(updated);
-        setIsModalOpen(false);
-      }
+
+      const updated = await courseService.updateCourse(data.id, payload);
+      setCourse(updated);
+      setIsModalOpen(false);
     } catch (err) {
       alert("Lỗi khi cập nhật khóa học.");
     }
@@ -152,11 +144,12 @@ export default function CourseDetailClientView({ course: initialCourse }: Props)
 
       </div>
 
-      {/* GỌI MODAL CHỈNH SỬA Ở ĐÂY */}
+      {/* FIX 3: truyền thẳng course (type Course) vào initialData — đúng type mà CourseModal expect
+          Không cần mapToFormRecord() nữa, tránh mất dữ liệu centerId, durationInWeeks, maxStudents, isActive */}
       <CourseModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        initialData={mapToFormRecord(course)} 
+        initialData={course}
         onSubmit={handleUpdate}
       />
     </div>
