@@ -53,7 +53,7 @@ export default function ResourceClientView() {
     title: dto.title,
     type: ((typeof dto.resourceType === 'number' ? TYPE_MAP[dto.resourceType] : dto.resourceType) as ResourceType) || 'Link',
     courseId: dto.courseId,
-    courseName: dto.courseName || 'Khong ro khoa hoc',
+    courseName: dto.courseName || 'Không rõ khóa học',
     url: dto.resourceUrl,
     uploadDate: new Date(dto.createdAt).toLocaleDateString('vi-VN'),
     isActive: dto.isActive,
@@ -76,7 +76,7 @@ export default function ResourceClientView() {
       setCourses(coursesData.map((course) => ({ id: course.id, courseName: course.courseName })));
     } catch (error) {
       console.error('Failed to fetch resources:', error);
-      toast.error('Khong the tai du lieu tai nguyen.');
+      toast.error('Không thể tải dữ liệu tài nguyên.');
     } finally {
       setLoading(false);
     }
@@ -130,7 +130,7 @@ export default function ResourceClientView() {
           resourceUrl: formData.url,
         });
         setResources((prev) => prev.map((item) => item.id === editingId ? mapDtoToModel(result) : item));
-        toast.success('Cap nhat tai nguyen thanh cong.');
+        toast.success('Cập nhật tài nguyên thành công.');
       } else {
         const result = await resourceLearningService.create({
           courseId: formData.courseId,
@@ -140,14 +140,14 @@ export default function ResourceClientView() {
         });
         setResources((prev) => [mapDtoToModel(result), ...prev]);
         setCurrentPage(1);
-        toast.success('Them tai nguyen moi thanh cong.');
+        toast.success('Thêm tài nguyên mới thành công.');
       }
 
       setIsModalOpen(false);
       setEditingId(null);
     } catch (error) {
       console.error('Failed to save resource:', error);
-      toast.error('Loi khi luu tai nguyen.');
+      toast.error('Lỗi khi lưu tài nguyên.');
     }
   };
 
@@ -160,10 +160,10 @@ export default function ResourceClientView() {
       await ensureToken();
       await resourceLearningService.delete(resourceToDelete);
       setResources((prev) => prev.filter((item) => item.id !== resourceToDelete));
-      toast.success('Da xoa tai nguyen.');
+      toast.success('Đã xóa tài nguyên.');
     } catch (error) {
       console.error('Failed to delete resource:', error);
-      toast.error('Loi khi xoa tai nguyen.');
+      toast.error('Lỗi khi xóa tài nguyên.');
     } finally {
       setIsDeleteModalOpen(false);
       setResourceToDelete(null);
@@ -189,7 +189,7 @@ export default function ResourceClientView() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center p-20">
         <Loader2 className="mb-4 h-12 w-12 animate-spin text-blue-600" />
-        <p className="font-medium text-slate-500">Dang tai danh sach tai nguyen...</p>
+        <p className="font-medium text-slate-500">Đang tải danh sách tài nguyên...</p>
       </div>
     );
   }
@@ -198,8 +198,8 @@ export default function ResourceClientView() {
     <div className="pb-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[1.875rem] font-black tracking-tight text-slate-900">Tai nguyen hoc tap</h1>
-          <p className="mt-1 text-sm text-slate-500">Quan ly va to chuc kho tai lieu dao tao cho hoc vien.</p>
+          <h1 className="text-[1.875rem] font-black tracking-tight text-slate-900">Tài nguyên học tập</h1>
+          <p className="mt-1 text-sm text-slate-500">Quản lý và tổ chức kho tài liệu đào tạo cho học viên.</p>
         </div>
         <button
           onClick={() => {
@@ -209,7 +209,7 @@ export default function ResourceClientView() {
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95"
         >
           <CloudUpload className="w-5 h-5" />
-          Tai len tai lieu
+          Tải lên tài liệu
         </button>
       </div>
 
@@ -227,7 +227,7 @@ export default function ResourceClientView() {
                 setCurrentPage(1);
               }}
               className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm outline-none transition-all focus:ring-2 focus:ring-blue-600"
-              placeholder="Tim kiem tai lieu hoac khoa hoc..."
+              placeholder="Tìm kiếm tài liệu hoặc khóa học..."
             />
           </div>
 
@@ -239,7 +239,7 @@ export default function ResourceClientView() {
             }}
             className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-600 md:w-auto"
           >
-            <option value="All">Tat ca dinh dang</option>
+            <option value="All">Tất cả định dạng</option>
             {Object.values(TYPE_MAP).map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -252,10 +252,10 @@ export default function ResourceClientView() {
           <table className="min-w-[800px] w-full border-collapse text-left">
             <thead>
               <tr className="bg-slate-50/80">
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Ten tai lieu</th>
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Loai</th>
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Khoa hoc</th>
-                <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Thao tac</th>
+                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Tên tài liệu</th>
+                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Loại</th>
+                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Khóa học</th>
+                <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -279,13 +279,13 @@ export default function ResourceClientView() {
                     <td className="px-6 py-4 text-sm font-medium text-slate-600">{item.courseName}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <a href={validUrl} target="_blank" rel="noopener noreferrer" className="rounded-md p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600" title="Xem tai lieu">
+                        <a href={validUrl} target="_blank" rel="noopener noreferrer" className="rounded-md p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600" title="Xem tài liệu">
                           <Eye className="w-4 h-4" />
                         </a>
-                        <button onClick={() => { setEditingId(item.id); setIsModalOpen(true); }} className="rounded-md p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600" title="Chinh sua">
+                        <button onClick={() => { setEditingId(item.id); setIsModalOpen(true); }} className="rounded-md p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600" title="Chỉnh sửa">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => { setResourceToDelete(item.id); setIsDeleteModalOpen(true); }} className="rounded-md p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600" title="Xoa tai lieu">
+                        <button onClick={() => { setResourceToDelete(item.id); setIsDeleteModalOpen(true); }} className="rounded-md p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600" title="Xóa tài liệu">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -295,7 +295,7 @@ export default function ResourceClientView() {
               }) : (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center font-medium text-slate-500">
-                    Khong tim thay tai lieu nao phu hop.
+                    Không tìm thấy tài liệu nào phù hợp.
                   </td>
                 </tr>
               )}
@@ -306,7 +306,7 @@ export default function ResourceClientView() {
         {filteredResources.length > 0 && (
           <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 bg-white px-6 py-4 sm:flex-row">
             <p className="text-xs font-medium text-slate-500">
-              Hien thi {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredResources.length)} cua {filteredResources.length} tai lieu
+              Hiển thị {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredResources.length)} của {filteredResources.length} tài liệu
             </p>
             <div className="flex gap-1.5">
               <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="rounded-md border border-slate-200 p-1.5 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50">
@@ -339,8 +339,8 @@ export default function ResourceClientView() {
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        title="Xoa tai nguyen"
-        message="Ban co chac chan muon xoa tai nguyen hoc tap nay khong? Hanh dong nay khong the hoan tac."
+        title="Xóa tài nguyên"
+        message="Bạn có chắc chắn muốn xóa tài nguyên học tập này không? Hành động này không thể hoàn tác."
         onCancel={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
       />

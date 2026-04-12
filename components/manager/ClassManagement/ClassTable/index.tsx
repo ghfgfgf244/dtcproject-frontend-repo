@@ -42,12 +42,12 @@ export default function ClassTable({
         <table className="w-full text-left min-w-[980px]">
           <thead>
             <tr className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-widest border-b border-slate-200">
-              <th className="px-6 py-4">Lop hoc</th>
-              <th className="px-6 py-4">Ky hoc / Khoa hoc</th>
-              <th className="px-6 py-4">Giang vien</th>
-              <th className="px-6 py-4">Hoc vien</th>
-              <th className="px-6 py-4">Thoi gian</th>
-              <th className="px-6 py-4 text-center">Thao tac</th>
+              <th className="px-6 py-4">Lớp học</th>
+              <th className="px-6 py-4">Kỳ học / Khóa học</th>
+              <th className="px-6 py-4">Giảng viên</th>
+              <th className="px-6 py-4">Học viên</th>
+              <th className="px-6 py-4">Thời gian</th>
+              <th className="px-6 py-4 text-center">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -61,7 +61,7 @@ export default function ClassTable({
                     <div>
                       <p className="text-sm font-bold text-slate-900">{cls.name}</p>
                       <p className="text-xs text-slate-500">
-                        {cls.classType === "Theory" ? "Ly thuyet" : "Thuc hanh"} / {cls.status}
+                        {cls.classType === "Theory" ? "Lý thuyết" : "Thực hành"} / {cls.status}
                       </p>
                     </div>
                   </div>
@@ -86,13 +86,13 @@ export default function ClassTable({
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onView(cls)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Xem chi tiet">
+                    <button onClick={() => onView(cls)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Xem chi tiết">
                       <Eye className="w-5 h-5" />
                     </button>
-                    <button onClick={() => onEdit(cls)} className="p-2 text-slate-400 hover:text-amber-500 transition-colors" title="Cap nhat">
+                    <button onClick={() => onEdit(cls)} className="p-2 text-slate-400 hover:text-amber-500 transition-colors" title="Cập nhật">
                       <Edit className="w-5 h-5" />
                     </button>
-                    <button onClick={() => onDelete(cls)} className="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Xoa">
+                    <button onClick={() => onDelete(cls)} className="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Xóa">
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
@@ -103,7 +103,7 @@ export default function ClassTable({
             {classes.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">
-                  Chua co lop hoc nao.
+                  Chưa có lớp học nào.
                 </td>
               </tr>
             )}
@@ -113,7 +113,7 @@ export default function ClassTable({
 
       <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-          {totalItems === 0 ? "Khong co du lieu" : `Hien thi ${startItem} - ${endItem} tren tong ${totalItems} lop hoc`}
+          {totalItems === 0 ? "Không có dữ liệu" : `Hiển thị ${startItem} - ${endItem} trên tổng ${totalItems} lớp học`}
         </p>
 
         {totalPages > 1 && (
@@ -130,9 +130,8 @@ export default function ClassTable({
               <button
                 key={num}
                 onClick={() => onPageChange(num)}
-                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
-                  currentPage === num ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200"
-                }`}
+                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === num ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-200"
+                  }`}
               >
                 {num}
               </button>

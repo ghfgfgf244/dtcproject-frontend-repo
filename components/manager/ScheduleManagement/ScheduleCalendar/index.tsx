@@ -8,7 +8,7 @@ interface Props {
   onDayClick: (date: Date) => void;
 }
 
-const WEEKDAYS = ["Thu Hai", "Thu Ba", "Thu Tu", "Thu Nam", "Thu Sau", "Thu Bay", "Chu Nhat"];
+const WEEKDAYS = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"];
 
 function startOfWeek(date: Date) {
   const clone = new Date(date);
@@ -52,13 +52,13 @@ function getEventStyle(type: ScheduleEvent["eventType"]) {
 function getEventLabel(type: ScheduleEvent["eventType"]) {
   switch (type) {
     case "Theory":
-      return "Ly thuyet";
+      return "Lý thuyết";
     case "Practice":
-      return "Thuc hanh";
+      return "Thực hành";
     case "Simulator":
-      return "Mo phong";
+      return "Mô phỏng";
     case "Exam":
-      return "Sat hach";
+      return "Sát hạch";
     default:
       return type;
   }
@@ -118,7 +118,7 @@ export default function ScheduleCalendar({ events, currentDate, onDayClick }: Pr
                     </div>
                   </div>
                 ))}
-                {dayEvents.length > 3 && <p className="text-[10px] font-bold text-slate-400">+{dayEvents.length - 3} lich hoc</p>}
+                {dayEvents.length > 3 && <p className="text-[10px] font-bold text-slate-400">+{dayEvents.length - 3} lịch học</p>}
               </div>
             </div>
           );

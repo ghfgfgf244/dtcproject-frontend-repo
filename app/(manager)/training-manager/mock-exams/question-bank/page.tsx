@@ -4,9 +4,9 @@ import QuestionBankClientView from "@/components/manager/MockExamManagement/Ques
 
 export default function QuestionBankPage() {
   const breadcrumbsItems = [
-    { label: "He thong", href: "/training-manager/dashboard" },
-    { label: "Quan ly thi thu", href: "/training-manager/mock-exams" },
-    { label: "Ngan hang cau hoi" },
+    { label: "Hệ thống", href: "/training-manager/dashboard" },
+    { label: "Quản lý thi thử", href: "/training-manager/mock-exams" },
+    { label: "Ngân hàng câu hỏi" },
   ];
 
   return (

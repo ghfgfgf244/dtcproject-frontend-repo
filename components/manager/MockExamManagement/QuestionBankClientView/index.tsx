@@ -19,7 +19,7 @@ export default function QuestionBankClientView() {
 
   const [questions, setQuestions] = useState<QuestionBankItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [category, setCategory] = useState("Tat ca");
+  const [category, setCategory] = useState("Tất cả");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,7 +40,7 @@ export default function QuestionBankClientView() {
       const data = await questionService.getAll();
       setQuestions(data);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tai ngan hang cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể tải ngân hàng câu hỏi");
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export default function QuestionBankClientView() {
     const keyword = searchQuery.trim().toLowerCase();
 
     return questions.filter((question) => {
-      const matchesCategory = category === "Tat ca" || question.category === category;
+      const matchesCategory = category === "Tất cả" || question.category === category;
       const matchesKeyword =
         keyword.length === 0 ||
         question.content.toLowerCase().includes(keyword) ||
@@ -73,9 +73,9 @@ export default function QuestionBankClientView() {
       const created = await questionService.create(data);
       setQuestions((prev) => [{ ...created, order: 0 }, ...prev]);
       setIsModalOpen(false);
-      toast.success("Da them cau hoi moi");
+      toast.success("Đã thêm câu hỏi mới");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tao cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể tạo câu hỏi");
     }
   };
 
@@ -88,9 +88,9 @@ export default function QuestionBankClientView() {
       setQuestions((prev) => prev.map((question) => (question.id === updated.id ? { ...updated, order: question.order } : question)));
       setEditingQuestion(null);
       setIsModalOpen(false);
-      toast.success("Da cap nhat cau hoi");
+      toast.success("Đã cập nhật câu hỏi");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the cap nhat cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể cập nhật câu hỏi");
     }
   };
 
@@ -102,9 +102,9 @@ export default function QuestionBankClientView() {
       await questionService.delete(questionToDelete);
       setQuestions((prev) => prev.filter((question) => question.id !== questionToDelete));
       setQuestionToDelete(null);
-      toast.success("Da xoa cau hoi");
+      toast.success("Đã xóa câu hỏi");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the xoa cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể xóa câu hỏi");
     }
   };
 
@@ -119,12 +119,12 @@ export default function QuestionBankClientView() {
       const result = await questionService.importFile(file);
       setQuestions((prev) => [...result.questions, ...prev]);
       if (result.warnings.length > 0) {
-        toast.success(`Da nhap ${result.importedCount} cau hoi. Co ${result.warnings.length} canh bao trong file.`);
+        toast.success(`Đã nhập ${result.importedCount} câu hỏi. Có ${result.warnings.length} cảnh báo trong file.`);
       } else {
-        toast.success(`Da nhap ${result.importedCount} cau hoi tu file`);
+        toast.success(`Đã nhập ${result.importedCount} câu hỏi từ file`);
       }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the nhap file cau hoi");
+      toast.error(error?.response?.data?.message || "Không thể nhập file câu hỏi");
     } finally {
       setImporting(false);
     }
@@ -135,7 +135,7 @@ export default function QuestionBankClientView() {
       await ensureToken();
       await questionService.downloadTemplate();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Khong the tai file mau");
+      toast.error(error?.response?.data?.message || "Không thể tải file mẫu");
     }
   };
 
@@ -144,7 +144,7 @@ export default function QuestionBankClientView() {
       <div className="flex min-h-[320px] items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500">
           <RefreshCw className="h-5 w-5 animate-spin" />
-          <span>Dang tai ngan hang cau hoi...</span>
+          <span>Đang tải ngân hàng câu hỏi...</span>
         </div>
       </div>
     );
@@ -177,7 +177,7 @@ export default function QuestionBankClientView() {
             </button>
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-50">
               <FileUp className="h-4 w-4" />
-              {importing ? "Dang nhap file..." : "Nhap file Excel"}
+              {importing ? "Đang nhập file..." : "Nhập file Excel"}
               <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={importing} />
             </label>
             <button
@@ -203,7 +203,7 @@ export default function QuestionBankClientView() {
               setSearchQuery(event.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Tim theo ID hoac noi dung cau hoi"
+            placeholder="Tìm theo ID hoặc nội dung câu hỏi"
             className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
           <select
@@ -214,10 +214,10 @@ export default function QuestionBankClientView() {
             }}
             className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           >
-            <option value="Tat ca">Tat ca</option>
-            <option value="Ly thuyet">Ly thuyet</option>
-            <option value="Bien bao">Bien bao</option>
-            <option value="Sa hinh">Sa hinh</option>
+            <option value="Tất cả">Tất cả</option>
+            <option value="Lý thuyết">Lý thuyết</option>
+            <option value="Biển báo">Biển báo</option>
+            <option value="Sa hình">Sa hình</option>
           </select>
         </div>
 
@@ -283,8 +283,8 @@ export default function QuestionBankClientView() {
 
       <ConfirmModal
         isOpen={questionToDelete !== null}
-        title="Xoa cau hoi"
-        message="Ban co chac chan muon xoa cau hoi nay khoi ngan hang cau hoi khong?"
+        title="Xóa câu hỏi"
+        message="Bạn có chắc chắn muốn xóa câu hỏi này khỏi ngân hàng câu hỏi không?"
         onCancel={() => setQuestionToDelete(null)}
         onConfirm={handleDelete}
       />

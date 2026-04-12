@@ -29,6 +29,7 @@ export default function UserManagementPage() {
         </div>
 
         <UserClientView />
+
       </div>
     </div>
   );

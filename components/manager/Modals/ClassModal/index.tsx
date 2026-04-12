@@ -108,7 +108,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
         setError(preview.warnings.join(" "));
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Khong the nhap file lich hoc.");
+      setError(err?.response?.data?.message || "Không thể nhập file lịch học.");
     } finally {
       setIsImporting(false);
       event.target.value = "";
@@ -140,7 +140,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
       await onSubmit(formData);
       onClose();
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Khong the luu lop hoc.");
+      setError(err?.response?.data?.message || err?.message || "Không thể lưu lớp học.");
     } finally {
       setIsSubmitting(false);
     }
@@ -158,9 +158,9 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
                 <Calendar className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-xl font-black leading-tight text-slate-900">{isEditMode ? "Cap nhat lop hoc" : "Them lop hoc thu cong"}</h3>
+                <h3 className="text-xl font-black leading-tight text-slate-900">{isEditMode ? "Cập nhật lớp học" : "Thêm lớp học thủ công"}</h3>
                 <p className="text-xs font-medium text-slate-500">
-                  {isEditMode ? "Cap nhat thong tin lop hoc va giang vien phu trach." : "Tao lop hoc, sau do them lich thu cong hoac nhap tu file Excel/CSV."}
+                  {isEditMode ? "Cập nhật thông tin lớp học và giảng viên phụ trách." : "Tạo lớp học, sau đó thêm lịch thủ công hoặc nhập từ file Excel/CSV."}
                 </p>
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
           <div className="flex-1 space-y-8 p-8">
             <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Ten lop hoc</label>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Tên lớp học</label>
                 <input
                   required
                   type="text"
@@ -186,7 +186,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Ky hoc</label>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Kỳ học</label>
                 <select
                   className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                   value={formData.termId}
@@ -202,7 +202,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Giang vien phu trach</label>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Giảng viên phụ trách</label>
                 <select
                   className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                   value={formData.instructorId}
@@ -217,19 +217,19 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Loai lop hoc</label>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Loại lớp học</label>
                 <select
                   className="w-full rounded-lg border-none bg-slate-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                   value={formData.classType}
                   onChange={(event) => setFormData((prev) => ({ ...prev, classType: event.target.value as ClassType }))}
                 >
-                  <option value="Theory">Ly thuyet</option>
-                  <option value="Practice">Thuc hanh</option>
+                  <option value="Theory">Lý thuyết</option>
+                  <option value="Practice">Thực hành</option>
                 </select>
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Si so toi da</label>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Sĩ số tối đa</label>
                 <input
                   required
                   type="number"
@@ -245,8 +245,8 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
               <section className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-600">Lich hoc cua lop</h4>
-                    <p className="mt-1 text-sm text-slate-500">Co the them tung dong lich hoc hoac nhap nhanh tu file Excel/CSV.</p>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-600">Lịch học của lớp</h4>
+                    <p className="mt-1 text-sm text-slate-500">Có thể thêm từng dòng lịch học hoặc nhập nhanh từ file Excel/CSV.</p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
@@ -256,12 +256,12 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100"
                     >
                       <Download className="h-4 w-4" />
-                      Tai file Excel mau
+                      Tải file Excel mẫu
                     </button>
 
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100">
                       <Upload className="h-4 w-4" />
-                      {isImporting ? "Dang nhap file..." : "Nhap file Excel"}
+                      {isImporting ? "Đang nhập file..." : "Nhập file Excel"}
                       <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={isImporting} />
                     </label>
                   </div>
@@ -280,7 +280,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Giang vien</label>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Giảng viên</label>
                           <select
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                             value={session.instructorId}
@@ -295,7 +295,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dia diem</label>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Địa điểm</label>
                           <select
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                             value={session.addressId}
@@ -310,7 +310,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bat dau</label>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bắt đầu</label>
                           <input
                             type="datetime-local"
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
@@ -320,7 +320,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ket thuc</label>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Kết thúc</label>
                           <input
                             type="datetime-local"
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
@@ -331,7 +331,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
                       </div>
 
                       <div className="mt-3 text-xs text-slate-500">
-                        {instructorMap.get(session.instructorId) ?? "Chua ro giang vien"} / {addressMap.get(session.addressId) ?? "Chua ro dia diem"}
+                        {instructorMap.get(session.instructorId) ?? "Chưa rõ giảng viên"} / {addressMap.get(session.addressId) ?? "Chưa rõ địa điểm"}
                       </div>
                     </div>
                   ))}
@@ -342,7 +342,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
                     className="group flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-4 text-slate-400 transition-all hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600"
                   >
                     <PlusCircle className="h-5 w-5 transition-transform group-hover:scale-110" />
-                    <span className="text-xs font-bold uppercase tracking-widest">Them dong lich hoc</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">Thêm dòng lịch học</span>
                   </button>
                 </div>
               </section>
@@ -353,14 +353,14 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
 
           <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 p-6">
             <button type="button" onClick={onClose} className="rounded-lg px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-500 transition-colors hover:bg-slate-200">
-              Huy bo
+              Hủy bỏ
             </button>
             <button
               type="submit"
               disabled={isSubmitting || isImporting}
               className="rounded-lg bg-blue-600 px-8 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-60"
             >
-              {isSubmitting ? "Dang luu..." : "Luu lop hoc"}
+              {isSubmitting ? "Đang lưu..." : "Lưu lớp học"}
             </button>
           </div>
         </form>

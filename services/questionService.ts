@@ -29,13 +29,16 @@ interface ImportResponse {
 }
 
 const CATEGORY_LABELS: Record<string, QuestionCategory> = {
-  "Ly thuyet": "Ly thuyet",
-  "Bien bao": "Bien bao",
-  "Sa hinh": "Sa hinh",
+  "Ly thuyet": "Lý thuyết",
+  "Bien bao": "Biển báo",
+  "Sa hinh": "Sa hình",
+  "Lý thuyết": "Lý thuyết",
+  "Biển báo": "Biển báo",
+  "Sa hình": "Sa hình",
 };
 
 function normalizeCategory(category?: string): QuestionCategory {
-  return CATEGORY_LABELS[category || "Ly thuyet"] || "Ly thuyet";
+  return CATEGORY_LABELS[category || "Ly thuyet"] || "Lý thuyết";
 }
 
 function buildAnswers(question: BackendQuestion): ExamAnswer[] {

@@ -82,7 +82,7 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
       <div className={`${styles.modalContainer} max-w-3xl flex max-h-[85vh] flex-col`}>
         <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black tracking-tight text-slate-900">Tim va them hoc vien</h3>
+            <h3 className="text-lg font-black tracking-tight text-slate-900">Tìm và thêm học viên</h3>
             <button
               onClick={handleCancel}
               className="flex h-8 w-8 items-center justify-center rounded text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-900"
@@ -100,7 +100,7 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
             <input
               type="text"
               className="w-full rounded-lg border-none bg-white py-3.5 pl-12 pr-4 text-sm shadow-sm outline-none ring-1 ring-slate-200 transition-all placeholder:text-slate-400 focus:ring-2 focus:ring-blue-600"
-              placeholder="Tim kiem theo ten, email hoac so dien thoai..."
+              placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
@@ -119,9 +119,9 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
                     onChange={handleToggleAll}
                   />
                 </th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Hoc vien</th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Lien he</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Khoa hoc lien quan</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Học viên</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Liên hệ</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Khóa học liên quan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -175,7 +175,7 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-slate-400">Chua co thong tin khoa hoc</span>
+                          <span className="text-xs text-slate-400">Chưa có thông tin khóa học</span>
                         )}
                       </div>
                     </td>
@@ -186,7 +186,7 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
               {filteredStudents.length === 0 && (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-sm text-slate-500">
-                    Khong tim thay hoc vien nao phu hop.
+                    Không tìm thấy học viên nào phù hợp.
                   </td>
                 </tr>
               )}
@@ -196,7 +196,7 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
 
         <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-white px-6 py-5">
           <span className="text-xs font-medium text-slate-500">
-            Da chon <span className="font-bold text-blue-600">{selectedIds.size}</span> hoc vien
+            Đã chọn <span className="font-bold text-blue-600">{selectedIds.size}</span> học viên
           </span>
 
           <div className="flex gap-3">
@@ -204,14 +204,14 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
               onClick={handleCancel}
               className="rounded-lg px-5 py-2.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 active:scale-95"
             >
-              Huy bo
+              Hủy bỏ
             </button>
             <button
               onClick={handleSubmit}
               disabled={selectedIds.size === 0}
               className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Them vao lop
+              Thêm vào lớp
             </button>
           </div>
         </div>

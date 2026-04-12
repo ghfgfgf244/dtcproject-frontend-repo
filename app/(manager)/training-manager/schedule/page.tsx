@@ -11,7 +11,8 @@ export default function SchedulePage() {
   const breadcrumbsItems = [
     { label: "Trang chủ", href: "/training-manager/dashboard" },
     { label: "Quản lý lớp học", href: "/training-manager/classes" },
-    { label: "ịch học" },
+
+    { label: "Lịch học" },
   ];
 
   return (

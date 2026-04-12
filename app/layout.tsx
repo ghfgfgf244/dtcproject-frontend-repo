@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Drive Safe Academy",
-  description: "He thong quan ly dao tao lai xe thong minh",
+  description: "Hệ thống quản lý đào tạo lái xe thông minh",
   icons: {
     icon: "/brand-car.svg",
     shortcut: "/brand-car.svg",

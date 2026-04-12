@@ -4,9 +4,9 @@ import MockExamClientView from "@/components/manager/MockExamManagement/MockExam
 
 export default function MockExamsPage() {
   const breadcrumbsItems = [
-    { label: "He thong", href: "/training-manager/dashboard" },
-    { label: "Quan ly thi thu", href: "/training-manager/mock-exams" },
-    { label: "Danh sach bo de" },
+    { label: "Hệ thống", href: "/training-manager/dashboard" },
+    { label: "Quản lý thi thử", href: "/training-manager/mock-exams" },
+    { label: "Danh sách bộ đề" },
   ];
 
   return (
