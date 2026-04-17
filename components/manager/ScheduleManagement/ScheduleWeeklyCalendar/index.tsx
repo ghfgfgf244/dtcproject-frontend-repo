@@ -117,7 +117,7 @@ export default function ScheduleWeeklyCalendar({ currentDate, events, onDayClick
                   </div>
                 ))}
 
-                {dayEvents.length === 0 && <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-400">Chua co lich hoc</div>}
+                {dayEvents.length === 0 && <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-400">Chưa có lịch học</div>}
               </div>
             </button>
           );

@@ -14,6 +14,68 @@
   flex-direction: column;
 }
 
+.insightBanner {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+  border: 1px solid #bfdbfe;
+}
+
+.insightContent {
+  flex: 1;
+  display: grid;
+  gap: 12px;
+}
+
+.insightEyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #2563eb;
+}
+
+.insightBanner h3 {
+  margin: 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.insightBanner p {
+  margin: 8px 0 0;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.insightSummary {
+  margin-top: 8px;
+}
+
+.insightMeta {
+  min-width: 220px;
+  display: grid;
+  gap: 8px;
+}
+
+.insightMeta span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .questionContent {
   flex: 1;
 }
@@ -132,6 +194,35 @@
   font-weight: 700;
 }
 
+.reviewStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reviewStats span {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #d7e3f0;
+  font-size: 12px;
+}
+
+.passPill {
+  border-color: #1b8f5a !important;
+  color: #1b8f5a;
+  background: #e8f8ef !important;
+}
+
+.failPill {
+  border-color: #d64545 !important;
+  color: #d64545;
+  background: #ffe8e8 !important;
+}
+
 .explanationBox {
   margin-top: 8px;
   padding: 12px;
@@ -149,6 +240,26 @@
 .explanationBox p {
   margin: 0;
   color: #1c2a44;
+  line-height: 1.6;
+}
+
+.studyTipBox {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.studyTipBox h4 {
+  margin: 0 0 6px;
+  color: #c2410c;
+  font-size: 14px;
+}
+
+.studyTipBox p {
+  margin: 0;
+  color: #7c2d12;
   line-height: 1.6;
 }
 
@@ -236,6 +347,62 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.sidebarInsight {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+}
+
+.sidebarInsight h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.sidebarInsight p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.categoryStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.categoryChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.topicList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.topicList span {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ecfccb;
+  color: #3f6212;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .timer {
@@ -388,5 +555,13 @@
 @media (max-width: 1200px) {
   .examLayout {
     grid-template-columns: 1fr;
+  }
+
+  .insightBanner {
+    flex-direction: column;
+  }
+
+  .insightMeta {
+    min-width: 0;
   }
 }

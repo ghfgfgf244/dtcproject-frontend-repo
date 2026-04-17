@@ -22,6 +22,11 @@ export interface RegistrationResponse {
   status: CourseRegistrationStatus;
   totalFee: number;
   notes?: string;
+  studentName?: string;
+  email?: string;
+  phone?: string;
+  courseName?: string;
+  licenseTypeLabel?: string;
   assignedTermId?: string;
   assignedTermName?: string;
   assignedClassId?: string;
@@ -30,6 +35,9 @@ export interface RegistrationResponse {
   suggestedTermName?: string;
   suggestedTermStartDate?: string;
   placementMessage?: string;
+  photoUrl?: string;
+  idFrontUrl?: string;
+  idBackUrl?: string;
 }
 
 export enum ExamRegistrationStatus {

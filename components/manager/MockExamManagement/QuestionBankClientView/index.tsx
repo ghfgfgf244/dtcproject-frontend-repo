@@ -64,8 +64,21 @@ export default function QuestionBankClientView() {
     });
   }, [category, questions, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredQuestions.length / ITEMS_PER_PAGE));
-  const paginatedQuestions = filteredQuestions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const rankedQuestions = useMemo(
+    () =>
+      [...filteredQuestions].sort((left, right) => {
+        const wrongDiff = (right.wrongAttemptCount ?? 0) - (left.wrongAttemptCount ?? 0);
+        if (wrongDiff !== 0) {
+          return wrongDiff;
+        }
+
+        return right.id - left.id;
+      }),
+    [filteredQuestions]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(rankedQuestions.length / ITEMS_PER_PAGE));
+  const paginatedQuestions = rankedQuestions.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleCreate = async (data: QuestionFormData) => {
     try {

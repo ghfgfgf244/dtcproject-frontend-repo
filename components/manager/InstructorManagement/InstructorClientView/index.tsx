@@ -12,6 +12,8 @@ import { Instructor, InstructorFormData } from "@/types/instructor";
 import { setAuthToken } from "@/lib/api";
 import { UserListItem, userService } from "@/services/userService";
 
+const ITEMS_PER_PAGE = 10;
+
 const mapInstructor = (user: UserListItem): Instructor => ({
   id: user.id,
   code: user.id.slice(0, 8).toUpperCase(),
@@ -29,6 +31,7 @@ export default function InstructorClientView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("Tất cả");
   const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState<InstructorFormData | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -44,7 +47,7 @@ export default function InstructorClientView() {
       setAuthToken(token);
       const data = await userService.getInstructors();
       setInstructors(data.map(mapInstructor));
-    } catch (error) {
+    } catch {
       toast.error("Không thể tải danh sách giảng viên.");
     } finally {
       setLoading(false);
@@ -52,7 +55,7 @@ export default function InstructorClientView() {
   }, [getToken, isLoaded, isSignedIn]);
 
   useEffect(() => {
-    fetchInstructors();
+    void fetchInstructors();
   }, [fetchInstructors]);
 
   const handleCreate = () => {
@@ -71,7 +74,9 @@ export default function InstructorClientView() {
           phone: data.phone,
           isActive: data.isActive,
         });
-        setInstructors((prev) => prev.map((item) => (item.id === updated.id ? mapInstructor(updated) : item)));
+        setInstructors((prev) =>
+          prev.map((item) => (item.id === updated.id ? mapInstructor(updated) : item)),
+        );
         toast.success("Đã cập nhật giảng viên.");
       } else {
         const created = await userService.createInstructor({
@@ -130,7 +135,9 @@ export default function InstructorClientView() {
       await userService.toggleInstructorStatus(instructor.id);
       setInstructors((prev) =>
         prev.map((ins) =>
-          ins.id === instructor.id ? { ...ins, status: ins.status === "Active" ? "Inactive" : "Active" } : ins,
+          ins.id === instructor.id
+            ? { ...ins, status: ins.status === "Active" ? "Inactive" : "Active" }
+            : ins,
         ),
       );
       toast.success("Đã cập nhật trạng thái giảng viên.");
@@ -142,7 +149,10 @@ export default function InstructorClientView() {
   const filteredInstructors = useMemo(() => {
     return instructors.filter((ins) => {
       const q = searchQuery.toLowerCase();
-      const matchSearch = ins.name.toLowerCase().includes(q) || ins.email.toLowerCase().includes(q) || ins.code.toLowerCase().includes(q);
+      const matchSearch =
+        ins.name.toLowerCase().includes(q) ||
+        ins.email.toLowerCase().includes(q) ||
+        ins.code.toLowerCase().includes(q);
       const matchStatus =
         statusFilter === "Tất cả" ||
         (statusFilter === "Hoạt động" && ins.status === "Active") ||
@@ -151,6 +161,17 @@ export default function InstructorClientView() {
       return matchSearch && matchStatus;
     });
   }, [instructors, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, instructors.length]);
+
+  const totalItems = filteredInstructors.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const paginatedInstructors = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredInstructors.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredInstructors, currentPage]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -163,21 +184,21 @@ export default function InstructorClientView() {
     <div className="space-y-6">
       <InstructorHeader onAddClick={handleCreate} />
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row gap-4 items-center shadow-sm">
-        <div className="relative flex-1 w-full group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+      <div className="flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row">
+        <div className="group relative w-full flex-1">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 transition-all outline-none"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-blue-600"
             placeholder="Tìm kiếm theo tên, email hoặc mã giảng viên..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
           <select
-            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-600 outline-none min-w-[160px] cursor-pointer"
+            className="min-w-[160px] cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-600"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -189,26 +210,31 @@ export default function InstructorClientView() {
           {isFiltering ? (
             <button
               onClick={clearFilters}
-              className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-bold text-sm shrink-0"
+              className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-500 transition-colors hover:bg-red-100"
               title="Xóa bộ lọc"
             >
-              <XCircle className="w-5 h-5" />
+              <XCircle className="h-5 w-5" />
             </button>
           ) : (
-            <button className="p-3 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200 flex items-center justify-center shrink-0">
-              <Filter className="w-5 h-5" />
+            <button className="flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-600 transition-colors hover:bg-slate-100">
+              <Filter className="h-5 w-5" />
             </button>
           )}
         </div>
       </div>
 
       {loading ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500 font-medium">
+        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center font-medium text-slate-500">
           Đang tải danh sách giảng viên...
         </div>
       ) : (
         <InstructorTable
-          instructors={filteredInstructors}
+          instructors={paginatedInstructors}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
           onEditClick={handleEdit}
           onToggleStatusClick={handleToggleStatus}
           onDeleteClick={handleDeleteClick}

@@ -14,7 +14,7 @@ import {
 } from "@/services/mockExamService";
 import { ExamQuestion } from "@/types/mock-exam-detail";
 
-function answerToNumber(answer?: string) {
+function answerToNumber(answer?: string | null) {
   const normalized = (answer || "").trim().toUpperCase();
   if (normalized === "A") return 1;
   if (normalized === "B") return 2;
@@ -24,15 +24,99 @@ function answerToNumber(answer?: string) {
   return Number.isNaN(numeric) ? undefined : numeric;
 }
 
+function answerToLabel(answer?: string | null) {
+  const numeric = answerToNumber(answer);
+  if (!numeric) return "Chưa chọn";
+  return `${numeric}`;
+}
+
+function normalizeCorruptedText(value?: string | null) {
+  return (value || "")
+    .replace(/ChÆ°a/g, "Chưa")
+    .replace(/LÃ½ thuyáº¿t/g, "Lý thuyết")
+    .replace(/Biá»ƒn bÃ¡o/g, "Biển báo")
+    .replace(/Sa hÃ¬nh/g, "Sa hình")
+    .replace(/KhÃ´ng/g, "Không")
+    .replace(/Äá»/g, "Đề")
+    .replace(/Äang/g, "Đang")
+    .replace(/ÄÃ£/g, "Đã")
+    .replace(/há»£p/g, "hợp")
+    .replace(/láº¡i/g, "lại")
+    .replace(/chá»n/g, "chọn")
+    .replace(/Ã´n/g, "ôn")
+    .replace(/Thá»i/g, "Thời")
+    .replace(/cÃ²n/g, "còn")
+    .trim();
+}
+
+function formatCategoryLabel(category?: string | null) {
+  const normalized = normalizeCorruptedText(category).trim().toLowerCase();
+  if (normalized === "ly thuyet" || normalized === "lý thuyết") return "Lý thuyết";
+  if (normalized === "bien bao" || normalized === "biển báo") return "Biển báo";
+  if (normalized === "sa hinh" || normalized === "sa hình") return "Sa hình";
+  return normalizeCorruptedText(category) || "Lý thuyết";
+}
+
+function formatInsightSummary(summary?: string | null) {
+  const raw = normalizeCorruptedText(summary);
+
+  if (!raw) {
+    return "Bạn hãy xem lại các câu sai, ưu tiên đúng nhóm kiến thức đang mất điểm nhiều nhất và luyện lại đề tương tự để cải thiện độ chính xác.";
+  }
+
+  if (
+    raw ===
+    "Ban dang nam bai kha tot. Hay tiep tuc giu nhip on tap de duy tri toc do lam bai va do chinh xac."
+  ) {
+    return "Bạn đang nắm bài khá tốt. Hãy tiếp tục giữ nhịp ôn tập để duy trì tốc độ làm bài và độ chính xác.";
+  }
+
+  if (
+    raw ===
+    "Ban chua co nhieu cau sai noi bat theo nhom, nhung diem so van chua dat. Nen luyen them de day toc do va do on dinh khi lam bai."
+  ) {
+    return "Bạn chưa có nhiều câu sai nổi bật theo nhóm, nhưng điểm số vẫn chưa đạt. Nên luyện thêm để tăng tốc độ và độ ổn định khi làm bài.";
+  }
+
+  if (raw.startsWith("Ban dang mat diem nhieu nhat o nhom ")) {
+    return raw
+      .replace("Ban dang mat diem nhieu nhat o nhom ", "Bạn đang mất điểm nhiều nhất ở nhóm ")
+      .replace(" Uu tien on lai: ", " Ưu tiên ôn lại: ")
+      .replace(
+        " Tap trung lam lai cac cau da sai va doc ky giai thich sau moi lan nop bai.",
+        " Tập trung làm lại các câu đã sai và đọc kỹ giải thích sau mỗi lần nộp bài.",
+      );
+  }
+
+  return raw;
+}
+
+function formatStudyTip(studyTip?: string | null) {
+  const raw = normalizeCorruptedText(studyTip);
+
+  switch (raw) {
+    case "Ban da tra loi dung cau nay. Nen ghi nho quy tac va tiep tuc giu nhip lam bai on dinh.":
+      return "Bạn đã trả lời đúng câu này. Nên ghi nhớ quy tắc và tiếp tục giữ nhịp làm bài ổn định.";
+    case "Nen hoc lai theo nhom bien bao va lien ket y nghia bien voi tinh huong giao thong cu the.":
+      return "Nên học lại theo nhóm biển báo và liên kết ý nghĩa biển với tình huống giao thông cụ thể.";
+    case "Nen quan sat huong di, diem xung dot va thu tu uu tien cua tung xe trong tinh huong sa hinh.":
+      return "Nên quan sát hướng đi, điểm xung đột và thứ tự ưu tiên của từng xe trong tình huống sa hình.";
+    case "Nen doc ky meo ghi nho, doi chieu dap an dung va lam lai nhom cau ly thuyet tuong tu.":
+      return "Nên đọc kỹ mẹo ghi nhớ, đối chiếu đáp án đúng và làm lại nhóm câu lý thuyết tương tự.";
+    default:
+      return raw;
+  }
+}
+
 export default function TheoryExamPage() {
   const searchParams = useSearchParams();
   const { getToken, isLoaded } = useAuth();
   const examRef = useRef<HTMLDivElement | null>(null);
 
   const examId = searchParams.get("examId") || "";
-  const license = searchParams.get("license") || "Chưa chọn";
+  const license = normalizeCorruptedText(searchParams.get("license")) || "Chưa chọn";
   const examNo = searchParams.get("examNo") || "-";
-  const examTitle = searchParams.get("title") || "Đề thi thử";
+  const examTitle = normalizeCorruptedText(searchParams.get("title")) || "Đề thi thử";
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -55,11 +139,8 @@ export default function TheoryExamPage() {
 
       try {
         setLoading(true);
-        const token = await getToken();
-        setAuthToken(token);
-
-        const detail = await mockExamService.getDetail(examId);
-        const mapped = mockExamService.mapExamDetail(detail);
+        const detail = await mockExamService.getPublicDetail(examId);
+        const mapped = mockExamService.mapPublicExamDetail(detail);
         setQuestions(mapped.questions);
         setDurationMinutes(mapped.info.durationMinutes);
         setPassingScore(mapped.info.passingScore);
@@ -73,96 +154,108 @@ export default function TheoryExamPage() {
       }
     };
 
-    fetchDetail();
-  }, [examId, getToken, isLoaded]);
+    void fetchDetail();
+  }, [examId, isLoaded]);
 
   const currentQuestion = useMemo(
     () => questions.find((question) => question.id === current) ?? questions[0],
     [current, questions],
   );
 
+  const currentReview = useMemo(
+    () => result?.reviewItems?.find((item) => item.questionId === currentQuestion?.id) ?? null,
+    [currentQuestion?.id, result?.reviewItems],
+  );
+
   const totalSeconds = durationMinutes * 60;
+  const progressPercent = useMemo(
+    () => (totalSeconds > 0 ? (remaining / totalSeconds) * 100 : 0),
+    [remaining, totalSeconds],
+  );
 
-  const scoreSummary = useMemo(() => {
-    if (!result) {
-      return {
-        totalCorrect: 0,
-        progressPercent: totalSeconds > 0 ? (remaining / totalSeconds) * 100 : 0,
-      };
-    }
+  const wrongCategoryEntries = useMemo(
+    () =>
+      Object.entries(result?.insight?.wrongCountsByCategory || {}).map(([category, count]) => [
+        formatCategoryLabel(category),
+        count,
+      ] as const),
+    [result?.insight?.wrongCountsByCategory],
+  );
 
-    const totalCorrect = questions.reduce((count, question) => {
-      const selectedAnswer = selected[question.id];
-      const correctAnswer = answerToNumber(result.correctAnswers?.[question.id]);
-      return selectedAnswer === correctAnswer ? count + 1 : count;
-    }, 0);
+  const formattedInsightSummary = useMemo(
+    () => formatInsightSummary(result?.insight?.summary),
+    [result?.insight?.summary],
+  );
 
-    return {
-      totalCorrect,
-      progressPercent: totalSeconds > 0 ? (remaining / totalSeconds) * 100 : 0,
-    };
-  }, [questions, remaining, result, selected, totalSeconds]);
+  const formattedSuggestedTopics = useMemo(
+    () => (result?.insight?.suggestedTopics || []).map((topic) => formatCategoryLabel(topic)),
+    [result?.insight?.suggestedTopics],
+  );
 
   const pick = (choice: number) => {
     if (finished || !currentQuestion) return;
     setSelected((prev) => ({ ...prev, [currentQuestion.id]: choice }));
   };
 
-  const submitExam = useCallback(async (forcedDurationSeconds?: number) => {
-    if (!examId || questions.length === 0 || submitting || result) {
-      setFinished(true);
-      return;
-    }
+  const submitExam = useCallback(
+    async (forcedDurationSeconds?: number) => {
+      if (!examId || questions.length === 0 || submitting || result) {
+        setFinished(true);
+        return;
+      }
 
-    setSubmitting(true);
-    try {
-      const token = await getToken();
-      setAuthToken(token);
+      setSubmitting(true);
+      try {
+        const token = await getToken();
+        setAuthToken(token);
 
-      const usedSeconds =
-        forcedDurationSeconds ?? Math.max(totalSeconds - remaining, 0);
+        const usedSeconds = forcedDurationSeconds ?? Math.max(totalSeconds - remaining, 0);
+        const answers = Object.fromEntries(
+          Object.entries(selected).map(([questionId, choice]) => [Number(questionId), String(choice)]),
+        );
 
-      const answers = Object.fromEntries(
-        Object.entries(selected).map(([questionId, choice]) => [
-          Number(questionId),
-          String(choice),
-        ]),
-      );
+        const response = token
+          ? await mockExamService.submit(examId, { durationSeconds: usedSeconds, answers })
+          : await mockExamService.submitPublic(examId, { durationSeconds: usedSeconds, answers });
 
-      const response = await mockExamService.submit(examId, {
-        durationSeconds: usedSeconds,
-        answers,
-      });
-
-      setResult(response);
-      setFinished(true);
-    } catch (error) {
-      console.error("Failed to submit sample exam:", error);
-      window.alert("Không thể nộp bài thi thử. Vui lòng thử lại.");
-    } finally {
-      setSubmitting(false);
-    }
-  }, [examId, getToken, questions.length, remaining, result, selected, submitting, totalSeconds]);
+        setResult(response);
+        setFinished(true);
+      } catch (error) {
+        console.error("Failed to submit sample exam:", error);
+        window.alert("Không thể nộp bài thi thử. Vui lòng thử lại sau.");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [examId, getToken, questions.length, remaining, result, selected, submitting, totalSeconds],
+  );
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
       if (!lockedKeys || loading || !currentQuestion) return;
 
-      if (
-        event.key === "ArrowRight" ||
-        event.key === "ArrowDown" ||
-        event.key === "ArrowLeft" ||
-        event.key === "ArrowUp"
-      ) {
+      if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(event.key)) {
         event.preventDefault();
       }
 
       if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-        setCurrent((prev) => questions[Math.min(questions.length - 1, questions.findIndex((q) => q.id === prev) + 1)]?.id ?? prev);
+        setCurrent((prev) => {
+          const nextIndex = Math.min(
+            questions.length - 1,
+            questions.findIndex((question) => question.id === prev) + 1,
+          );
+          return questions[nextIndex]?.id ?? prev;
+        });
       }
 
       if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-        setCurrent((prev) => questions[Math.max(0, questions.findIndex((q) => q.id === prev) - 1)]?.id ?? prev);
+        setCurrent((prev) => {
+          const nextIndex = Math.max(
+            0,
+            questions.findIndex((question) => question.id === prev) - 1,
+          );
+          return questions[nextIndex]?.id ?? prev;
+        });
       }
 
       if (["1", "2", "3", "4"].includes(event.key)) {
@@ -176,7 +269,7 @@ export default function TheoryExamPage() {
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [currentQuestion, loading, lockedKeys, questions, result, submitExam]);
+  }, [currentQuestion, loading, lockedKeys, questions, submitExam]);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -211,7 +304,7 @@ export default function TheoryExamPage() {
   const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
   const seconds = String(remaining % 60).padStart(2, "0");
   const timeText = `${minutes}:${seconds}`;
-  const resultLabel = result?.isPassed ? "Đậu" : "Trượt";
+  const resultLabel = result?.isPassed ? "Đậu" : "Chưa đạt";
 
   if (loading) {
     return (
@@ -249,12 +342,12 @@ export default function TheoryExamPage() {
             <div className={styles.questionContent}>
               <div className={styles.questionMeta}>
                 <span>Câu {questions.findIndex((item) => item.id === currentQuestion.id) + 1}</span>
-                <span>{currentQuestion.category}</span>
+                <span>{formatCategoryLabel(currentQuestion.category)}</span>
               </div>
 
-              <h1>{currentQuestion.content}</h1>
+              <h1>{normalizeCorruptedText(currentQuestion.content)}</h1>
 
-              {currentQuestion.imageUrl && (
+              {currentQuestion.imageUrl ? (
                 <div className={styles.questionImageWrap}>
                   <img
                     src={currentQuestion.imageUrl}
@@ -262,7 +355,7 @@ export default function TheoryExamPage() {
                     className={styles.questionImage}
                   />
                 </div>
-              )}
+              ) : null}
 
               <ol>
                 {currentQuestion.answers.map((answer, index) => {
@@ -295,7 +388,7 @@ export default function TheoryExamPage() {
                           />
                         </span>
                         <span className={styles.answerContent}>
-                          <strong>{answer.label}.</strong> {answer.content}
+                          <strong>{answer.label}.</strong> {normalizeCorruptedText(answer.content)}
                         </span>
                       </label>
                     </li>
@@ -303,46 +396,89 @@ export default function TheoryExamPage() {
                 })}
               </ol>
 
-              {finished && result && (
+              {finished && result ? (
                 <div className={styles.resultBox}>
                   <p>
                     Đáp án đúng:{" "}
-                    <strong>
-                      {result.correctAnswers?.[currentQuestion.id] || "Chưa có"}
-                    </strong>
+                    <strong>{normalizeCorruptedText(result.correctAnswers?.[currentQuestion.id]) || "Chưa có"}</strong>
                   </p>
                   <p>
                     Bạn chọn:{" "}
-                    <strong>
-                      {selected[currentQuestion.id]
-                        ? selected[currentQuestion.id]
-                        : "Chưa chọn"}
-                    </strong>
+                    <strong>{answerToLabel(String(selected[currentQuestion.id] || ""))}</strong>
                   </p>
                   <div className={styles.resultStatus}>
                     Kết quả hiện tại:{" "}
-                    <span className={result.isPassed ? styles.pass : styles.fail}>
-                      {resultLabel}
-                    </span>{" "}
-                    ({scoreSummary.totalCorrect}/{questions.length} câu đúng · {result.totalScore}/100 điểm)
+                    <span className={result.isPassed ? styles.pass : styles.fail}>{resultLabel}</span> (
+                    {result.correctCount}/{result.totalQuestions} câu đúng · {result.totalScore}/100 điểm)
                   </div>
 
-                  {currentQuestion.explanation && (
-                    <div className={styles.explanationBox}>
-                      <h4>Mẹo ghi nhớ / giải thích</h4>
-                      <p>{currentQuestion.explanation}</p>
+                  {currentReview ? (
+                    <div className={styles.reviewStats}>
+                      <span className={currentReview.isCorrect ? styles.passPill : styles.failPill}>
+                        {currentReview.isCorrect ? "Câu này đúng" : "Câu này sai"}
+                      </span>
+                      <span>Lượt làm toàn hệ thống: {currentReview.attemptCount}</span>
+                      <span>Tỷ lệ sai: {(currentReview.wrongRate * 100).toFixed(0)}%</span>
                     </div>
-                  )}
+                  ) : null}
+
+                  {currentReview?.explanation ? (
+                    <div className={styles.explanationBox}>
+                      <h4>Giải thích</h4>
+                      <p>{normalizeCorruptedText(currentReview.explanation)}</p>
+                    </div>
+                  ) : null}
+
+                  {currentReview?.studyTip ? (
+                    <div className={styles.studyTipBox}>
+                      <h4>Gợi ý ôn tập</h4>
+                      <p>{formatStudyTip(currentReview.studyTip)}</p>
+                    </div>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
             </div>
+
+            {finished && result?.insight ? (
+              <div className={styles.insightBanner}>
+                <div className={styles.insightContent}>
+                  <div>
+                    <p className={styles.insightEyebrow}>Phân tích ôn tập thông minh</p>
+                    <h3>Tổng kết sau khi nộp bài</h3>
+                    <p className={styles.insightSummary}>{formattedInsightSummary}</p>
+                  </div>
+
+                  {wrongCategoryEntries.length > 0 ? (
+                    <div className={styles.categoryStats}>
+                      {wrongCategoryEntries.map(([category, count]) => (
+                        <span key={category} className={styles.categoryChip}>
+                          {category}: {count} câu sai
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {formattedSuggestedTopics.length > 0 ? (
+                    <div className={styles.topicList}>
+                      {formattedSuggestedTopics.map((topic) => (
+                        <span key={topic}>{topic}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className={styles.insightMeta}>
+                  <span>{result.correctCount}/{result.totalQuestions} câu đúng</span>
+                  <span>{result.totalScore}/100 điểm</span>
+                  <span>{resultLabel}</span>
+                  <span>Mô hình: {normalizeCorruptedText(result.insight.model) || "Phân tích nội bộ"}</span>
+                </div>
+              </div>
+            ) : null}
 
             <div className={styles.statusBar}>
               <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${scoreSummary.progressPercent}%` }}
-                />
+                <div className={styles.progressFill} style={{ width: `${progressPercent}%` }} />
               </div>
               <div className={styles.statusInfo}>
                 <div className={styles.inlineTimer}>
@@ -351,7 +487,9 @@ export default function TheoryExamPage() {
                 <p>Đề thi: {examTitle}</p>
                 <p>Hạng GPLX: {license}</p>
                 <p>Mã đề: {examNo}</p>
-                <p>Trạng thái: <span>{finished ? "Đã nộp bài" : "Đang thi"}</span></p>
+                <p>
+                  Trạng thái: <span>{finished ? "Đã nộp bài" : "Đang thi"}</span>
+                </p>
                 <p>
                   Điều kiện đạt: <strong>{passingScore}/100 điểm</strong>
                 </p>
@@ -376,7 +514,7 @@ export default function TheoryExamPage() {
                   finished && selectedAnswer && selectedAnswer === correctAnswer
                     ? styles.questionCorrect
                     : "",
-                  finished && selectedAnswer && selectedAnswer !== correctAnswer
+                  finished && (!selectedAnswer || selectedAnswer !== correctAnswer)
                     ? styles.questionWrong
                     : "",
                 ]
@@ -393,10 +531,7 @@ export default function TheoryExamPage() {
                     <span>{index + 1}</span>
                     <div className={styles.answerDots}>
                       {[1, 2, 3, 4].map((item) => (
-                        <span
-                          key={item}
-                          className={selectedAnswer === item ? styles.filledDot : ""}
-                        />
+                        <span key={item} className={selectedAnswer === item ? styles.filledDot : ""} />
                       ))}
                     </div>
                   </button>
@@ -417,12 +552,12 @@ export default function TheoryExamPage() {
               <h4>Hướng dẫn nhanh:</h4>
               <p>Di chuyển câu bằng phím mũi tên hoặc dùng chuột.</p>
               <p>Chọn đáp án bằng chuột hoặc phím 1, 2, 3, 4.</p>
-              <p>Mẹo giải sẽ chỉ hiển thị sau khi bạn nộp bài.</p>
-              <p>Các câu đúng và sai sẽ được tô màu để bạn review.</p>
+              <p>Mẹo giải và thống kê sai chỉ hiển thị sau khi bạn nộp bài.</p>
+              <p>Các câu đúng và sai sẽ được tô màu để bạn review lại.</p>
             </div>
 
             <div className={styles.sideActions}>
-              <Link href="/courses/my-course/theory-practice">Đổi đề/hạng khác</Link>
+              <Link href="/courses/my-course/theory-practice">Đổi đề / hạng khác</Link>
             </div>
           </aside>
         </div>

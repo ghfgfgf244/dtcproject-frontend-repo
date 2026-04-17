@@ -83,7 +83,7 @@ export default function RichTextEditor({
   );
 
   if (!ReactQuill) {
-    return <p className="text-sm text-slate-400 p-4">Loading editor...</p>;
+    return <p className="p-4 text-sm text-slate-400">Đang tải trình soạn thảo...</p>;
   }
 
   return (

@@ -21,7 +21,7 @@ import { TermRecord } from "@/types/term";
 import { UserListItem } from "@/services/userService";
 import { AddressOption } from "@/services/addressService";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
 const classTypeMap: Record<ClassType, 1 | 2> = {
   Theory: 1,
@@ -174,15 +174,41 @@ export default function ClassClientView() {
     await fetchData();
   };
 
-  const handleRunAutoAssign = async (payload: { termId: string; classType: ClassType }) => {
+  const handleRunAutoAssign = async (payload: {
+    termId: string;
+    classType: ClassType;
+    preferredClassSize?: number;
+    tolerancePercent?: number;
+    preferredShift?: string;
+  }) => {
     await ensureAuthToken();
     const response = await classService.autoAssign({
       termId: payload.termId,
       classType: classTypeMap[payload.classType],
+      preferredClassSize: payload.preferredClassSize,
+      tolerancePercent: payload.tolerancePercent,
+      preferredShift: payload.preferredShift,
     });
     toast.success(response.message || "Đã xếp lớp tự động");
     setIsAutoAssignModalOpen(false);
     await fetchData();
+  };
+
+  const handlePreviewAutoAssign = async (payload: {
+    termId: string;
+    classType: ClassType;
+    preferredClassSize?: number;
+    tolerancePercent?: number;
+    preferredShift?: string;
+  }) => {
+    await ensureAuthToken();
+    return classService.previewAutoAssign({
+      termId: payload.termId,
+      classType: classTypeMap[payload.classType],
+      preferredClassSize: payload.preferredClassSize,
+      tolerancePercent: payload.tolerancePercent,
+      preferredShift: payload.preferredShift,
+    });
   };
 
   const handleConfirmDelete = async () => {
@@ -314,6 +340,7 @@ export default function ClassClientView() {
         isOpen={isAutoAssignModalOpen}
         onClose={() => setIsAutoAssignModalOpen(false)}
         terms={terms}
+        onPreview={handlePreviewAutoAssign}
         onConfirm={handleRunAutoAssign}
       />
 

@@ -1,5 +1,12 @@
 import api from "@/lib/api";
-import { ExamAnswer, ExamQuestion, QuestionBankItem, QuestionCategory, QuestionFormData } from "@/types/mock-exam-detail";
+import {
+  CommonMistakeItem,
+  ExamAnswer,
+  ExamQuestion,
+  QuestionBankItem,
+  QuestionCategory,
+  QuestionFormData,
+} from "@/types/mock-exam-detail";
 
 type BackendQuestion = {
   id: number;
@@ -13,7 +20,21 @@ type BackendQuestion = {
   correctAnswer: 1 | 2 | 3 | 4;
   imageLink?: string | null;
   explanation?: string | null;
+  attemptCount?: number;
+  wrongAttemptCount?: number;
+  wrongRate?: number;
   createdAt: string;
+};
+
+type BackendCommonMistakeQuestion = {
+  id: number;
+  category: string;
+  content: string;
+  imageLink?: string | null;
+  explanation?: string | null;
+  attemptCount?: number;
+  wrongAttemptCount?: number;
+  wrongRate?: number;
 };
 
 interface ApiResponse<T> {
@@ -69,8 +90,24 @@ export function mapQuestion(question: BackendQuestion): QuestionBankItem {
     category: normalizeCategory(question.category),
     imageUrl: question.imageLink || undefined,
     explanation: question.explanation || undefined,
+    attemptCount: Number(question.attemptCount ?? 0),
+    wrongAttemptCount: Number(question.wrongAttemptCount ?? 0),
+    wrongRate: Number(question.wrongRate ?? 0),
     answers: buildAnswers(question),
     createdAt: question.createdAt,
+  };
+}
+
+function mapCommonMistake(question: BackendCommonMistakeQuestion): CommonMistakeItem {
+  return {
+    id: question.id,
+    category: normalizeCategory(question.category),
+    content: question.content,
+    imageUrl: question.imageLink || undefined,
+    explanation: question.explanation || undefined,
+    attemptCount: Number(question.attemptCount ?? 0),
+    wrongAttemptCount: Number(question.wrongAttemptCount ?? 0),
+    wrongRate: Number(question.wrongRate ?? 0),
   };
 }
 
@@ -94,6 +131,18 @@ export const questionService = {
       params: category ? { category } : undefined,
     });
     return (response.data.data || []).map(mapQuestion);
+  },
+
+  async getCommonMistakes(params?: {
+    category?: string;
+    level?: number;
+    limit?: number;
+  }): Promise<CommonMistakeItem[]> {
+    const response = await api.get<ApiResponse<BackendCommonMistakeQuestion[]>>("/Question/common-mistakes", {
+      params,
+    });
+
+    return (response.data.data || []).map(mapCommonMistake);
   },
 
   async getById(id: number): Promise<QuestionBankItem | null> {

@@ -15,6 +15,9 @@ export interface ExamQuestion {
   category: QuestionCategory;
   imageUrl?: string;
   explanation?: string;
+  attemptCount?: number;
+  wrongAttemptCount?: number;
+  wrongRate?: number;
   answers: ExamAnswer[];
 }
 
@@ -32,6 +35,37 @@ export interface MockExamDetailInfo {
 
 export interface QuestionBankItem extends ExamQuestion {
   createdAt: string;
+}
+
+export interface CommonMistakeItem {
+  id: number;
+  category: QuestionCategory;
+  content: string;
+  imageUrl?: string;
+  explanation?: string;
+  attemptCount: number;
+  wrongAttemptCount: number;
+  wrongRate: number;
+}
+
+export interface SampleExamQuestionReview {
+  questionId: number;
+  category: QuestionCategory;
+  isCorrect: boolean;
+  selectedAnswer?: string | null;
+  correctAnswer: string;
+  explanation?: string | null;
+  studyTip: string;
+  attemptCount: number;
+  wrongAttemptCount: number;
+  wrongRate: number;
+}
+
+export interface SampleExamInsight {
+  summary: string;
+  model: string;
+  wrongCountsByCategory: Record<string, number>;
+  suggestedTopics: string[];
 }
 
 export interface QuestionFormData {

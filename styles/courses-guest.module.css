@@ -36,3 +36,165 @@
   margin: 0 auto;
   padding: 24px;
 }
+
+.catalogSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.filterCard {
+  border: 1px solid #d9e6f7;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fafdff 0%, #f3f9ff 100%);
+  box-shadow: 0 16px 40px rgba(28, 76, 140, 0.08);
+  padding: 24px;
+}
+
+.filterHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.filterHeader h2 {
+  margin: 6px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #17325c;
+}
+
+.filterEyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #2b7fff;
+}
+
+.filterSummary {
+  margin: 0;
+  color: #59708f;
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field span {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5f7394;
+}
+
+.field select {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid #d7e4f4;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 0 16px;
+  font-size: 15px;
+  color: #17325c;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field select:focus {
+  border-color: #2b7fff;
+  box-shadow: 0 0 0 4px rgba(43, 127, 255, 0.12);
+}
+
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 4px;
+  border-top: 1px solid #e6eef8;
+  padding-top: 20px;
+  color: #61728d;
+  font-size: 14px;
+}
+
+.paginationActions {
+  display: flex;
+  gap: 12px;
+}
+
+.paginationActions button {
+  min-width: 108px;
+  height: 44px;
+  border: 1px solid #d9e5f5;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #17325c;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.paginationActions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #2b7fff;
+  box-shadow: 0 8px 20px rgba(43, 127, 255, 0.12);
+}
+
+.paginationActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.emptyState {
+  border: 1px dashed #d7e4f4;
+  border-radius: 24px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #7284a1;
+  background: #f9fbff;
+}
+
+@media (max-width: 768px) {
+  .filterHeader {
+    flex-direction: column;
+  }
+
+  .filterSummary {
+    text-align: left;
+  }
+
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .paginationBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .paginationActions {
+    width: 100%;
+  }
+
+  .paginationActions button {
+    flex: 1;
+  }
+}

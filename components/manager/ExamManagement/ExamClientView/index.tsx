@@ -17,6 +17,9 @@ import ExamBatchModal from "../../Modals/ExamBatchModal";
 import ExamModal from "../../Modals/ExamModal";
 import ConfirmModal from "@/components/ui/confirm-modal";
 
+const BATCHES_PER_PAGE = 5;
+const EXAMS_PER_PAGE = 4;
+
 export default function ExamClientView() {
   const { getToken } = useAuth();
   
@@ -31,6 +34,8 @@ export default function ExamClientView() {
   const [activeTab, setActiveTab] = useState<string | number>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedLicenseType, setSelectedLicenseType] = useState<string>("all");
+  const [batchPage, setBatchPage] = useState(1);
+  const [examPage, setExamPage] = useState(1);
 
   // 3. State quản lý Modal
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -189,6 +194,16 @@ export default function ExamClientView() {
     });
   }, [batches, activeTab, searchQuery]);
 
+  useEffect(() => {
+    setBatchPage(1);
+  }, [activeTab, searchQuery, batches.length]);
+
+  const totalBatchPages = Math.max(1, Math.ceil(filteredBatches.length / BATCHES_PER_PAGE));
+  const paginatedBatches = useMemo(() => {
+    const start = (batchPage - 1) * BATCHES_PER_PAGE;
+    return filteredBatches.slice(start, start + BATCHES_PER_PAGE);
+  }, [filteredBatches, batchPage]);
+
   const currentBatchId = filteredBatches.some(b => b.id === selectedBatchId)
     ? selectedBatchId
     : filteredBatches[0]?.id || "";
@@ -197,6 +212,16 @@ export default function ExamClientView() {
   const currentExams = exams
     .filter((ex) => ex.examBatchId === currentBatchId)
     .filter((ex) => selectedLicenseType === "all" || String(ex.licenseType) === selectedLicenseType);
+
+  useEffect(() => {
+    setExamPage(1);
+  }, [currentBatchId, selectedLicenseType, exams.length]);
+
+  const totalExamPages = Math.max(1, Math.ceil(currentExams.length / EXAMS_PER_PAGE));
+  const paginatedExams = useMemo(() => {
+    const start = (examPage - 1) * EXAMS_PER_PAGE;
+    return currentExams.slice(start, start + EXAMS_PER_PAGE);
+  }, [currentExams, examPage]);
 
   if (loading) {
     return (
@@ -265,8 +290,13 @@ export default function ExamClientView() {
 
         {/* Bảng Đợt Thi */}
         <ExamBatchTable
-          batches={filteredBatches}
+          batches={paginatedBatches}
           selectedId={currentBatchId}
+          currentPage={batchPage}
+          totalPages={totalBatchPages}
+          totalItems={filteredBatches.length}
+          itemsPerPage={BATCHES_PER_PAGE}
+          onPageChange={setBatchPage}
           onSelect={setSelectedBatchId}
           onEditClick={handleEditBatch}
           onDeleteClick={handleDeleteClickBatch}
@@ -276,7 +306,12 @@ export default function ExamClientView() {
           <div className="lg:col-span-2">
             <ExamCardList
               batchName={selectedBatch?.batchName}
-              exams={currentExams}
+              exams={paginatedExams}
+              currentPage={examPage}
+              totalPages={totalExamPages}
+              totalItems={currentExams.length}
+              itemsPerPage={EXAMS_PER_PAGE}
+              onPageChange={setExamPage}
               onAddClick={handleCreateExam}
               onEditClick={handleEditExam}
               onDeleteClick={handleDeleteExamClick}

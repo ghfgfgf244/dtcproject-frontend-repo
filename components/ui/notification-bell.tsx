@@ -70,6 +70,7 @@ export default function NotificationBell({ role }: Props) {
   const router = useRouter();
   const { getToken } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -98,8 +99,13 @@ export default function NotificationBell({ role }: Props) {
   }, [getToken, role]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     fetchNotifications();
-  }, [fetchNotifications]);
+  }, [fetchNotifications, mounted]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -147,6 +153,10 @@ export default function NotificationBell({ role }: Props) {
       router.push(`${getNotificationRoute(role)}/${notification.id}`);
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>

@@ -38,6 +38,9 @@ export default function RegistrationTable({
   onReject,
   onTogglePayment,
 }: Props) {
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = totalItems === 0 ? 0 : Math.min(currentPage * itemsPerPage, totalItems);
+
   return (
     <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
@@ -99,12 +102,12 @@ export default function RegistrationTable({
                     </p>
                   </td>
                   <td className="px-6 py-4 text-center">
-                        <p className="text-sm font-black text-slate-900">
+                    <p className="text-sm font-black text-slate-900">
                       {(record.attendanceRate ?? 0).toFixed(0)}%
-                        </p>
-                        <p className="text-xs text-slate-500">
+                    </p>
+                    <p className="text-xs text-slate-500">
                       {record.presentCount ?? 0}/{record.totalSessions ?? 0} buổi
-                        </p>
+                    </p>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <button
@@ -160,7 +163,9 @@ export default function RegistrationTable({
                         </button>
                       </div>
                     ) : (
-                      <p className="text-right text-xs font-bold text-slate-500">{record.approvalStatus}</p>
+                      <p className="text-right text-xs font-bold text-slate-500">
+                        {record.approvalStatus}
+                      </p>
                     )}
                   </td>
                 </tr>
@@ -179,24 +184,26 @@ export default function RegistrationTable({
 
       <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-4">
         <p className="text-xs font-medium text-slate-500">
-          Hiển thị {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} trên tổng số {totalItems} đăng ký
+          {totalItems === 0
+            ? "Không có dữ liệu đăng ký"
+            : `Hiển thị ${startItem}-${endItem} trên tổng số ${totalItems} đăng ký`}
         </p>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onPageChange(currentPage - 1)}
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage <= 1}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <div className="rounded-full bg-blue-600 px-4 py-2 text-xs font-black text-white">
-            {totalPages === 0 ? 0 : currentPage}/{totalPages}
+            {currentPage}/{totalPages}
           </div>
           <button
             type="button"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage >= totalPages || totalPages === 0}
+            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage >= totalPages}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ChevronRight className="h-4 w-4" />

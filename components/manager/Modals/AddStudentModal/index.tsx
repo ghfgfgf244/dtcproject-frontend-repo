@@ -9,6 +9,9 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   availableStudents: StudentOption[];
+  classTypeLabel?: string;
+  courseName?: string;
+  termName?: string;
   onSubmit: (selectedStudentIds: string[]) => void;
 }
 
@@ -16,7 +19,15 @@ function getFallbackInitial(name: string) {
   return (name.trim()[0] || "U").toUpperCase();
 }
 
-export default function AddStudentModal({ isOpen, onClose, availableStudents, onSubmit }: Props) {
+export default function AddStudentModal({
+  isOpen,
+  onClose,
+  availableStudents,
+  classTypeLabel,
+  courseName,
+  termName,
+  onSubmit,
+}: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -55,12 +66,20 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
   };
 
   const handleToggleAll = () => {
-    if (filteredStudents.length > 0 && selectedIds.size === filteredStudents.length) {
-      setSelectedIds(new Set());
+    const allFilteredSelected =
+      filteredStudents.length > 0 &&
+      filteredStudents.every((student) => selectedIds.has(student.id));
+
+    if (allFilteredSelected) {
+      const next = new Set(selectedIds);
+      filteredStudents.forEach((student) => next.delete(student.id));
+      setSelectedIds(next);
       return;
     }
 
-    setSelectedIds(new Set(filteredStudents.map((student) => student.id)));
+    const next = new Set(selectedIds);
+    filteredStudents.forEach((student) => next.add(student.id));
+    setSelectedIds(next);
   };
 
   const handleSubmit = () => {
@@ -75,14 +94,28 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
     onClose();
   };
 
+  const allFilteredSelected =
+    filteredStudents.length > 0 &&
+    filteredStudents.every((student) => selectedIds.has(student.id));
+
   return (
     <div className={styles.overlay}>
       <div className={styles.backdrop} onClick={handleCancel} />
 
-      <div className={`${styles.modalContainer} max-w-3xl flex max-h-[85vh] flex-col`}>
+      <div
+        className={`${styles.modalContainer} flex max-h-[85vh] max-w-3xl flex-col`}
+      >
         <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black tracking-tight text-slate-900">Tìm và thêm học viên</h3>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-black tracking-tight text-slate-900">
+                Tìm và thêm học viên
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Chỉ hiển thị học viên chưa có lớp{" "}
+                {classTypeLabel?.toLowerCase() || "cùng loại"} trong cùng kỳ học.
+              </p>
+            </div>
             <button
               onClick={handleCancel}
               className="flex h-8 w-8 items-center justify-center rounded text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-900"
@@ -93,6 +126,14 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
         </div>
 
         <div className="shrink-0 border-b border-slate-100 bg-slate-50 p-6">
+          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-medium text-blue-800">
+            {(courseName || "Khóa học") +
+              " / " +
+              (termName || "Kỳ học") +
+              " / " +
+              (classTypeLabel || "Lớp hiện tại")}
+          </div>
+
           <div className="group relative">
             <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
               <Search className="h-5 w-5" />
@@ -100,7 +141,7 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
             <input
               type="text"
               className="w-full rounded-lg border-none bg-white py-3.5 pl-12 pr-4 text-sm shadow-sm outline-none ring-1 ring-slate-200 transition-all placeholder:text-slate-400 focus:ring-2 focus:ring-blue-600"
-              placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
+              placeholder="Tìm theo tên, email hoặc số điện thoại..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
@@ -115,13 +156,19 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
                   <input
                     type="checkbox"
                     className="h-4 w-4 cursor-pointer rounded-sm border-slate-300 text-blue-600 focus:ring-blue-600"
-                    checked={filteredStudents.length > 0 && selectedIds.size === filteredStudents.length}
+                    checked={allFilteredSelected}
                     onChange={handleToggleAll}
                   />
                 </th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Học viên</th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Liên hệ</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Khóa học liên quan</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Học viên
+                </th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Liên hệ
+                </th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Khóa học liên quan
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -132,7 +179,9 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
                   <tr
                     key={student.id}
                     onClick={() => handleToggleStudent(student.id)}
-                    className={`cursor-pointer transition-colors ${isSelected ? "bg-blue-50/50" : "hover:bg-slate-50"}`}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected ? "bg-blue-50/50" : "hover:bg-slate-50"
+                    }`}
                   >
                     <td className="py-3 pl-6 pr-2">
                       <input
@@ -156,12 +205,18 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
                             {getFallbackInitial(student.fullName)}
                           </div>
                         )}
-                        <div className="text-sm font-bold leading-tight text-slate-900">{student.fullName}</div>
+                        <div className="text-sm font-bold leading-tight text-slate-900">
+                          {student.fullName}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-[11px] font-medium text-slate-600">{student.email}</div>
-                      <div className="text-[10px] text-slate-400">{student.phone || "N/A"}</div>
+                      <div className="text-[11px] font-medium text-slate-600">
+                        {student.email}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {student.phone || "N/A"}
+                      </div>
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -175,7 +230,9 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-slate-400">Chưa có thông tin khóa học</span>
+                          <span className="text-xs text-slate-400">
+                            Chưa có thông tin khóa học
+                          </span>
                         )}
                       </div>
                     </td>
@@ -186,7 +243,11 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
               {filteredStudents.length === 0 && (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-sm text-slate-500">
-                    Không tìm thấy học viên nào phù hợp.
+                    {availableStudents.length === 0
+                      ? `Không còn học viên phù hợp để thêm vào lớp ${
+                          classTypeLabel?.toLowerCase() || ""
+                        } này.`
+                      : "Không tìm thấy học viên nào phù hợp với từ khóa tìm kiếm."}
                   </td>
                 </tr>
               )}
@@ -196,7 +257,8 @@ export default function AddStudentModal({ isOpen, onClose, availableStudents, on
 
         <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-white px-6 py-5">
           <span className="text-xs font-medium text-slate-500">
-            Đã chọn <span className="font-bold text-blue-600">{selectedIds.size}</span> học viên
+            Đã chọn <span className="font-bold text-blue-600">{selectedIds.size}</span>{" "}
+            học viên
           </span>
 
           <div className="flex gap-3">

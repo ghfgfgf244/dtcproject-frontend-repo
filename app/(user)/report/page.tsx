@@ -3,37 +3,36 @@ import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/score-report.module.css";
 
 const breakdown = [
-  { label: "Attendance", score: "12/15", value: 80 },
-
-  { label: "Theory Exam", score: "29/30", value: 96.67 },
-  { label: "Simulation Exam", score: "35/50", value: 70 },
-  { label: "Practical Exam", score: "85/100", value: 85 },
+  { label: "Điểm chuyên cần", score: "12/15", value: 80 },
+  { label: "Thi lý thuyết", score: "29/30", value: 96.67 },
+  { label: "Thi mô phỏng", score: "35/50", value: 70 },
+  { label: "Thi thực hành", score: "85/100", value: 85 },
 ];
 
 const exams = [
   {
-    name: "Theory Entrance Test",
-    date: "Oct 01, 2023",
+    name: "Bài kiểm tra đầu vào lý thuyết",
+    date: "01/10/2023",
     score: "28/30",
-    status: "Pass",
+    status: "Đạt",
   },
   {
-    name: "Basic Maneuvering Quiz",
-    date: "Oct 15, 2023",
+    name: "Kiểm tra thao tác cơ bản",
+    date: "15/10/2023",
     score: "9/10",
-    status: "Pass",
+    status: "Đạt",
   },
   {
-    name: "Midterm Simulation",
-    date: "Nov 05, 2023",
+    name: "Thi mô phỏng giữa kỳ",
+    date: "05/11/2023",
     score: "40/50",
-    status: "Pass",
+    status: "Đạt",
   },
   {
-    name: "Final Practical Mock",
-    date: "Dec 12, 2023",
+    name: "Thi thử thực hành cuối kỳ",
+    date: "12/12/2023",
     score: "85/100",
-    status: "Pass",
+    status: "Đạt",
   },
 ];
 
@@ -45,28 +44,28 @@ export default function ScoreReportPage() {
       <section className={shellStyles.content}>
         <header className={styles.header}>
           <div>
-            <h1>Score Report</h1>
-            <p>Academic performance overview for the current semester</p>
+            <h1>Báo cáo kết quả học tập</h1>
+            <p>Tổng quan kết quả học tập trong học kỳ hiện tại</p>
           </div>
           <button type="button" className={styles.termButton}>
-            Fall Semester 2023
+            Học kỳ Thu 2023
           </button>
         </header>
 
         <div className={styles.summaryGrid}>
           <div className={styles.overallCard}>
-            <div className={styles.cardTitle}>Overall Grade</div>
+            <div className={styles.cardTitle}>Điểm tổng kết</div>
             <div className={styles.overallRing}>
               <div className={styles.overallInner}>
                 <strong>8.2</strong>
-                <span>Out of 10</span>
+                <span>Trên thang 10</span>
               </div>
             </div>
-            <div className={styles.badge}>Top 15% of Class</div>
+            <div className={styles.badge}>Top 15% của lớp</div>
           </div>
 
           <div className={styles.breakdownCard}>
-            <div className={styles.cardTitle}>Performance Breakdown</div>
+            <div className={styles.cardTitle}>Chi tiết kết quả</div>
             <div className={styles.breakdownList}>
               {breakdown.map((item) => (
                 <div key={item.label} className={styles.breakdownItem}>
@@ -90,18 +89,18 @@ export default function ScoreReportPage() {
 
         <div className={styles.historyCard}>
           <div className={styles.historyHeader}>
-            <h2>Exam History</h2>
+            <h2>Lịch sử bài thi</h2>
             <button type="button" className={styles.downloadButton}>
-              Download PDF Report
+              Tải báo cáo PDF
             </button>
           </div>
 
           <div className={styles.historyTable}>
             <div className={`${styles.historyRow} ${styles.historyHead}`}>
-              <span>Exam Name</span>
-              <span>Date</span>
-              <span>Score</span>
-              <span>Status</span>
+              <span>Tên bài thi</span>
+              <span>Ngày thi</span>
+              <span>Điểm số</span>
+              <span>Trạng thái</span>
             </div>
 
             {exams.map((item) => (

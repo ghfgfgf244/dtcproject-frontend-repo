@@ -265,7 +265,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
   }, [registrations, statusFilter]);
 
   const totalItems = filteredData.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const paginatedData = filteredData.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,

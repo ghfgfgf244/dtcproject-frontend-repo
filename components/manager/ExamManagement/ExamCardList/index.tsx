@@ -7,6 +7,11 @@ import { EXAM_LEVEL_LABEL_BY_VALUE, EXAM_LEVEL_OPTIONS } from "@/constants/exam-
 interface Props {
   batchName: string | undefined;
   exams: Exam[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
   onAddClick: () => void;
   onEditClick: (exam: Exam) => void;
   onDeleteClick: (exam: Exam) => void;
@@ -24,12 +29,20 @@ const statusLabel: Record<ExamStatus, string> = {
 export default function ExamCardList({
   batchName,
   exams,
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPage,
+  onPageChange,
   onAddClick,
   onEditClick,
   onDeleteClick,
   selectedLicenseType,
   onLicenseFilterChange,
 }: Props) {
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = totalItems === 0 ? 0 : Math.min(currentPage * itemsPerPage, totalItems);
+
   return (
     <section className={styles.listWrapper}>
       <div className="p-6 border-b border-slate-200 flex justify-between items-center">
@@ -134,6 +147,37 @@ export default function ExamCardList({
             </div>
           ))
         )}
+      </div>
+
+      <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+        <p className="text-xs font-medium text-slate-500">
+          {totalItems === 0
+            ? "Không có bài thi nào"
+            : `Hiển thị ${startItem}-${endItem} trên tổng ${totalItems} bài thi`}
+        </p>
+        {totalPages > 1 ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <div className="rounded-full bg-blue-600 px-4 py-2 text-xs font-black text-white">
+              {currentPage}/{totalPages}
+            </div>
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   );

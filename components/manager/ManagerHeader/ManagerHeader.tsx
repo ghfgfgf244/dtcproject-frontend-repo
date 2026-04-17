@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useUser, UserButton } from '@clerk/nextjs';
 import NotificationBell from '@/components/ui/notification-bell';
@@ -24,6 +24,11 @@ const ROUTE_TRANSLATIONS: Record<string, string> = {
 export const ManagerHeader = () => {
   const pathname = usePathname();
   const { user, isLoaded } = useUser();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // --- BƯỚC 2: LOGIC TẠO TITLE TIẾNG VIỆT TỪ URL ---
   const segments = pathname.split('/').filter(Boolean);
@@ -109,7 +114,7 @@ export const ManagerHeader = () => {
           </div>
           
           <div className="size-10 rounded-full flex items-center justify-center bg-slate-50 border-2 border-slate-200 overflow-hidden shrink-0 shadow-sm">
-            <UserButton afterSignOutUrl="/" />
+            {mounted && isLoaded ? <UserButton afterSignOutUrl="/" /> : null}
           </div>
         </div>
       </div>

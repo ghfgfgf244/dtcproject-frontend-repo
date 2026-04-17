@@ -6,8 +6,8 @@ import { MOCK_NOTIFICATIONS, MOCK_ALERTS } from '@/constants/notification-data';
 
 export default function NotificationsPage() {
   const breadcrumbItems = [
-    { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Notifications Center' }
+    { label: 'Bảng điều khiển', href: '/admin/dashboard' },
+    { label: 'Trung tâm thông báo' }
   ];
 
   return (

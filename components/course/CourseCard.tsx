@@ -1,5 +1,3 @@
-// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\components\course\CourseCard.tsx
-
 import Link from "next/link";
 import styles from "@/styles/course-card.module.css";
 import { Course } from "@/types/course";
@@ -9,8 +7,8 @@ interface Props {
 }
 
 export default function CourseCard({ course }: Props) {
-  // Destructure for readability
   const { id, courseName, description, price, centerName, centerAddress } = course;
+  const formattedPrice = new Intl.NumberFormat("vi-VN").format(price);
 
   return (
     <div className={styles.card}>
@@ -19,9 +17,7 @@ export default function CourseCard({ course }: Props) {
       <div className={styles.body}>
         <p className={styles.description}>{description}</p>
 
-        <div className={styles.price}>
-          {price.toLocaleString()} VND
-        </div>
+        <div className={styles.price}>{formattedPrice} VND</div>
 
         <div className={styles.center}>
           {centerName && <p className="font-semibold text-slate-800">{centerName}</p>}
@@ -29,7 +25,7 @@ export default function CourseCard({ course }: Props) {
         </div>
 
         <Link href={`/courses/${id}`} className={styles.cta}>
-          Xem Chi Tiết
+          Xem chi tiết
         </Link>
       </div>
     </div>

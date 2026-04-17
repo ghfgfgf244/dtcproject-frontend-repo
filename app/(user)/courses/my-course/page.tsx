@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
@@ -11,9 +11,12 @@ import LearningMaterials from "@/components/course/LearningMaterials";
 import ExamResults from "@/components/course/ExamResults";
 import AttendanceHistory from "@/components/course/AttendanceHistory";
 import NoCourseRegistered from "@/components/course/NoCourseRegistered";
-import api, { setAuthToken } from "@/lib/api";
+import PendingCourseRegistrationNotice from "@/components/course/PendingCourseRegistrationNotice";
+import { setAuthToken } from "@/lib/api";
 import { drivingService } from "@/services/drivingService";
 import { examService } from "@/services/examService";
+import { registrationService } from "@/services/registrationService";
+import { RegistrationRecord } from "@/types/registration";
 import {
   attendanceService,
   AttendanceSession,
@@ -22,61 +25,62 @@ import {
 export default function MyCoursePage() {
   const { isLoaded, getToken } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [registration, setRegistration] = useState<any>(null);
+  const [registration, setRegistration] = useState<RegistrationRecord | null>(null);
+  const [pendingRegistration, setPendingRegistration] = useState<RegistrationRecord | null>(null);
   const [drivingMetrics, setDrivingMetrics] = useState({ total: 0, required: 800 });
   const [examResults, setExamResults] = useState<any[]>([]);
   const [attendances, setAttendances] = useState<AttendanceSession[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!isLoaded) return;
+  const fetchData = useCallback(async () => {
+    if (!isLoaded) return;
 
-      try {
-        setLoading(true);
-        const token = await getToken();
-        setAuthToken(token);
+    try {
+      setLoading(true);
+      const token = await getToken();
+      setAuthToken(token);
 
-        const regResponse = await api.get("/CourseRegistration/me");
-        const registrations = regResponse.data.data || [];
-        const activeReg = registrations.find(
-          (item: any) => item.status === 2 || item.status === "Approved",
-        );
+      const registrations = await registrationService.getMyCourseRegistrations();
+      const activeReg = registrations.find((item) => item.status === "Approved") ?? null;
+      const waitingReg = registrations.find((item) => item.status === "Pending") ?? null;
 
-        if (!activeReg) {
-          setRegistration(null);
-          setExamResults([]);
-          setAttendances([]);
-          setDrivingMetrics({ total: 0, required: 800 });
-          return;
-        }
-
-        setRegistration(activeReg);
-
-        const [distRecords, results, attendanceData] = await Promise.all([
-          drivingService.getMyDistances(),
-          examService.getMyExamResults(),
-          attendanceService.getMyAttendanceReport(),
-        ]);
-
-        const totalDist = distRecords.reduce(
-          (sum: number, rec: any) => sum + (rec.actualDistance || 0),
-          0,
-        );
-        const requiredDist =
-          distRecords.length > 0 ? distRecords[0].requiredDistance : 800;
-
-        setDrivingMetrics({ total: totalDist, required: requiredDist });
-        setExamResults(results);
-        setAttendances((attendanceData.sessions || []).slice(0, 3));
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-      } finally {
-        setLoading(false);
+      if (!activeReg) {
+        setRegistration(null);
+        setPendingRegistration(waitingReg);
+        setExamResults([]);
+        setAttendances([]);
+        setDrivingMetrics({ total: 0, required: 800 });
+        return;
       }
-    };
 
-    fetchData();
+      setRegistration(activeReg);
+      setPendingRegistration(null);
+
+      const [distRecords, results, attendanceData] = await Promise.all([
+        drivingService.getMyDistances(),
+        examService.getMyExamResults(),
+        attendanceService.getMyAttendanceReport(),
+      ]);
+
+      const totalDist = distRecords.reduce(
+        (sum: number, rec: any) => sum + (rec.actualDistance || 0),
+        0,
+      );
+      const requiredDist =
+        distRecords.length > 0 ? distRecords[0].requiredDistance : 800;
+
+      setDrivingMetrics({ total: totalDist, required: requiredDist });
+      setExamResults(results);
+      setAttendances((attendanceData.sessions || []).slice(0, 3));
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [getToken, isLoaded]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -111,7 +115,12 @@ export default function MyCoursePage() {
           </p>
         </header>
 
-        {!registration ? (
+        {!registration && pendingRegistration ? (
+          <PendingCourseRegistrationNotice
+            registration={pendingRegistration}
+            onCancelled={fetchData}
+          />
+        ) : !registration ? (
           <NoCourseRegistered />
         ) : (
           <div className={styles.grid}>

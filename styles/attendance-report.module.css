@@ -148,7 +148,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 120px 1.4fr 140px 110px 110px;
+  grid-template-columns: 120px 1.4fr 140px 110px;
   align-items: center;
   gap: 12px;
   padding: 12px 10px;
@@ -208,12 +208,6 @@
   color: #d58b1b;
 }
 
-.action {
-  color: #1ca7ec;
-  font-weight: 600;
-  text-align: right;
-}
-
 .tableFooter {
   display: flex;
   justify-content: space-between;
@@ -256,10 +250,6 @@
   .row {
     grid-template-columns: 1fr;
     gap: 6px;
-    text-align: left;
-  }
-
-  .action {
     text-align: left;
   }
 }

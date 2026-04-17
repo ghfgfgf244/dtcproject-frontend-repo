@@ -55,13 +55,49 @@ export interface UpdateClassRequest {
 export interface AutoAssignClassesRequest {
   termId: string;
   classType: 1 | 2;
+  preferredClassSize?: number;
+  tolerancePercent?: number;
+  preferredShift?: string;
 }
 
 export interface AutoAssignClassesResponse {
   message: string;
   eligibleStudents: number;
   createdClasses: number;
+  targetClassSize: number;
+  minSuggestedSize: number;
+  maxSuggestedSize: number;
+  explanation: string;
+  model: string;
+  notes: string[];
   classes: ClassDto[];
+}
+
+export interface AutoAssignPreviewClass {
+  className: string;
+  classType: string;
+  instructorId: string;
+  instructorName: string;
+  studentCount: number;
+  suggestedMaxStudents: number;
+  occupancyRate: number;
+}
+
+export interface AutoAssignExplainResponse {
+  message: string;
+  eligibleStudents: number;
+  plannedClassCount: number;
+  targetClassSize: number;
+  minSuggestedSize: number;
+  maxSuggestedSize: number;
+  explanation: string;
+  model: string;
+  notes: string[];
+  classes: AutoAssignPreviewClass[];
+}
+
+export interface TransferStudentRequest {
+  targetClassId: string;
 }
 
 interface ApiResponse<T> {
@@ -129,8 +165,17 @@ export const classService = {
     await api.delete(`/Class/${classId}/students/${studentId}`);
   },
 
+  async transferStudent(classId: string, studentId: string, data: TransferStudentRequest): Promise<void> {
+    await api.post(`/Class/${classId}/students/${studentId}/transfer`, data);
+  },
+
   async autoAssign(data: AutoAssignClassesRequest): Promise<AutoAssignClassesResponse> {
     const response = await api.post<ApiResponse<AutoAssignClassesResponse>>("/Class/auto-assign", data);
+    return response.data.data;
+  },
+
+  async previewAutoAssign(data: AutoAssignClassesRequest): Promise<AutoAssignExplainResponse> {
+    const response = await api.post<ApiResponse<AutoAssignExplainResponse>>("/Class/auto-assign/explain", data);
     return response.data.data;
   },
 };
