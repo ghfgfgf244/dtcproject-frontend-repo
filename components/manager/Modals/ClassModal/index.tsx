@@ -46,7 +46,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
         ...defaultFormData,
         termId: firstTerm,
         instructorId: firstInstructor,
-      }
+      },
     );
     setError(null);
   }, [initialData, instructors, isOpen, terms]);
@@ -93,7 +93,7 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
     setError(null);
 
     try {
-      const preview = await scheduleService.importPreview(file);
+      const preview = await scheduleService.importPreview(file, formData.instructorId || undefined);
       setFormData((prev) => ({
         ...prev,
         schedules: preview.schedules.map((schedule) => ({
@@ -117,9 +117,9 @@ export default function ClassModal({ isOpen, onClose, initialData, terms, instru
 
   const handleDownloadTemplate = () => {
     const csvContent = [
-      "InstructorId,StartTime,EndTime,AddressId",
-      "11111111-1111-1111-1111-111111111111,2026-04-10T08:00,2026-04-10T10:00,1",
-      "11111111-1111-1111-1111-111111111111,2026-04-12T13:00,2026-04-12T15:00,2",
+      "StartTime,EndTime,AddressName",
+      "2026-04-10T08:00,2026-04-10T10:00,Bãi tập sa hình Trung tâm Quận 1",
+      "2026-04-12T13:00,2026-04-12T15:00,Phòng học lý thuyết Trung tâm Quận 1",
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

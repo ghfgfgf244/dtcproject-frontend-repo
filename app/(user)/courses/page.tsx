@@ -1,12 +1,13 @@
-// d:\Project_Sample\driving-training-centers-project-v1\repo-frontend\dtcproject\app\(user)\courses\page.tsx
-
+import CourseCatalogView from "@/components/course/CourseCatalogView";
+import { centerService } from "@/services/centerService";
 import { courseService } from "@/services/courseService";
-import CourseGrid from "@/components/course/CourseGrid";
 import styles from "@/styles/courses-guest.module.css";
 
-// This is a Server Component by default in Next.js 13+ App Router
 export default async function CoursesPage() {
-  const courses = await courseService.getAvailableCourses();
+  const [courses, centers] = await Promise.all([
+    courseService.getAvailableCourses(),
+    centerService.getAll(),
+  ]);
 
   return (
     <div className={styles.page}>
@@ -21,9 +22,9 @@ export default async function CoursesPage() {
 
       <div className={styles.listWrap}>
         {courses.length > 0 ? (
-          <CourseGrid courses={courses} />
+          <CourseCatalogView courses={courses} centers={centers} />
         ) : (
-          <div className="text-center py-20 text-slate-500">
+          <div className={styles.emptyState}>
             Hiện tại chưa có khóa học nào khả dụng. Vui lòng quay lại sau!
           </div>
         )}

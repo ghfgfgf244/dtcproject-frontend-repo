@@ -3,17 +3,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import AiChatPanel from "@/components/ai/AiChatPanel";
+import CommonMistakePanel from "@/components/exam/CommonMistakePanel";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/theory-practice.module.css";
 import { setAuthToken } from "@/lib/api";
+import { aiAdvisorService } from "@/services/aiAdvisorService";
 import { mockExamService } from "@/services/mockExamService";
 import { courseService } from "@/services/courseService";
+import { questionService } from "@/services/questionService";
 import {
-  EXAM_LEVEL_LABEL_BY_VALUE,
   EXAM_LEVEL_OPTIONS,
   EXAM_LEVEL_VALUE_BY_LABEL,
 } from "@/constants/exam-levels";
+import { CommonMistakeItem } from "@/types/mock-exam-detail";
 
 type CourseLite = {
   id: string;
@@ -44,6 +48,8 @@ export default function TheoryPracticePage() {
   const [checked, setChecked] = useState(false);
   const [courses, setCourses] = useState<CourseLite[]>([]);
   const [allExams, setAllExams] = useState<SampleExamLite[]>([]);
+  const [commonMistakes, setCommonMistakes] = useState<CommonMistakeItem[]>([]);
+  const [loadingMistakes, setLoadingMistakes] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,7 +70,7 @@ export default function TheoryPracticePage() {
             id: course.id,
             courseName: course.courseName,
             licenseType: Number(course.licenseType),
-          })),
+          }))
         );
         setAllExams((examData || []).filter((exam) => exam.isActive));
       } catch (error) {
@@ -76,10 +82,37 @@ export default function TheoryPracticePage() {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, [getToken, isLoaded]);
 
-  const selectedLicenseValue = license ? EXAM_LEVEL_VALUE_BY_LABEL[license] : undefined;
+  const selectedLicenseValue = license
+    ? EXAM_LEVEL_VALUE_BY_LABEL[license]
+    : undefined;
+
+  useEffect(() => {
+    const fetchCommonMistakes = async () => {
+      if (!selectedLicenseValue) {
+        setCommonMistakes([]);
+        return;
+      }
+
+      try {
+        setLoadingMistakes(true);
+        const data = await questionService.getCommonMistakes({
+          level: selectedLicenseValue,
+          limit: 5,
+        });
+        setCommonMistakes(data);
+      } catch (error) {
+        console.error("Failed to load common mistakes:", error);
+        setCommonMistakes([]);
+      } finally {
+        setLoadingMistakes(false);
+      }
+    };
+
+    void fetchCommonMistakes();
+  }, [selectedLicenseValue]);
 
   const availableExams = useMemo(() => {
     if (!selectedLicenseValue) return [];
@@ -98,7 +131,7 @@ export default function TheoryPracticePage() {
 
   const selectedExam = useMemo(
     () => availableExams.find((exam) => exam.id === examChoice) ?? null,
-    [availableExams, examChoice],
+    [availableExams, examChoice]
   );
 
   const canCheck = Boolean(license && examChoice);
@@ -149,8 +182,8 @@ export default function TheoryPracticePage() {
         <header className={styles.pageHeader}>
           <h1>Lý thuyết lái xe</h1>
           <p>
-            Chọn hạng GPLX và đề thi để vào làm bài. Các thông tin còn lại chỉ dùng để
-            bạn làm quen với màn hình sát hạch.
+            Chọn hạng GPLX và đề thi để vào làm bài. Các thông tin còn lại chỉ
+            dùng để bạn làm quen với màn hình sát hạch.
           </p>
         </header>
 
@@ -168,7 +201,9 @@ export default function TheoryPracticePage() {
                 value={unit}
                 onChange={(event) => setUnit(event.target.value)}
               >
-                <option value="TRUNG TÂM ĐÀO TẠO DTC">TRUNG TÂM ĐÀO TẠO DTC</option>
+                <option value="TRUNG TÂM ĐÀO TẠO DTC">
+                  TRUNG TÂM ĐÀO TẠO DTC
+                </option>
                 <option value="TRUNG TÂM SÁT HẠCH LÁI XE KHU VỰC 1">
                   TRUNG TÂM SÁT HẠCH LÁI XE KHU VỰC 1
                 </option>
@@ -239,7 +274,8 @@ export default function TheoryPracticePage() {
                   </option>
                   {availableExams.map((exam) => (
                     <option key={exam.id} value={exam.id}>
-                      Đề {exam.examNo} · {exam.totalQuestions} câu · {exam.durationMinutes} phút
+                      Đề {exam.examNo} · {exam.totalQuestions} câu ·{" "}
+                      {exam.durationMinutes} phút
                     </option>
                   ))}
                 </select>
@@ -274,7 +310,7 @@ export default function TheoryPracticePage() {
                   <span>Địa chỉ:</span>
                   <strong>{info.address}</strong>
                 </div>
-                {selectedExam && (
+                {selectedExam ? (
                   <>
                     <div className={styles.infoRow}>
                       <span>Đề đã chọn:</span>
@@ -289,7 +325,7 @@ export default function TheoryPracticePage() {
                       <strong>{selectedExam.passingScore}/100</strong>
                     </div>
                   </>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -305,16 +341,61 @@ export default function TheoryPracticePage() {
             </div>
 
             <p className={styles.note}>
-              * Học viên chỉ cần chọn hạng GPLX và đề thi. Sau khi nộp bài, hệ thống mới
-              hiển thị câu đúng, câu sai và mẹo giải thích từng câu để bạn review lại.
+              * Học viên chỉ cần chọn hạng GPLX và đề thi. Sau khi nộp bài, hệ
+              thống mới hiển thị câu đúng, câu sai và mẹo giải thích từng câu để
+              bạn xem lại.
             </p>
 
-            {license && !loading && availableExams.length === 0 && (
+            {license && !loading && availableExams.length === 0 ? (
               <p className={styles.note}>
-                * Hiện chưa có đề thi thử hoạt động cho hạng {license}. Vui lòng chọn hạng
-                khác hoặc quay lại sau.
+                * Hiện chưa có đề thi thử hoạt động cho hạng {license}. Vui lòng
+                chọn hạng khác hoặc quay lại sau.
               </p>
-            )}
+            ) : null}
+
+            <div className="mt-6">
+              <CommonMistakePanel
+                items={commonMistakes}
+                title={
+                  license
+                    ? `Những câu thường sai ở hạng ${license}`
+                    : "Chọn hạng GPLX để xem nhóm câu thống kê"
+                }
+                description={
+                  loadingMistakes
+                    ? "Đang tải thống kê câu sai phổ biến..."
+                    : "Ưu tiên ôn lại các câu có tỷ lệ sai cao để cải thiện tốc độ và độ chắc kiến thức."
+                }
+              />
+            </div>
+
+            <div className="mt-6">
+              <AiChatPanel
+                title="Trợ lý ôn lý thuyết GPLX"
+                description={
+                  license
+                    ? `Đang ưu tiên nội dung cho hạng ${license}. Bạn có thể hỏi mẹo ghi nhớ, cách loại trừ đáp án sai hoặc nhờ giải thích một câu lý thuyết cụ thể.`
+                    : "Chọn hạng GPLX rồi hỏi AI về mẹo ghi nhớ, cách phân biệt biển báo hoặc cách xử lý các nhóm câu lý thuyết."
+                }
+                placeholder={
+                  license
+                    ? `Ví dụ: Giải thích giúp tôi các câu ${license} hay nhầm về biển báo và mẹo nhớ nhanh`
+                    : "Ví dụ: Cách học nhanh phần lý thuyết lái xe để ít nhầm đáp án?"
+                }
+                submitLabel="Hỏi trợ lý"
+                helperText="AI sẽ dùng nguồn tri thức nội bộ đã index từ câu hỏi, tài liệu và khóa học để trả lời ngắn gọn, dễ ôn."
+                emptyStateTitle="Hỏi ngay khi đang ôn"
+                emptyStateDescription="Bạn có thể hỏi theo hạng GPLX đang chọn hoặc hỏi trực tiếp về một câu hỏi cụ thể để nhận giải thích kèm nguồn liên quan."
+                onAsk={(prompt) =>
+                  aiAdvisorService.askTheory({
+                    question: prompt,
+                    examLevel: license || undefined,
+                    category: commonMistakes[0]?.category || undefined,
+                    includeStudyTips: true,
+                  })
+                }
+              />
+            </div>
           </div>
         </div>
       </section>

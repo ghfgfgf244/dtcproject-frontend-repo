@@ -6,18 +6,20 @@ export default function Hero() {
   return (
     <section className={styles.hero}>
       <div className={styles.overlay}>
-        <p className={styles.welcome}>WELCOME TO</p>
-        <h1 className={styles.title}>Driving school system</h1>
-        <p className={styles.subtitle}>Theory and Practice Course</p>
+        <p className={styles.welcome}>DRIVE SAFE ACADEMY</p>
+        <h1 className={styles.title}>Học lái xe đúng lộ trình, chọn trung tâm đúng nhu cầu</h1>
+        <p className={styles.subtitle}>
+          Tư vấn khóa học, kỳ học và địa điểm thi phù hợp ngay trên trang chủ.
+        </p>
 
         <div className={styles.actions}>
-          <Link href="/courses" className={styles.primaryBtn}>
-            View courses
+          <Link href="#course-advisor" className={styles.primaryBtn}>
+            Tư vấn ngay
           </Link>
 
           <SignUpButton mode="modal">
             <button className={styles.secondaryBtn}>
-              Register now
+              Đăng ký tài khoản
             </button>
           </SignUpButton>
         </div>

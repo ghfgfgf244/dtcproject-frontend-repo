@@ -13,7 +13,7 @@ import { collaboratorService, ReferralCodeResponse, Commission } from "@/service
 export default function PartnerDashboardPage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
   const { getToken } = useAuth();
-  
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tokenData, setTokenData] = useState<ReferralCodeResponse | null>(null);
   const [commissions, setCommissions] = useState<Commission[]>([]);
@@ -24,13 +24,12 @@ export default function PartnerDashboardPage() {
   useEffect(() => {
     async function fetchData() {
       if (!isClerkLoaded || !clerkUser) return;
-      
+
       try {
         setLoading(true);
         const token = await getToken();
         setAuthToken(token);
 
-        // 1. Fetch profile first to check roles
         const userProfile = await userService.getMe();
         setProfile(userProfile);
 
@@ -39,10 +38,9 @@ export default function PartnerDashboardPage() {
           return;
         }
 
-        // 2. Only fetch collaborator data if role matches
         const [myToken, myComms] = await Promise.all([
           collaboratorService.getMyReferralCode(),
-          collaboratorService.getMyCommissions()
+          collaboratorService.getMyCommissions(),
         ]);
 
         setTokenData(myToken);
@@ -62,48 +60,49 @@ export default function PartnerDashboardPage() {
       <div className={shellStyles.page}>
         <Sidebar activeKey="partner" />
         <div className={shellStyles.loadingContainer}>
-           <Loader2 className="animate-spin" size={48} />
-           <p>Đang chuẩn bị dữ liệu cộng tác viên...</p>
+          <Loader2 className="animate-spin" size={48} />
+          <p>Đang chuẩn bị dữ liệu cộng tác viên...</p>
         </div>
       </div>
     );
   }
 
-  // Unauthorized state
   if (profile && profile.roleName !== "Collaborator") {
     return (
       <div className={shellStyles.page}>
         <Sidebar activeKey="partner" />
         <div className={shellStyles.content}>
-           <div style={{ 
-             maxWidth: "600px", 
-             margin: "100px auto", 
-             textAlign: "center", 
-             padding: "40px",
-             backgroundColor: "white",
-             borderRadius: "20px",
-             boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)"
-           }}>
-             <div style={{ fontSize: "64px", marginBottom: "20px" }}>🛡️</div>
-             <h2 style={{ fontSize: "24px", color: "#1e293b", marginBottom: "16px" }}>Quyền truy cập hạn chế</h2>
-             <p style={{ color: "#64748b", marginBottom: "30px", lineHeight: "1.6" }}>
-                Trang này chỉ dành riêng cho **Cộng tác viên**. Tài khoản hiện tại của bạn ({profile.roleName}) không có quyền truy cập dữ liệu này.
-             </p>
-             <button 
-                onClick={() => window.location.href = "/"}
-                style={{ 
-                  backgroundColor: "#0ea5e9", 
-                  color: "white", 
-                  padding: "12px 30px", 
-                  borderRadius: "10px",
-                  fontWeight: "600",
-                  border: "none",
-                  cursor: "pointer"
-                }}
-             >
-                Quay lại trang chủ
-             </button>
-           </div>
+          <div
+            style={{
+              maxWidth: "600px",
+              margin: "100px auto",
+              textAlign: "center",
+              padding: "40px",
+              backgroundColor: "white",
+              borderRadius: "20px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div style={{ fontSize: "64px", marginBottom: "20px" }}>🛡️</div>
+            <h2 style={{ fontSize: "24px", color: "#1e293b", marginBottom: "16px" }}>Quyền truy cập hạn chế</h2>
+            <p style={{ color: "#64748b", marginBottom: "30px", lineHeight: "1.6" }}>
+              Trang này chỉ dành riêng cho cộng tác viên. Tài khoản hiện tại của bạn ({profile.roleName}) không có quyền truy cập dữ liệu này.
+            </p>
+            <button
+              onClick={() => (window.location.href = "/")}
+              style={{
+                backgroundColor: "#0ea5e9",
+                color: "white",
+                padding: "12px 30px",
+                borderRadius: "10px",
+                fontWeight: "600",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Quay lại trang chủ
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -120,8 +119,7 @@ export default function PartnerDashboardPage() {
   const handleGenerateCode = async () => {
     try {
       setGenerating(true);
-      
-      // Generate a random 8-character alphanumeric code
+
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
       let randomCode = "";
       for (let i = 0; i < 8; i++) {
@@ -131,8 +129,7 @@ export default function PartnerDashboardPage() {
       const token = await getToken();
       setAuthToken(token);
       await collaboratorService.generateReferralCode(randomCode);
-      
-      // Refresh token data
+
       const newToken = await collaboratorService.getMyReferralCode();
       setTokenData(newToken);
       alert(`Mã giới thiệu "${randomCode}" đã được tạo thành công!`);
@@ -144,33 +141,18 @@ export default function PartnerDashboardPage() {
     }
   };
 
-  // Aggregation Logic
-  const totalCommission = commissions.reduce((sum, c) => sum + c.amount, 0);
-  
-  // "Term" commission logic (for now using current month)
+  const totalCommission = commissions.reduce((sum, commission) => sum + commission.amount, 0);
+
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const termCommission = commissions
-    .filter(c => {
-      const d = new Date(c.createdAt);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    .filter((commission) => {
+      const date = new Date(commission.createdAt);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
     })
-    .reduce((sum, c) => sum + c.amount, 0);
+    .reduce((sum, commission) => sum + commission.amount, 0);
 
-  // Growth calc (mock delta for UI richness unless we have historical data)
   const codeUsers = tokenData?.usedCount || 0;
-
-  if (loading || !isClerkLoaded) {
-    return (
-      <div className={shellStyles.page}>
-        <Sidebar activeKey="partner" />
-        <div className={shellStyles.loadingContainer}>
-           <Loader2 className="animate-spin" size={48} />
-           <p>Đang chuẩn bị dữ liệu cộng tác viên...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={shellStyles.page}>
@@ -180,7 +162,7 @@ export default function PartnerDashboardPage() {
         <div className={styles.page}>
           <header className={styles.header}>
             <div>
-              <h1>Partner Dashboard</h1>
+              <h1>Bảng điều khiển cộng tác viên</h1>
               <p>
                 Chào buổi sáng, {profile?.fullName || clerkUser?.fullName}. Đây là hiệu suất giới thiệu của bạn.
               </p>
@@ -194,25 +176,25 @@ export default function PartnerDashboardPage() {
                     <strong>{tokenData.code}</strong>
                     <button type="button" className={styles.copyButton} onClick={handleCopy}>
                       {copied ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
-                      {copied ? "Đã copy" : "Copy"}
+                      {copied ? "Đã sao chép" : "Sao chép"}
                     </button>
                   </>
                 ) : (
-                  <button 
-                    type="button" 
-                    className={styles.generateButton} 
+                  <button
+                    type="button"
+                    className={styles.generateButton}
                     onClick={handleGenerateCode}
                     disabled={generating}
-                    style={{ 
-                      backgroundColor: "#0ea5e9", 
-                      color: "white", 
-                      padding: "8px 16px", 
+                    style={{
+                      backgroundColor: "#0ea5e9",
+                      color: "white",
+                      padding: "8px 16px",
                       borderRadius: "8px",
                       display: "flex",
                       alignItems: "center",
                       gap: "8px",
                       fontSize: "14px",
-                      fontWeight: "600"
+                      fontWeight: "600",
                     }}
                   >
                     <Plus size={16} />
@@ -252,7 +234,7 @@ export default function PartnerDashboardPage() {
               <span className={styles.metricLabel}>Hoa hồng tháng này</span>
               <div className={styles.metricValue}>{termCommission.toLocaleString()}</div>
               <span className={styles.metricSub}>VND</span>
-              <span className={styles.metricHint}>Dự kiến thanh toán vào 15 hàng tháng</span>
+              <span className={styles.metricHint}>Dự kiến thanh toán vào ngày 15 hằng tháng</span>
               <div className={styles.metricFootWarm} />
             </article>
           </section>
@@ -270,29 +252,34 @@ export default function PartnerDashboardPage() {
                 <p className={styles.emptyText}>Chưa có dữ liệu hoa hồng.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "10px" }}>
-                  {commissions.slice(0, 5).map((comm) => (
-                    <div key={comm.id} style={{ 
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center",
-                      padding: "12px",
-                      backgroundColor: "#f8fafc",
-                      borderRadius: "10px",
-                      border: "1px solid #f1f5f9"
-                    }}>
+                  {commissions.slice(0, 5).map((commission) => (
+                    <div
+                      key={commission.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px",
+                        backgroundColor: "#f8fafc",
+                        borderRadius: "10px",
+                        border: "1px solid #f1f5f9",
+                      }}
+                    >
                       <div>
-                        <div style={{ fontWeight: "600", color: "#334155" }}>+{comm.amount.toLocaleString()} VND</div>
-                        <div style={{ fontSize: "12px", color: "#94a3b8" }}>{new Date(comm.createdAt).toLocaleDateString("vi-VN")}</div>
+                        <div style={{ fontWeight: "600", color: "#334155" }}>+{commission.amount.toLocaleString()} VND</div>
+                        <div style={{ fontSize: "12px", color: "#94a3b8" }}>{new Date(commission.createdAt).toLocaleDateString("vi-VN")}</div>
                       </div>
-                      <span style={{ 
-                        fontSize: "11px", 
-                        padding: "4px 10px", 
-                        borderRadius: "20px", 
-                        backgroundColor: comm.status === "Paid" ? "#dcfce7" : "#fef9c3",
-                        color: comm.status === "Paid" ? "#166534" : "#854d0e",
-                        fontWeight: "600"
-                      }}>
-                        {comm.status === "Paid" ? "Đã trả" : "Chờ xử lý"}
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          padding: "4px 10px",
+                          borderRadius: "20px",
+                          backgroundColor: commission.status === "Paid" ? "#dcfce7" : "#fef9c3",
+                          color: commission.status === "Paid" ? "#166534" : "#854d0e",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {commission.status === "Paid" ? "Đã trả" : "Chờ xử lý"}
                       </span>
                     </div>
                   ))}

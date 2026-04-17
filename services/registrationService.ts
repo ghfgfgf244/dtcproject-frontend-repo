@@ -284,4 +284,20 @@ export const registrationService = {
       throw error;
     }
   },
+
+  async getMyCourseRegistrations(): Promise<RegistrationRecord[]> {
+    try {
+      const response = await api.get<{ data: any[] }>("/CourseRegistration/me");
+      return (response.data.data || []).map(mapToCourseRegistrationRecord);
+    } catch (error) {
+      console.error("Failed to fetch mapped my registrations:", error);
+      return [];
+    }
+  },
+
+  async cancelCourseRegistration(id: string, reason: string): Promise<void> {
+    await api.put(`/CourseRegistration/${id}/cancel`, {
+      reason,
+    });
+  },
 };

@@ -14,8 +14,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   BarChart3,
-  Save,
   MapPin,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
@@ -30,7 +30,7 @@ import CourseTable from "../CourseTable";
 import CourseModal, { CourseSubmitData } from "../../Modals/CourseModal";
 import RoadmapModal, { RoadmapSubmitData } from "../../Modals/RoadmapModal";
 
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
+const PAGE_SIZE = 10;
 
 interface DetailModalProps {
   course: Course;
@@ -41,10 +41,8 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
   const { getToken } = useAuth();
   const [roadmaps, setRoadmaps] = useState<LearningRoadmapItem[]>([]);
   const [roadmapLoading, setRoadmapLoading] = useState(true);
-
   const [roadmapModalOpen, setRoadmapModalOpen] = useState(false);
-  const [roadmapEditTarget, setRoadmapEditTarget] =
-    useState<LearningRoadmapItem | null>(null);
+  const [roadmapEditTarget, setRoadmapEditTarget] = useState<LearningRoadmapItem | null>(null);
 
   const fetchRoadmaps = useCallback(async () => {
     setRoadmapLoading(true);
@@ -58,23 +56,30 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
     } finally {
       setRoadmapLoading(false);
     }
-  }, [getToken, course.id]);
+  }, [course.id, getToken]);
 
   useEffect(() => {
-    fetchRoadmaps();
+    void fetchRoadmaps();
   }, [fetchRoadmaps]);
 
   const handleRoadmapSave = async (data: RoadmapSubmitData) => {
     try {
       const token = await getToken();
       setAuthToken(token);
+
       if (data.id) {
         await roadmapService.update(data.id, data);
         toast.success("Cập nhật chặng lộ trình thành công");
       } else {
-        await roadmapService.create({ ...data, courseId: course.id } as any);
+        await roadmapService.create({
+          courseId: course.id,
+          orderNo: data.orderNo,
+          title: data.title,
+          description: data.description,
+        });
         toast.success("Thêm chặng lộ trình thành công");
       }
+
       setRoadmapModalOpen(false);
       setRoadmapEditTarget(null);
       await fetchRoadmaps();
@@ -85,6 +90,7 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
 
   const handleDeleteRoadmap = async (id: string, title: string) => {
     if (!confirm(`Bạn có chắc muốn xóa chặng "${title}"?`)) return;
+
     try {
       const token = await getToken();
       setAuthToken(token);
@@ -98,101 +104,139 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-700 shrink-0">
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
+        <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
             <div className="flex items-center gap-3 text-white">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md">
-                <Info className="w-6 h-6" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
+                <Info className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-black text-lg leading-none uppercase tracking-tight">
+                <h3 className="text-lg font-black uppercase leading-none tracking-tight">
                   Chi tiết khóa học
                 </h3>
-                <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mt-1">
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-white/70">
                   ID: {course.id}
                 </p>
               </div>
             </div>
+
             <button
               onClick={onClose}
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+              className="rounded-lg bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
             >
-              <X className="w-6 h-6" />
+              <X className="h-6 w-6" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-8 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="flex-1 space-y-8 overflow-y-auto p-8">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-[1.3fr_0.9fr]">
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 mb-2">
-                    <GraduationCap className="w-3.5 h-3.5" /> Tên khóa học
+                  <label className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    Tên khóa học
                   </label>
-                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <span className="text-xl font-black text-slate-900 leading-tight block uppercase">
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <span className="block text-xl font-black uppercase leading-tight tracking-tight text-slate-900">
                       {course.courseName}
                     </span>
-                    <span className="inline-flex mt-3 items-center px-3 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-black uppercase tracking-wider">
+                    <span className="mt-3 inline-flex items-center rounded-lg bg-blue-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-blue-700">
                       Hạng {course.licenseType}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 mb-2">
-                    <CreditCard className="w-3.5 h-3.5" /> Học phí niêm yết
+                  <label className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Học phí niêm yết
                   </label>
-                  <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 group">
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
                     <span className="text-2xl font-black text-emerald-700">
                       {course.price.toLocaleString("vi-VN")}
-                      <span className="text-xs ml-1 font-bold text-emerald-400 tracking-tighter uppercase">
+                      <span className="ml-1 text-xs font-bold uppercase tracking-tighter text-emerald-400">
                         VND
                       </span>
                     </span>
                   </div>
                 </div>
+
+                <div>
+                  <label className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Mô tả khóa học
+                  </label>
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-sm italic leading-relaxed text-slate-600">
+                    "{course.description || "Chưa có mô tả chi tiết cho khóa học này."}"
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col justify-center text-center">
-                  <Calendar className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
-                  <span className="text-2xl font-black text-indigo-900 leading-none">
-                    {course.durationInWeeks}
-                  </span>
-                  <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mt-1">
-                    Tuần đào tạo
-                  </span>
-                </div>
-                <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 flex flex-col justify-center text-center">
-                  <Users className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                  <span className="text-2xl font-black text-purple-900 leading-none">
-                    {course.maxStudents}
-                  </span>
-                  <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mt-1">
-                    Học viên tối đa
-                  </span>
-                </div>
-                <div className="col-span-2 p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`p-2 rounded-lg ${course.isActive ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-500"}`}
-                    >
-                      {course.isActive ? (
-                        <ShieldCheck className="w-5 h-5" />
-                      ) : (
-                        <ShieldAlert className="w-5 h-5" />
-                      )}
+              <div className="space-y-4">
+                <div className="flex h-52 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  {course.thumbnailUrl ? (
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={course.courseName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <ImageIcon className="h-10 w-10" />
+                      <span className="text-xs font-semibold">Chưa có ảnh khóa học</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">
-                        Trạng thái
-                      </span>
-                      <span
-                        className={`text-sm font-black uppercase ${course.isActive ? "text-emerald-700" : "text-red-700"}`}
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col justify-center rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center">
+                    <Calendar className="mx-auto mb-2 h-6 w-6 text-indigo-600" />
+                    <span className="text-2xl font-black leading-none text-indigo-900">
+                      {course.durationInWeeks}
+                    </span>
+                    <span className="mt-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400">
+                      Tuần đào tạo
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col justify-center rounded-xl border border-purple-100 bg-purple-50 p-4 text-center">
+                    <Users className="mx-auto mb-2 h-6 w-6 text-purple-600" />
+                    <span className="text-2xl font-black leading-none text-purple-900">
+                      {course.maxStudents}
+                    </span>
+                    <span className="mt-1 text-[10px] font-bold uppercase tracking-widest text-purple-400">
+                      Học viên tối đa
+                    </span>
+                  </div>
+
+                  <div className="col-span-2 flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`rounded-lg p-2 ${
+                          course.isActive
+                            ? "bg-emerald-100 text-emerald-600"
+                            : "bg-red-100 text-red-500"
+                        }`}
                       >
-                        {course.isActive ? "Đang hoạt động" : "Tạm dừng"}
-                      </span>
+                        {course.isActive ? (
+                          <ShieldCheck className="h-5 w-5" />
+                        ) : (
+                          <ShieldAlert className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          Trạng thái
+                        </span>
+                        <span
+                          className={`text-sm font-black uppercase ${
+                            course.isActive ? "text-emerald-700" : "text-red-700"
+                          }`}
+                        >
+                          {course.isActive ? "Đang hoạt động" : "Tạm dừng"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -200,21 +244,8 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
             </div>
 
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 mb-2">
-                <BarChart3 className="w-3.5 h-3.5" /> Mô tả khóa học
-              </label>
-              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 text-sm text-slate-600 leading-relaxed font-medium italic">
-                "
-                {course.description ||
-                  "Chưa có mô tả chi tiết cho khóa học này."}
-                "
-              </div>
-            </div>
-
-            {/* ROADMAP SECTION */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <label className="text-sm font-black uppercase text-slate-800 tracking-widest flex items-center gap-1.5">
+              <div className="mb-4 flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-sm font-black uppercase tracking-widest text-slate-800">
                   Lộ trình đào tạo
                 </label>
                 <button
@@ -222,18 +253,19 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
                     setRoadmapEditTarget(null);
                     setRoadmapModalOpen(true);
                   }}
-                  className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100"
                 >
-                  <PlusCircle className="w-4 h-4" /> Thêm chặng
+                  <PlusCircle className="h-4 w-4" />
+                  Thêm chặng
                 </button>
               </div>
 
               {roadmapLoading ? (
                 <div className="flex justify-center p-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
+                  <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
                 </div>
               ) : roadmaps.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-sm font-medium border-2 border-dashed rounded-xl">
+                <div className="rounded-xl border-2 border-dashed p-8 text-center text-sm font-medium text-slate-400">
                   Chưa có lộ trình nào. Bấm "Thêm chặng" để tạo.
                 </div>
               ) : (
@@ -243,40 +275,33 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
                     .map((rm) => (
                       <div
                         key={rm.id}
-                        className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow"
+                        className="flex items-start gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                       >
-                        <div className="bg-blue-100 text-blue-700 w-10 h-10 rounded-full flex items-center justify-center font-black shrink-0">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 font-black text-blue-700">
                           {rm.orderNo}
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-black text-slate-800 text-sm">
-                              {rm.title}
-                            </h4>
+                          <div className="flex items-center justify-between gap-3">
+                            <h4 className="text-sm font-black text-slate-800">{rm.title}</h4>
                             <div className="flex gap-2">
                               <button
                                 onClick={() => {
                                   setRoadmapEditTarget(rm);
                                   setRoadmapModalOpen(true);
                                 }}
-                                className="text-xs text-blue-600 hover:underline font-bold"
+                                className="text-xs font-bold text-blue-600 hover:underline"
                               >
                                 Sửa
                               </button>
                               <button
-                                onClick={() =>
-                                  handleDeleteRoadmap(rm.id, rm.title)
-                                }
-                                className="text-xs text-red-500 hover:underline font-bold"
+                                onClick={() => handleDeleteRoadmap(rm.id, rm.title)}
+                                className="text-xs font-bold text-red-500 hover:underline"
                               >
                                 Xóa
                               </button>
                             </div>
                           </div>
-                          
-                          <p className="text-xs text-slate-600">
-                            {rm.description}
-                          </p>
+                          <p className="text-xs text-slate-600">{rm.description}</p>
                         </div>
                       </div>
                     ))}
@@ -285,10 +310,10 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
             </div>
           </div>
 
-          <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
+          <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50 px-8 py-5">
             <button
               onClick={onClose}
-              className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-600 hover:bg-slate-100 transition-colors uppercase tracking-wider shadow-sm"
+              className="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-black uppercase tracking-wider text-slate-600 shadow-sm transition-colors hover:bg-slate-100"
             >
               Đóng
             </button>
@@ -309,8 +334,6 @@ function CourseDetailModal({ course, onClose }: DetailModalProps) {
   );
 }
 
-// ─── Main View ────────────────────────────────────────────────────────────────
-
 export default function CourseClientView() {
   const { getToken } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -319,6 +342,7 @@ export default function CourseClientView() {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [centerFilter, setCenterFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [detailTarget, setDetailTarget] = useState<Course | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Course | null>(null);
@@ -329,7 +353,6 @@ export default function CourseClientView() {
       const token = await getToken();
       setAuthToken(token);
 
-      // Load both courses and centers
       const [coursesData, centersData] = await Promise.all([
         courseService.getAllAdminCourses(),
         centerService.getAll(),
@@ -345,7 +368,7 @@ export default function CourseClientView() {
   }, [getToken]);
 
   useEffect(() => {
-    fetchCourses();
+    void fetchCourses();
   }, [fetchCourses]);
 
   const handleSave = async (data: CourseSubmitData) => {
@@ -373,8 +396,9 @@ export default function CourseClientView() {
   };
 
   const handleDelete = async (course: Course) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa khóa học "${course.courseName}"?`))
+    if (!confirm(`Bạn có chắc chắn muốn xóa khóa học "${course.courseName}"?`)) {
       return;
+    }
 
     setActionLoading(true);
     try {
@@ -408,13 +432,28 @@ export default function CourseClientView() {
     return result;
   }, [courses, searchQuery, centerFilter]);
 
-  const stats = useMemo(() => {
-    return {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, centerFilter, courses.length]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)),
+    [filtered.length],
+  );
+
+  const paginatedCourses = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage]);
+
+  const stats = useMemo(
+    () => ({
       total: courses.length,
       active: courses.filter((c) => c.isActive).length,
       suspended: courses.filter((c) => !c.isActive).length,
-    };
-  }, [courses]);
+    }),
+    [courses],
+  );
 
   const handleToggleStatus = async (course: Course) => {
     setActionLoading(true);
@@ -426,9 +465,13 @@ export default function CourseClientView() {
         await courseService.deactivateCourse(course.id);
         toast.success("Đã tạm dừng khóa học.");
       } else {
-        await courseService.updateCourse(course.id, { isActive: true });
+        await courseService.updateCourse(course.id, {
+          isActive: true,
+          thumbnailUrl: course.thumbnailUrl,
+        });
         toast.success("Đã kích hoạt khóa học.");
       }
+
       await fetchCourses();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Thao tác thất bại.");
@@ -438,56 +481,56 @@ export default function CourseClientView() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500">
+      <div className="flex flex-col justify-between gap-6 px-2 md:flex-row md:items-center">
         <div className="flex items-center gap-4">
-          <div className="w-1.5 h-10 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)]" />
+          <div className="h-10 w-1.5 rounded-full bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]" />
           <div>
-            <h2 className="text-3xl font-black tracking-tighter text-slate-900 leading-none uppercase">
-              Quản lý Khóa đào tạo
+            <h2 className="text-3xl font-black uppercase leading-none tracking-tighter text-slate-900">
+              Quản lý khóa đào tạo
             </h2>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1.5 opacity-80">
-              Danh mục chương trình học & trạng thái vận hành
+            <p className="mt-1.5 text-xs font-bold uppercase tracking-widest text-slate-400 opacity-80">
+              Danh mục chương trình học và trạng thái vận hành
             </p>
           </div>
         </div>
+
         <button
           onClick={() => {
             setEditTarget(null);
             setModalOpen(true);
           }}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
+          className="flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
         >
-          <PlusCircle className="w-5 h-5" />
+          <PlusCircle className="h-5 w-5" />
           Thêm khóa học mới
         </button>
       </div>
 
       <CourseStats stats={stats} loading={loading} />
 
-      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100 overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-50/30">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="relative max-w-md w-full group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 w-5 h-5 transition-colors" />
+      <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-100">
+        <div className="flex flex-col justify-between gap-6 border-b border-slate-100 bg-slate-50/30 p-6 lg:flex-row lg:items-center">
+          <div className="flex flex-1 flex-col gap-4 sm:flex-row">
+            <div className="group relative w-full max-w-md">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-500" />
               <input
                 type="text"
                 placeholder="Tìm theo tên khóa học hoặc hạng bằng..."
-                className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all shadow-sm"
+                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-12 pr-4 text-sm font-bold shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
             <div className="relative min-w-[220px]">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <MapPin className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <select
-                className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none appearance-none text-slate-600 cursor-pointer shadow-sm"
+                className="w-full cursor-pointer appearance-none rounded-2xl border border-slate-200 bg-white py-3.5 pl-12 pr-4 text-sm font-bold text-slate-600 shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 value={centerFilter}
                 onChange={(e) => setCenterFilter(e.target.value)}
               >
-                <option value="">Tất cả Trung tâm</option>
+                <option value="">Tất cả trung tâm</option>
                 <option value="none">Chưa phân bổ</option>
                 {centers.map((center) => (
                   <option key={center.id} value={center.id}>
@@ -499,21 +542,23 @@ export default function CourseClientView() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="px-4 py-2 bg-slate-100 rounded-xl text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">
-              {filtered.length} Kết quả
+            <div className="whitespace-nowrap rounded-xl bg-slate-100 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-slate-500">
+              {filtered.length} kết quả
             </div>
           </div>
         </div>
 
         <div className="relative">
           {actionLoading && (
-            <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1px] flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             </div>
           )}
+
           <CourseTable
-            data={filtered}
+            data={paginatedCourses}
             loading={loading}
+            startIndex={(currentPage - 1) * PAGE_SIZE}
             onToggleStatus={handleToggleStatus}
             onViewDetail={(c) => setDetailTarget(c)}
             onEdit={(c) => {
@@ -523,14 +568,39 @@ export default function CourseClientView() {
             onDelete={handleDelete}
           />
         </div>
+
+        {!loading && filtered.length > PAGE_SIZE ? (
+          <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-medium text-slate-500">
+              Trang {currentPage}/{totalPages} • Hiển thị {(currentPage - 1) * PAGE_SIZE + 1}-
+              {Math.min(currentPage * PAGE_SIZE, filtered.length)} trên {filtered.length} khóa học
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Trước
+              </button>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {detailTarget && (
-        <CourseDetailModal
-          course={detailTarget}
-          onClose={() => setDetailTarget(null)}
-        />
-      )}
+      {detailTarget ? (
+        <CourseDetailModal course={detailTarget} onClose={() => setDetailTarget(null)} />
+      ) : null}
 
       <CourseModal
         isOpen={modalOpen}

@@ -7,13 +7,22 @@ import { Loader2, Eye, ToggleLeft, ToggleRight, Trash2, PenSquare } from "lucide
 interface CourseTableProps {
   data: Course[];
   loading: boolean;
+  startIndex?: number;
   onToggleStatus: (c: Course) => void;
   onViewDetail: (c: Course) => void;
   onEdit: (c: Course) => void;
   onDelete: (c: Course) => void;
 }
 
-export default function CourseTable({ data, loading, onToggleStatus, onViewDetail, onEdit, onDelete }: CourseTableProps) {
+export default function CourseTable({
+  data,
+  loading,
+  startIndex = 0,
+  onToggleStatus,
+  onViewDetail,
+  onEdit,
+  onDelete,
+}: CourseTableProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
@@ -50,7 +59,7 @@ export default function CourseTable({ data, loading, onToggleStatus, onViewDetai
           {data.map((course, idx) => (
             <tr key={course.id} className="hover:bg-blue-50/20 transition-all group">
               <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-slate-300">
-                {String(idx + 1).padStart(2, "0")}
+                {String(startIndex + idx + 1).padStart(2, "0")}
               </td>
               <td className="px-6 py-5">
                 <span className="text-sm font-black text-slate-800 group-hover:text-blue-600 transition-colors uppercase leading-tight tracking-tight">

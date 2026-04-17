@@ -40,6 +40,43 @@ export interface ScheduleImportPreview {
   warnings: string[];
 }
 
+export interface ScheduleConflictExplainRequest {
+  classId: string;
+  instructorId: string;
+  startTime: string;
+  endTime: string;
+  addressId: number;
+  ignoreScheduleId?: string;
+}
+
+export interface ScheduleConflictDetail {
+  conflictType: string;
+  scheduleId: string;
+  classId: string;
+  className: string;
+  instructorId: string;
+  instructorName: string;
+  addressId: number;
+  addressName: string;
+  startTime: string;
+  endTime: string;
+  message: string;
+}
+
+export interface ScheduleAlternativeSlot {
+  startTime: string;
+  endTime: string;
+  reason: string;
+}
+
+export interface ScheduleConflictExplainResponse {
+  hasConflict: boolean;
+  summary: string;
+  model: string;
+  conflicts: ScheduleConflictDetail[];
+  suggestions: ScheduleAlternativeSlot[];
+}
+
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -79,9 +116,12 @@ export const scheduleService = {
     return response.data.data || [];
   },
 
-  async importPreview(file: File): Promise<ScheduleImportPreview> {
+  async importPreview(file: File, defaultInstructorId?: string): Promise<ScheduleImportPreview> {
     const formData = new FormData();
     formData.append("file", file);
+    if (defaultInstructorId) {
+      formData.append("defaultInstructorId", defaultInstructorId);
+    }
 
     const response = await api.post<ApiResponse<ScheduleImportPreview>>("/Schedule/import-preview", formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -98,5 +138,10 @@ export const scheduleService = {
   async getTeachingSchedule(): Promise<ClassSchedule[]> {
     const response = await api.get<ApiResponse<ClassSchedule[]>>("/Schedule/teaching");
     return response.data.data || [];
+  },
+
+  async explainConflict(data: ScheduleConflictExplainRequest): Promise<ScheduleConflictExplainResponse> {
+    const response = await api.post<ApiResponse<ScheduleConflictExplainResponse>>("/Schedule/conflict-explain", data);
+    return response.data.data;
   },
 };

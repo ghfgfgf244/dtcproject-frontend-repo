@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
-import { Bell, CalendarX, FileText, Loader2, RefreshCw, Settings, UserPlus } from "lucide-react";
+import {
+  Bell,
+  CalendarX,
+  FileText,
+  Loader2,
+  RefreshCw,
+  Settings,
+  UserPlus,
+} from "lucide-react";
 import { setAuthToken } from "@/lib/api";
 import { notificationService } from "@/services/notificationService";
 import { NotificationRecord } from "@/types/notification";
@@ -52,7 +60,7 @@ export default function NotificationDropdown() {
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.isRead).length,
-    [notifications]
+    [notifications],
   );
 
   const fetchNotifications = useCallback(async () => {
@@ -92,7 +100,10 @@ export default function NotificationDropdown() {
     if (!open) return;
 
     function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -102,7 +113,9 @@ export default function NotificationDropdown() {
   }, [open]);
 
   const handleMarkAllAsRead = async () => {
-    const unreadIds = notifications.filter((notification) => !notification.isRead).map((notification) => notification.id);
+    const unreadIds = notifications
+      .filter((notification) => !notification.isRead)
+      .map((notification) => notification.id);
     if (unreadIds.length === 0) return;
 
     try {
@@ -111,9 +124,11 @@ export default function NotificationDropdown() {
 
       setAuthToken(token);
       await Promise.all(unreadIds.map((id) => notificationService.markAsRead(id)));
-      setNotifications((current) => current.map((notification) => ({ ...notification, isRead: true })));
+      setNotifications((current) =>
+        current.map((notification) => ({ ...notification, isRead: true })),
+      );
     } catch {
-      // silent in header
+      // Silent in header
     }
   };
 
@@ -127,10 +142,12 @@ export default function NotificationDropdown() {
       setAuthToken(token);
       await notificationService.markAsRead(notification.id);
       setNotifications((current) =>
-        current.map((item) => (item.id === notification.id ? { ...item, isRead: true } : item))
+        current.map((item) =>
+          item.id === notification.id ? { ...item, isRead: true } : item,
+        ),
       );
     } catch {
-      // silent in header
+      // Silent in header
     }
   };
 
@@ -140,7 +157,11 @@ export default function NotificationDropdown() {
 
   return (
     <div className={styles.notiWrapper} ref={wrapperRef}>
-      <button type="button" className={styles.notiBell} onClick={() => setOpen((current) => !current)}>
+      <button
+        type="button"
+        className={styles.notiBell}
+        onClick={() => setOpen((current) => !current)}
+      >
         <Bell size={18} />
         {unreadCount > 0 ? <span className={styles.notiBadge} /> : null}
       </button>
@@ -149,16 +170,20 @@ export default function NotificationDropdown() {
         <div className={`${styles.notiDropdown} ${styles.show}`}>
           <div className={styles.notiHeader}>
             <div>
-              <span>Thong bao</span>
+              <span>Thông báo</span>
               <small className={styles.notiSubtext}>
                 {unreadCount > 0
-                  ? `Ban co ${unreadCount} thong bao chua doc`
-                  : "Ban da doc het thong bao"}
+                  ? `Bạn có ${unreadCount} thông báo chưa đọc`
+                  : "Bạn đã đọc hết thông báo"}
               </small>
             </div>
             {unreadCount > 0 ? (
-              <button type="button" className={styles.notiAction} onClick={handleMarkAllAsRead}>
-                Danh dau da doc
+              <button
+                type="button"
+                className={styles.notiAction}
+                onClick={handleMarkAllAsRead}
+              >
+                Đánh dấu đã đọc
               </button>
             ) : null}
           </div>
@@ -167,7 +192,7 @@ export default function NotificationDropdown() {
             {loading ? (
               <div className={styles.notiState}>
                 <Loader2 size={16} className={styles.notiSpinner} />
-                <span>Dang tai thong bao...</span>
+                <span>Đang tải thông báo...</span>
               </div>
             ) : notifications.length > 0 ? (
               notifications.map((notification) => {
@@ -176,7 +201,9 @@ export default function NotificationDropdown() {
                   <button
                     key={notification.id}
                     type="button"
-                    className={`${styles.notiItem} ${notification.isRead ? styles.notiItemRead : ""}`}
+                    className={`${styles.notiItem} ${
+                      notification.isRead ? styles.notiItemRead : ""
+                    }`}
                     onClick={() => handleOpenNotification(notification)}
                   >
                     <div className={icon.className}>{icon.icon}</div>
@@ -185,13 +212,15 @@ export default function NotificationDropdown() {
                       <span>{notification.timeAgo}</span>
                       <small>{notification.message}</small>
                     </div>
-                    {!notification.isRead ? <span className={styles.notiUnreadDot} /> : null}
+                    {!notification.isRead ? (
+                      <span className={styles.notiUnreadDot} />
+                    ) : null}
                   </button>
                 );
               })
             ) : (
               <div className={styles.notiState}>
-                <span>Chua co thong bao nao.</span>
+                <span>Chưa có thông báo nào.</span>
               </div>
             )}
           </div>

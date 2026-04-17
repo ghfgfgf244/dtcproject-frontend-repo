@@ -7,6 +7,11 @@ import { ExamBatch } from '@/types/exam';
 interface Props {
   batches: ExamBatch[];
   selectedId: string;
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
   onSelect: (id: string) => void;
   onEditClick: (batch: ExamBatch) => void;   // Added explicit Edit handler
   onDeleteClick: (batch: ExamBatch) => void; // Added Delete handler
@@ -15,10 +20,17 @@ interface Props {
 export default function ExamBatchTable({ 
   batches, 
   selectedId, 
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPage,
+  onPageChange,
   onSelect, 
   onEditClick, 
   onDeleteClick 
 }: Props) {
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = totalItems === 0 ? 0 : Math.min(currentPage * itemsPerPage, totalItems);
   return (
     <div className={styles.tableWrapper}>
       <div className="p-6 border-b border-slate-200 flex justify-between items-center">
@@ -102,6 +114,36 @@ export default function ExamBatchTable({
             )}
           </tbody>
         </table>
+      </div>
+      <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+        <p className="text-xs font-medium text-slate-500">
+          {totalItems === 0
+            ? "Không có đợt thi nào"
+            : `Hiển thị ${startItem}-${endItem} trên tổng ${totalItems} đợt thi`}
+        </p>
+        {totalPages > 1 ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <div className="rounded-full bg-blue-600 px-4 py-2 text-xs font-black text-white">
+              {currentPage}/{totalPages}
+            </div>
+            <button
+              type="button"
+              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

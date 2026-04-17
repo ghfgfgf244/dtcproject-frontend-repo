@@ -1,6 +1,6 @@
 // src/app/(manager)/training-manager/mock-exams/[id]/_components/QuestionCard/index.tsx
 import React from "react";
-import { Trash2, CheckCircle2, Edit3 } from "lucide-react";
+import { Trash2, CheckCircle2, Edit3, TriangleAlert } from "lucide-react";
 import { ExamQuestion } from "@/types/mock-exam-detail";
 
 interface Props {
@@ -26,7 +26,12 @@ export default function QuestionCard({ question, onEdit, onDelete }: Props) {
                 <p className="text-sm font-semibold text-slate-800 leading-relaxed">
                   {question.content}
                 </p>
-                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                    <TriangleAlert className="h-3.5 w-3.5" />
+                    Sai {question.wrongAttemptCount ?? 0} lần
+                  </div>
+                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => onEdit(question.id)}
                     className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white shadow-sm border border-transparent hover:border-blue-200 rounded-md transition-all bg-transparent"
@@ -41,6 +46,7 @@ export default function QuestionCard({ question, onEdit, onDelete }: Props) {
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  </div>
                 </div>
               </div>
 

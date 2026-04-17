@@ -1,39 +1,42 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/schedule.module.css";
 import { setAuthToken } from "@/lib/api";
-import api from "@/lib/api";
 import { scheduleService, ClassSchedule } from "@/services/scheduleService";
 import ScheduleSlot from "@/components/schedule/ScheduleSlot";
 import NoCourseRegistered from "@/components/course/NoCourseRegistered";
+import PendingCourseRegistrationNotice from "@/components/course/PendingCourseRegistrationNotice";
+import { registrationService } from "@/services/registrationService";
+import { RegistrationRecord } from "@/types/registration";
 
 const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 function startOfWeek(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const value = new Date(date);
+  const day = value.getDay();
+  value.setDate(value.getDate() - day);
+  value.setHours(0, 0, 0, 0);
+  return value;
 }
 
 function addDays(date: Date, offset: number) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + offset);
-  return d;
+  const value = new Date(date);
+  value.setDate(value.getDate() + offset);
+  return value;
 }
 
 function formatRange(start: Date) {
   const end = addDays(start, 6);
-  const opts: Intl.DateTimeFormatOptions = { month: "long", day: "numeric" };
-  const startText = start.toLocaleDateString("vi-VN", opts);
-  const endText = end.toLocaleDateString("vi-VN", opts);
-  return `${startText} - ${endText}`;
+  const options: Intl.DateTimeFormatOptions = { month: "long", day: "numeric" };
+  return `${start.toLocaleDateString("vi-VN", options)} - ${end.toLocaleDateString(
+    "vi-VN",
+    options,
+  )}`;
 }
 
 export default function SchedulePage() {
@@ -42,73 +45,82 @@ export default function SchedulePage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [allSchedules, setAllSchedules] = useState<ClassSchedule[]>([]);
-  const [registration, setRegistration] = useState<any>(null);
+  const [registration, setRegistration] = useState<RegistrationRecord | null>(null);
+  const [pendingRegistration, setPendingRegistration] =
+    useState<RegistrationRecord | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!isLoaded) return;
+
+    try {
+      setLoading(true);
+      const token = await getToken();
+      setAuthToken(token);
+
+      const registrations = await registrationService.getMyCourseRegistrations();
+      const activeReg = registrations.find((item) => item.status === "Approved") ?? null;
+      const waitingReg = registrations.find((item) => item.status === "Pending") ?? null;
+
+      if (activeReg) {
+        setRegistration(activeReg);
+        setPendingRegistration(null);
+        const data = await scheduleService.getMySchedules();
+        setAllSchedules(data);
+      } else {
+        setRegistration(null);
+        setPendingRegistration(waitingReg);
+        setAllSchedules([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch schedule data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, isLoaded]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!isLoaded) return;
-      try {
-        setLoading(true);
-        const token = await getToken();
-        setAuthToken(token);
-
-        // 1. Check registration first
-        const regResponse = await api.get("/CourseRegistration/me");
-        const registrations = regResponse.data.data || [];
-        const activeReg = registrations.find((r: any) => r.status === 2 || r.status === "Approved");
-        
-        if (activeReg) {
-          setRegistration(activeReg);
-          // 2. Only fetch schedules if user has an active course
-          const data = await scheduleService.getMySchedules();
-          setAllSchedules(data);
-        } else {
-          setRegistration(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch schedule data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, [isLoaded]);
+  }, [fetchData]);
 
-  const weekDays = useMemo(() => {
-    return Array.from({ length: 7 }, (_, index) => {
-      const date = addDays(weekStart, index);
-      return {
-        day: dayLabels[date.getDay()],
-        date,
-        isToday: new Date().toDateString() === date.toDateString(),
-        isSelected: selectedDate.toDateString() === date.toDateString(),
-      };
-    });
-  }, [weekStart, selectedDate]);
+  const weekDays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const date = addDays(weekStart, index);
+        return {
+          day: dayLabels[date.getDay()],
+          date,
+          isToday: new Date().toDateString() === date.toDateString(),
+          isSelected: selectedDate.toDateString() === date.toDateString(),
+        };
+      }),
+    [selectedDate, weekStart],
+  );
 
-  const dailySchedules = useMemo(() => {
-    return allSchedules.filter(s => {
-      const sDate = new Date(s.startTime).toDateString();
-      return sDate === selectedDate.toDateString();
-    });
-  }, [allSchedules, selectedDate]);
+  const dailySchedules = useMemo(
+    () =>
+      allSchedules.filter(
+        (schedule) =>
+          new Date(schedule.startTime).toDateString() === selectedDate.toDateString(),
+      ),
+    [allSchedules, selectedDate],
+  );
 
   const groupedSessions = useMemo(() => {
     const sessions = {
       morning: [] as ClassSchedule[],
       afternoon: [] as ClassSchedule[],
-      evening: [] as ClassSchedule[]
+      evening: [] as ClassSchedule[],
     };
 
-    dailySchedules.forEach(s => {
-      const startHour = new Date(s.startTime).getHours();
-      
+    dailySchedules.forEach((schedule) => {
+      const startHour = new Date(schedule.startTime).getHours();
+
       if (startHour >= 8 && startHour < 12) {
-        sessions.morning.push(s);
+        sessions.morning.push(schedule);
       } else if (startHour >= 13 && startHour < 17) {
-        sessions.afternoon.push(s);
+        sessions.afternoon.push(schedule);
       } else if (startHour >= 18 && startHour < 22) {
-        sessions.evening.push(s);
+        sessions.evening.push(schedule);
       }
     });
 
@@ -116,9 +128,9 @@ export default function SchedulePage() {
   }, [dailySchedules]);
 
   const handleWeekChange = (offset: number) => {
-    const newStart = addDays(weekStart, offset);
-    setWeekStart(newStart);
-    setSelectedDate(newStart); 
+    const nextStart = addDays(weekStart, offset);
+    setWeekStart(nextStart);
+    setSelectedDate(nextStart);
   };
 
   const handleToday = () => {
@@ -132,7 +144,7 @@ export default function SchedulePage() {
       <div className={shellStyles.page}>
         <Sidebar activeKey="schedule" />
         <section className={shellStyles.content}>
-          <div style={{ textAlign: 'center', padding: '4rem', color: '#6c7a96' }}>
+          <div style={{ textAlign: "center", padding: "4rem", color: "#6c7a96" }}>
             Đang tải dữ liệu...
           </div>
         </section>
@@ -156,19 +168,32 @@ export default function SchedulePage() {
             <button type="button" className={styles.todayButton} onClick={handleToday}>
               Hôm nay
             </button>
-            <button type="button" className={styles.addButton} onClick={() => handleWeekChange(-7)}>
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={() => handleWeekChange(-7)}
+            >
               <ChevronLeft />
             </button>
-            <button type="button" className={styles.addButton} onClick={() => handleWeekChange(7)}>
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={() => handleWeekChange(7)}
+            >
               <ChevronRight />
             </button>
           </div>
         </header>
 
-        {!registration ? (
-          <NoCourseRegistered 
+        {!registration && pendingRegistration ? (
+          <PendingCourseRegistrationNotice
+            registration={pendingRegistration}
+            onCancelled={fetchData}
+          />
+        ) : !registration ? (
+          <NoCourseRegistered
             title="Bạn chưa tham gia khóa học nào"
-            description="Lịch học sẽ được hiển thị sau khi bạn đăng ký và tham gia vào một khóa đào tạo chính thức."
+            description="Lịch học sẽ hiển thị sau khi bạn được duyệt và tham gia một khóa học chính thức."
           />
         ) : (
           <>
@@ -179,7 +204,7 @@ export default function SchedulePage() {
                   <div
                     key={item.date.toISOString()}
                     className={`${styles.weekDay} ${item.isSelected ? styles.weekDayActive : ""}`}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: "pointer" }}
                     onClick={() => setSelectedDate(item.date)}
                   >
                     <span>{item.day}</span>
@@ -193,14 +218,14 @@ export default function SchedulePage() {
               <div className={styles.sectionTitle}>Buổi sáng (08:00 - 12:00)</div>
               <div className={styles.cardGrid}>
                 {groupedSessions.morning.length > 0 ? (
-                  groupedSessions.morning.map((s) => (
+                  groupedSessions.morning.map((schedule) => (
                     <ScheduleSlot
-                      key={s.id}
-                      title={s.className}
-                      startTime={s.startTime}
-                      endTime={s.endTime}
-                      teacher={s.instructorName}
-                      location={s.location}
+                      key={schedule.id}
+                      title={schedule.className}
+                      startTime={schedule.startTime}
+                      endTime={schedule.endTime}
+                      teacher={schedule.instructorName}
+                      location={schedule.location}
                     />
                   ))
                 ) : (
@@ -213,14 +238,14 @@ export default function SchedulePage() {
               <div className={styles.sectionTitle}>Buổi chiều (13:00 - 17:00)</div>
               <div className={styles.cardGrid}>
                 {groupedSessions.afternoon.length > 0 ? (
-                  groupedSessions.afternoon.map((s) => (
+                  groupedSessions.afternoon.map((schedule) => (
                     <ScheduleSlot
-                      key={s.id}
-                      title={s.className}
-                      startTime={s.startTime}
-                      endTime={s.endTime}
-                      teacher={s.instructorName}
-                      location={s.location}
+                      key={schedule.id}
+                      title={schedule.className}
+                      startTime={schedule.startTime}
+                      endTime={schedule.endTime}
+                      teacher={schedule.instructorName}
+                      location={schedule.location}
                     />
                   ))
                 ) : (
@@ -233,14 +258,14 @@ export default function SchedulePage() {
               <div className={styles.sectionTitle}>Buổi tối (18:00 - 21:00)</div>
               <div className={styles.cardGrid}>
                 {groupedSessions.evening.length > 0 ? (
-                  groupedSessions.evening.map((s) => (
+                  groupedSessions.evening.map((schedule) => (
                     <ScheduleSlot
-                      key={s.id}
-                      title={s.className}
-                      startTime={s.startTime}
-                      endTime={s.endTime}
-                      teacher={s.instructorName}
-                      location={s.location}
+                      key={schedule.id}
+                      title={schedule.className}
+                      startTime={schedule.startTime}
+                      endTime={schedule.endTime}
+                      teacher={schedule.instructorName}
+                      location={schedule.location}
                     />
                   ))
                 ) : (

@@ -16,24 +16,27 @@ export default function ContactPage() {
             <section className={styles.heroSection}>
               <div className={styles.heroCopy}>
                 <h1>
-                  Get in touch with our <br />
-                  <span>Drive Safe Academy Experts.</span>
+                  Liên hệ với đội ngũ <br />
+                  <span>chuyên viên Drive Safe Academy.</span>
                 </h1>
                 <p>
-                  Whether you're looking to start your journey or need help with your
-                  current curriculum, our team is here to guide you through every mile.
+                  Dù bạn đang muốn bắt đầu hành trình học lái hay cần hỗ trợ cho
+                  khóa học hiện tại, đội ngũ của chúng tôi luôn sẵn sàng đồng
+                  hành cùng bạn trên từng chặng đường.
                 </p>
 
                 <div className={styles.contactCard}>
-                  <div className={styles.cardTitle}>Training Center Contact</div>
+                  <div className={styles.cardTitle}>Thông tin trung tâm đào tạo</div>
                   <div className={styles.contactGrid}>
                     <div className={styles.contactItem}>
                       <div className={styles.iconChip}>
-                        <span className="material-symbols-outlined">location_on</span>
+                        <span className="material-symbols-outlined">
+                          location_on
+                        </span>
                       </div>
                       <div>
-                        <span>Address</span>
-                        <strong>123 Nguyen Van Linh, Da Nang</strong>
+                        <span>Địa chỉ</span>
+                        <strong>123 Nguyễn Văn Linh, Đà Nẵng</strong>
                       </div>
                     </div>
                     <div className={styles.contactItem}>
@@ -41,7 +44,7 @@ export default function ContactPage() {
                         <span className="material-symbols-outlined">call</span>
                       </div>
                       <div>
-                        <span>Phone</span>
+                        <span>Điện thoại</span>
                         <strong>0901 234 567</strong>
                       </div>
                     </div>
@@ -56,11 +59,13 @@ export default function ContactPage() {
                     </div>
                     <div className={styles.contactItem}>
                       <div className={styles.iconChip}>
-                        <span className="material-symbols-outlined">schedule</span>
+                        <span className="material-symbols-outlined">
+                          schedule
+                        </span>
                       </div>
                       <div>
-                        <span>Working hours</span>
-                        <strong>8:00 - 17:30 Mon-Sat</strong>
+                        <span>Giờ làm việc</span>
+                        <strong>8:00 - 17:30 từ Thứ hai đến Thứ bảy</strong>
                       </div>
                     </div>
                   </div>
@@ -69,46 +74,45 @@ export default function ContactPage() {
 
               <div className={styles.mapCard}>
                 <iframe
-                  title="Drive Safe Academy location"
+                  title="Vị trí Drive Safe Academy"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3835.856069316429!2d108.25831637486753!3d15.968891042116757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3142116949840599%3A0x365b35580f52e8d5!2zxJDhuqFpIGjhu41jIEZQVCDEkMOgIE7hurVuZw!5e0!3m2!1svi!2s!4v1774247108504!5m2!1svi!2s"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 />
                 <div className={styles.mapBadge}>
-                  <span>Da Nang Central District</span>
-                  <strong>DA NANG</strong>
+                  <span>Khu vực trung tâm Đà Nẵng</span>
+                  <strong>ĐÀ NẴNG</strong>
                 </div>
               </div>
             </section>
 
             <section className={styles.contactPurpose}>
-              <div className={styles.sectionLabel}>Contact by purpose</div>
+              <div className={styles.sectionLabel}>Liên hệ theo nhu cầu</div>
               <div className={styles.purposeGrid}>
                 <article className={styles.purposeCard}>
-                  <div className={styles.purposeTag}>New Enquiries</div>
-                  <h3>Support for Course Registration</h3>
+                  <div className={styles.purposeTag}>Tư vấn mới</div>
+                  <h3>Hỗ trợ đăng ký khóa học</h3>
                   <p>
-                    Dedicated support for guests and prospective students. Ask about
-                    curriculum details, eligibility requirements, and current tuition
-                    fee structures.
+                    Dành cho khách quan tâm và học viên tiềm năng. Bạn có thể
+                    hỏi về chương trình học, điều kiện đăng ký và mức học phí
+                    hiện tại.
                   </p>
                   <div className={styles.pillRow}>
-                    <span>Tuition Info</span>
-                    <span>Course Roadmap</span>
+                    <span>Thông tin học phí</span>
+                    <span>Lộ trình khóa học</span>
                   </div>
                 </article>
 
                 <article className={styles.purposeCard}>
-                  <div className={styles.purposeTag}>Student Services</div>
-                  <h3>Support for Classes</h3>
+                  <div className={styles.purposeTag}>Dịch vụ học viên</div>
+                  <h3>Hỗ trợ lớp học</h3>
                   <p>
-                    Priority assistance for registered students. Manage your training
-                    schedule, report room issues, or request class changes with our
-                    academic office.
+                    Ưu tiên cho học viên đã đăng ký. Bạn có thể cần hỗ trợ về
+                    lịch học, phản ánh phòng học hoặc gửi yêu cầu điều chỉnh lớp.
                   </p>
                   <div className={styles.pillRow}>
-                    <span>Schedule Swap</span>
-                    <span>Facility Support</span>
+                    <span>Đổi lịch học</span>
+                    <span>Hỗ trợ cơ sở vật chất</span>
                   </div>
                 </article>
               </div>
@@ -116,36 +120,41 @@ export default function ContactPage() {
 
             <section className={styles.messageSection}>
               <div className={styles.messageIntro}>
-                <h2>Send us a message</h2>
+                <h2>Gửi tin nhắn cho chúng tôi</h2>
                 <p>
-                  Our academic advisors typically respond within 2-4 business hours.Please provide as much detail as possible to help us assist you better.
+                  Đội ngũ tư vấn học vụ thường phản hồi trong vòng 2-4 giờ làm
+                  việc. Vui lòng mô tả càng chi tiết càng tốt để chúng tôi hỗ
+                  trợ bạn nhanh và chính xác hơn.
                 </p>
               </div>
 
               <form className={styles.messageForm}>
                 <div className={styles.formGroup}>
-                  <label>Title</label>
-                  <input placeholder="Alex Johnson" />
+                  <label>Họ và tên</label>
+                  <input placeholder="Nguyễn Văn A" />
                 </div>
 
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
-                    <label>Phone</label>
+                    <label>Số điện thoại</label>
                     <input placeholder="+84 000 000 000" />
                   </div>
                   <div className={styles.formGroup}>
                     <label>Email</label>
-                    <input placeholder="alex@example.com" />
+                    <input placeholder="tenban@example.com" />
                   </div>
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Message</label>
-                  <textarea rows={5} placeholder="Tell us more about your request..." />
+                  <label>Nội dung</label>
+                  <textarea
+                    rows={5}
+                    placeholder="Hãy cho chúng tôi biết rõ yêu cầu của bạn..."
+                  />
                 </div>
 
                 <div className={styles.formActions}>
-                  <button type="button">Send Message</button>
+                  <button type="button">Gửi tin nhắn</button>
                 </div>
               </form>
             </section>
