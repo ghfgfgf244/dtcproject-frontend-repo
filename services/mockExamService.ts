@@ -1,5 +1,6 @@
 import api from "@/lib/api";
 import {
+  AnswerLabel,
   ExamQuestion,
   MockExamDetailInfo,
   SampleExamInsight,
@@ -123,6 +124,22 @@ function mapExamDetail(
   };
 }
 
+function buildPublicAnswers(question: BackendPublicQuestion) {
+  return ([
+    { label: "A", content: question.answerA || "" },
+    { label: "B", content: question.answerB || "" },
+    { label: "C", content: question.answerC || "" },
+    { label: "D", content: question.answerD || "" },
+  ] as const)
+    .filter((answer) => answer.content.trim().length > 0)
+    .map((answer) => ({
+      id: `${question.id}-${answer.label}`,
+      label: answer.label as AnswerLabel,
+      content: answer.content,
+      isCorrect: false,
+    }));
+}
+
 function mapPublicExamDetail(
   base: BackendPublicSampleExamDetail,
   courseName = "Chưa có khóa học",
@@ -159,12 +176,7 @@ function mapPublicExamDetail(
         createdAt: new Date().toISOString(),
       }).category,
       imageUrl: question.imageLink || undefined,
-      answers: [
-        { id: `${question.id}-A`, label: "A", content: question.answerA || "", isCorrect: false },
-        { id: `${question.id}-B`, label: "B", content: question.answerB || "", isCorrect: false },
-        { id: `${question.id}-C`, label: "C", content: question.answerC || "", isCorrect: false },
-        { id: `${question.id}-D`, label: "D", content: question.answerD || "", isCorrect: false },
-      ].filter((answer) => answer.content.trim().length > 0),
+      answers: buildPublicAnswers(question),
     })),
   };
 }
