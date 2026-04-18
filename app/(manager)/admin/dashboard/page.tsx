@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import AiAlertList from "@/components/manager/Shared/AiAlertList";
 import AiInsightCard from "@/components/manager/Shared/AiInsightCard";
 import { dashboardAiService } from "@/services/dashboardAiService";
@@ -12,6 +13,7 @@ import {
   DashboardUpcomingExamDto,
   MonthlyMetricDto,
 } from "@/types/dashboard";
+import { setAuthToken } from "@/lib/api";
 
 const CENTER_PAGE_SIZE = 5;
 const EXAM_PAGE_SIZE = 5;
@@ -163,10 +165,7 @@ function PendingExamCard({ batch }: { batch: DashboardUpcomingExamDto }) {
         </span>
       </div>
       <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
-        <div
-          className="h-full rounded-full bg-amber-500"
-          style={{ width: `${Math.min(fillRate, 100)}%` }}
-        />
+        <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.min(fillRate, 100)}%` }} />
       </div>
       <p className="mt-2 text-sm text-slate-500">
         {batch.currentCandidates.toLocaleString("vi-VN")}/
@@ -177,6 +176,7 @@ function PendingExamCard({ batch }: { batch: DashboardUpcomingExamDto }) {
 }
 
 export default function AdminDashboardPage() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [dashboard, setDashboard] = useState<AdminOperationalDashboardDto | null>(null);
   const [insight, setInsight] = useState<DashboardInsightResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,32 +184,40 @@ export default function AdminDashboardPage() {
   const [centerPage, setCenterPage] = useState(1);
   const [examPage, setExamPage] = useState(1);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+  const fetchData = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+
+      const dashboardData = await dashboardService.getAdminDashboard();
+      setDashboard(dashboardData);
 
       try {
-        const [dashboardData, insightData] = await Promise.all([
-          dashboardService.getAdminDashboard(),
-          dashboardAiService.getAdminSummary(),
-        ]);
-
-        setDashboard(dashboardData);
+        const insightData = await dashboardAiService.getAdminSummary();
         setInsight(insightData);
-      } catch (fetchError: any) {
-        setError(
-          fetchError?.response?.data?.errors?.[0] ||
-            fetchError?.message ||
-            "Không tải được dashboard admin.",
-        );
-      } finally {
-        setLoading(false);
+      } catch (aiError) {
+        console.error("Failed to fetch admin AI summary:", aiError);
+        setInsight(null);
       }
-    };
+    } catch (fetchError: any) {
+      setError(
+        fetchError?.response?.data?.errors?.[0] ||
+          fetchError?.message ||
+          "Không tải được dashboard admin.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, isLoaded, isSignedIn]);
 
+  useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const maxTrendValue = useMemo(() => {
     if (!dashboard?.revenueTrend?.length) {
@@ -254,9 +262,7 @@ export default function AdminDashboardPage() {
           <p className="text-sm font-bold uppercase tracking-[0.26em] text-blue-600">
             Admin Command Center
           </p>
-          <h1 className="text-3xl font-black text-slate-900">
-            Dashboard điều hành toàn hệ thống
-          </h1>
+          <h1 className="text-3xl font-black text-slate-900">Dashboard điều hành toàn hệ thống</h1>
           <p className="max-w-3xl text-sm leading-7 text-slate-600">
             Tập trung các tín hiệu hệ trọng nhất: tăng trưởng, hiệu suất trung tâm, doanh thu,
             backlog phê duyệt và đợt thi chờ admin.
@@ -269,11 +275,7 @@ export default function AdminDashboardPage() {
           </div>
         ) : null}
 
-        <AiInsightCard
-          title="Tóm tắt AI cho quản trị hệ thống"
-          insight={insight}
-          loading={loading}
-        />
+        <AiInsightCard title="Tóm tắt AI cho quản trị hệ thống" insight={insight} loading={loading} />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {(dashboard?.kpis ||
@@ -305,10 +307,7 @@ export default function AdminDashboardPage() {
             <div className="grid h-72 grid-cols-6 items-end gap-3">
               {(dashboard?.revenueTrend || []).map((item) => {
                 const currentValue = Number(item.value) || 0;
-                const height = `${Math.max(
-                  (currentValue / maxTrendValue) * 100,
-                  currentValue > 0 ? 12 : 4,
-                )}%`;
+                const height = `${Math.max((currentValue / maxTrendValue) * 100, currentValue > 0 ? 12 : 4)}%`;
 
                 return (
                   <div key={`${item.year}-${item.month}`} className="flex h-full flex-col justify-end gap-3">
@@ -318,13 +317,8 @@ export default function AdminDashboardPage() {
                       })}
                       M
                     </div>
-                    <div
-                      className="rounded-t-[28px] bg-gradient-to-t from-blue-700 to-indigo-400"
-                      style={{ height }}
-                    />
-                    <p className="text-center text-xs font-semibold text-slate-500">
-                      {formatMonth(item)}
-                    </p>
+                    <div className="rounded-t-[28px] bg-gradient-to-t from-blue-700 to-indigo-400" style={{ height }} />
+                    <p className="text-center text-xs font-semibold text-slate-500">{formatMonth(item)}</p>
                   </div>
                 );
               })}

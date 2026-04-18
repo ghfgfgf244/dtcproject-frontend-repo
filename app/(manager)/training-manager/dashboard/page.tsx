@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import AiAlertList from "@/components/manager/Shared/AiAlertList";
 import AiInsightCard from "@/components/manager/Shared/AiInsightCard";
 import { dashboardAiService } from "@/services/dashboardAiService";
 import { dashboardService } from "@/services/dashboardService";
 import { DashboardInsightResponse } from "@/types/ai";
 import { MonthlyMetricDto, TrainingOperationalDashboardDto } from "@/types/dashboard";
+import { setAuthToken } from "@/lib/api";
 
 const PAGE_SIZE = 5;
 
@@ -36,9 +38,7 @@ function Pagination({
 
   return (
     <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-      <p className="text-xs font-medium text-slate-500">
-        Trang {page}/{totalPages}
-      </p>
+      <p className="text-xs font-medium text-slate-500">Trang {page}/{totalPages}</p>
 
       <div className="flex items-center gap-2">
         <button
@@ -94,6 +94,7 @@ function TrainingMetricCard({
 }
 
 export default function TrainingDashboardPage() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [dashboard, setDashboard] = useState<TrainingOperationalDashboardDto | null>(null);
   const [insight, setInsight] = useState<DashboardInsightResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,32 +102,40 @@ export default function TrainingDashboardPage() {
   const [examPage, setExamPage] = useState(1);
   const [instructorPage, setInstructorPage] = useState(1);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+  const fetchData = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+
+      const dashboardData = await dashboardService.getTrainingDashboard();
+      setDashboard(dashboardData);
 
       try {
-        const [dashboardData, insightData] = await Promise.all([
-          dashboardService.getTrainingDashboard(),
-          dashboardAiService.getTrainingSummary(),
-        ]);
-
-        setDashboard(dashboardData);
+        const insightData = await dashboardAiService.getTrainingSummary();
         setInsight(insightData);
-      } catch (fetchError: any) {
-        setError(
-          fetchError?.response?.data?.errors?.[0] ||
-            fetchError?.message ||
-            "Không tải được dashboard đào tạo.",
-        );
-      } finally {
-        setLoading(false);
+      } catch (aiError) {
+        console.error("Failed to fetch training AI summary:", aiError);
+        setInsight(null);
       }
-    };
+    } catch (fetchError: any) {
+      setError(
+        fetchError?.response?.data?.errors?.[0] ||
+          fetchError?.message ||
+          "Không tải được dashboard đào tạo.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, isLoaded, isSignedIn]);
 
+  useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   useEffect(() => {
     setExamPage(1);
@@ -161,12 +170,9 @@ export default function TrainingDashboardPage() {
           <p className="text-sm font-bold uppercase tracking-[0.26em] text-blue-600">
             Trung tâm điều hành đào tạo
           </p>
-          <h1 className="text-3xl font-black text-slate-900">
-            Dashboard điều hành đào tạo
-          </h1>
+          <h1 className="text-3xl font-black text-slate-900">Dashboard điều hành đào tạo</h1>
           <p className="max-w-3xl text-sm leading-7 text-slate-600">
-            Nắm nhanh tải lớp, chuyên cần, lịch thi và giảng viên để xử lý vận hành đào
-            tạo trong ngày.
+            Nắm nhanh tải lớp, chuyên cần, lịch thi và giảng viên để xử lý vận hành đào tạo trong ngày.
           </p>
         </section>
 
@@ -176,11 +182,7 @@ export default function TrainingDashboardPage() {
           </div>
         ) : null}
 
-        <AiInsightCard
-          title="Tóm tắt AI cho bộ phận đào tạo"
-          insight={insight}
-          loading={loading}
-        />
+        <AiInsightCard title="Tóm tắt AI cho bộ phận đào tạo" insight={insight} loading={loading} />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {(dashboard?.kpis ||
@@ -212,26 +214,15 @@ export default function TrainingDashboardPage() {
             <div className="grid h-72 grid-cols-6 items-end gap-3">
               {(dashboard?.classOpeningTrend || []).map((item) => {
                 const currentValue = Number(item.value) || 0;
-                const height = `${Math.max(
-                  (currentValue / maxTrendValue) * 100,
-                  currentValue > 0 ? 12 : 4,
-                )}%`;
+                const height = `${Math.max((currentValue / maxTrendValue) * 100, currentValue > 0 ? 12 : 4)}%`;
 
                 return (
-                  <div
-                    key={`${item.year}-${item.month}`}
-                    className="flex h-full flex-col justify-end gap-3"
-                  >
+                  <div key={`${item.year}-${item.month}`} className="flex h-full flex-col justify-end gap-3">
                     <div className="rounded-3xl bg-slate-100 p-3 text-center text-xs font-bold text-slate-500">
                       {currentValue.toLocaleString("vi-VN")}
                     </div>
-                    <div
-                      className="rounded-t-[28px] bg-gradient-to-t from-blue-600 to-cyan-400"
-                      style={{ height }}
-                    />
-                    <p className="text-center text-xs font-semibold text-slate-500">
-                      {formatMonth(item)}
-                    </p>
+                    <div className="rounded-t-[28px] bg-gradient-to-t from-blue-600 to-cyan-400" style={{ height }} />
+                    <p className="text-center text-xs font-semibold text-slate-500">{formatMonth(item)}</p>
                   </div>
                 );
               })}
@@ -259,16 +250,12 @@ export default function TrainingDashboardPage() {
                       : 0;
 
                   return (
-                    <div
-                      key={batch.id}
-                      className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4"
-                    >
+                    <div key={batch.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="font-black text-slate-900">{batch.batchName}</p>
                           <p className="mt-1 text-sm text-slate-500">
-                            {new Date(batch.examDate).toLocaleDateString("vi-VN")} • Trạng
-                            thái {batch.status}
+                            {new Date(batch.examDate).toLocaleDateString("vi-VN")} • Trạng thái {batch.status}
                           </p>
                         </div>
                         <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-blue-600 shadow-sm">
@@ -277,10 +264,7 @@ export default function TrainingDashboardPage() {
                       </div>
 
                       <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-full rounded-full bg-blue-600"
-                          style={{ width: `${Math.min(fillRate, 100)}%` }}
-                        />
+                        <div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.min(fillRate, 100)}%` }} />
                       </div>
 
                       <p className="mt-2 text-sm text-slate-500">
@@ -315,10 +299,7 @@ export default function TrainingDashboardPage() {
             <div className="space-y-4">
               {pagedInstructorLoads.length ? (
                 pagedInstructorLoads.map((item) => (
-                  <div
-                    key={item.instructorId}
-                    className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4"
-                  >
+                  <div key={item.instructorId} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-black text-slate-900">{item.instructorName}</p>
@@ -341,10 +322,7 @@ export default function TrainingDashboardPage() {
                     </div>
 
                     <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className="h-full rounded-full bg-cyan-500"
-                        style={{ width: `${Math.min(item.utilizationRate, 100)}%` }}
-                      />
+                      <div className="h-full rounded-full bg-cyan-500" style={{ width: `${Math.min(item.utilizationRate, 100)}%` }} />
                     </div>
 
                     <p className="mt-2 text-sm text-slate-500">
@@ -372,9 +350,7 @@ export default function TrainingDashboardPage() {
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5">
-              <h2 className="text-xl font-black text-slate-900">
-                Lớp cần theo dõi chuyên cần
-              </h2>
+              <h2 className="text-xl font-black text-slate-900">Lớp cần theo dõi chuyên cần</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Danh sách lớp có tỷ lệ hiện diện thấp trên các buổi đã điểm danh.
               </p>
@@ -383,10 +359,7 @@ export default function TrainingDashboardPage() {
             <div className="space-y-4">
               {dashboard?.lowAttendanceClasses?.length ? (
                 dashboard.lowAttendanceClasses.map((item) => (
-                  <div
-                    key={item.classId}
-                    className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4"
-                  >
+                  <div key={item.classId} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-black text-slate-900">{item.className}</p>
