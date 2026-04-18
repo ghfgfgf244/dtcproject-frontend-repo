@@ -22,6 +22,35 @@ import {
   AttendanceSession,
 } from "@/services/attendanceService";
 
+function buildCourseDescription(registration: RegistrationRecord): string {
+  if (registration.notes?.trim()) {
+    return registration.notes.trim();
+  }
+
+  if (registration.licenseType) {
+    return `Khóa học hiện đang được ghi nhận cho hạng bằng ${registration.licenseType}. Hệ thống sẽ cập nhật chi tiết lộ trình học, lớp học và lịch học ngay khi hoàn tất xếp kỳ hoặc xếp lớp.`;
+  }
+
+  return "Thông tin chi tiết về lộ trình lý thuyết và thực hành sẽ được cập nhật khi trung tâm hoàn tất xếp lớp.";
+}
+
+function buildCenterLabel(registration: RegistrationRecord): string {
+  return (
+    registration.assignedTermName ||
+    registration.suggestedTermName ||
+    registration.termName ||
+    "Trung tâm / kỳ học sẽ được cập nhật"
+  );
+}
+
+function buildStartDate(registration: RegistrationRecord): string | undefined {
+  if (!registration.suggestedTermStartDate) {
+    return undefined;
+  }
+
+  return new Date(registration.suggestedTermStartDate).toLocaleDateString("vi-VN");
+}
+
 export default function MyCoursePage() {
   const { isLoaded, getToken } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -127,21 +156,9 @@ export default function MyCoursePage() {
             <div className={styles.left}>
               <CourseOverview
                 courseName={registration.courseName || "Khóa học lái xe"}
-                description={
-                  registration.courseDescription ||
-                  "Thời gian đào tạo bao gồm lý thuyết và thực hành."
-                }
-                centerName={registration.centerName || "Trung tâm đào tạo DTC"}
-                startDate={
-                  registration.startDate
-                    ? new Date(registration.startDate).toLocaleDateString("vi-VN")
-                    : undefined
-                }
-                endDate={
-                  registration.endDate
-                    ? new Date(registration.endDate).toLocaleDateString("vi-VN")
-                    : undefined
-                }
+                description={buildCourseDescription(registration)}
+                centerName={buildCenterLabel(registration)}
+                startDate={buildStartDate(registration)}
               />
               <DrivingMetrics
                 totalDistance={drivingMetrics.total}
