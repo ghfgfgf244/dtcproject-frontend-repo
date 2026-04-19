@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useUserRole } from "@/contexts/UserRoleContext";
 
 const MANAGER_ROLE_REDIRECTS: Record<string, string> = {
@@ -28,9 +28,14 @@ const MANAGER_AREA_PREFIXES = ["/admin", "/training-manager", "/enrollment-manag
 export default function RoleRedirect() {
   const { isLoaded, isSignedIn } = useUser();
   const { role } = useUserRole();
-  const router = useRouter();
   const pathname = usePathname();
   const hasRedirected = useRef(false);
+
+  const redirectTo = (targetPath: string) => {
+    if (typeof window === "undefined") return;
+    if (window.location.pathname === targetPath) return;
+    window.location.replace(targetPath);
+  };
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -54,7 +59,7 @@ export default function RoleRedirect() {
       const managerPrefix = "/" + targetManagerPath.split("/")[1];
       if (pathname.startsWith(managerPrefix)) return; // already home
       hasRedirected.current = true;
-      router.replace(targetManagerPath);
+      redirectTo(targetManagerPath);
       return;
     }
 
@@ -65,10 +70,10 @@ export default function RoleRedirect() {
 
       if (isOnLanding || isOnManagerPage) {
         hasRedirected.current = true;
-        router.replace("/homepage");
+        redirectTo("/homepage");
       }
     }
-  }, [isLoaded, isSignedIn, role, pathname, router]);
+  }, [isLoaded, isSignedIn, role, pathname]);
 
   return null;
 }
