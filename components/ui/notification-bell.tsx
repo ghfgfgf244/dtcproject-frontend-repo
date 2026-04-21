@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import axios from "axios";
 import {
   Bell,
   CalendarX,
@@ -68,7 +69,7 @@ const getIconProps = (type: string) => {
 
 export default function NotificationBell({ role }: Props) {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -81,22 +82,44 @@ export default function NotificationBell({ role }: Props) {
   );
 
   const fetchNotifications = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) {
+      setAuthToken(null);
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+
     try {
       const token = await getToken();
+      if (!token) {
+        setAuthToken(null);
+        setNotifications([]);
+        return;
+      }
+
       setAuthToken(token);
       const data =
         role === "admin"
           ? await notificationService.getAllAdminNotifications()
           : await notificationService.getMyNotifications();
+
       setNotifications(data);
     } catch (error) {
-      console.error("Failed to load header notifications:", error);
-      setNotifications([]);
+      if (
+        axios.isAxiosError(error) &&
+        (error.response?.status === 401 || error.message === "Network Error")
+      ) {
+        setNotifications([]);
+      } else {
+        console.error("Failed to load header notifications:", error);
+        setNotifications([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [getToken, role]);
+  }, [getToken, isLoaded, isSignedIn, role]);
 
   useEffect(() => {
     setMounted(true);
@@ -109,7 +132,10 @@ export default function NotificationBell({ role }: Props) {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -119,13 +145,25 @@ export default function NotificationBell({ role }: Props) {
   }, []);
 
   const handleMarkAllAsRead = async () => {
-    const unreadIds = notifications.filter((notification) => !notification.isRead).map((notification) => notification.id);
+    if (!isLoaded || !isSignedIn) return;
+
+    const unreadIds = notifications
+      .filter((notification) => !notification.isRead)
+      .map((notification) => notification.id);
+
     if (unreadIds.length === 0) return;
 
     try {
       const token = await getToken();
+      if (!token) return;
+
       setAuthToken(token);
-      await Promise.all(unreadIds.map((id) => notificationService.markAsRead(id)));
+      await Promise.all(
+        unreadIds.map((notificationId) =>
+          notificationService.markAsRead(notificationId),
+        ),
+      );
+
       setNotifications((current) =>
         current.map((notification) => ({ ...notification, isRead: true })),
       );
@@ -138,6 +176,8 @@ export default function NotificationBell({ role }: Props) {
     try {
       if (!notification.isRead) {
         const token = await getToken();
+        if (!token) return;
+
         setAuthToken(token);
         await notificationService.markAsRead(notification.id);
         setNotifications((current) =>
@@ -154,7 +194,7 @@ export default function NotificationBell({ role }: Props) {
     }
   };
 
-  if (!mounted) {
+  if (!mounted || !isLoaded || !isSignedIn) {
     return null;
   }
 
@@ -176,7 +216,9 @@ export default function NotificationBell({ role }: Props) {
           <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 p-4">
             <div>
               <h3 className="text-base font-bold text-slate-900">Thông báo</h3>
-              <p className="text-xs text-slate-500">Bạn có {unreadCount} thông báo chưa đọc</p>
+              <p className="text-xs text-slate-500">
+                Bạn có {unreadCount} thông báo chưa đọc
+              </p>
             </div>
             {unreadCount > 0 && (
               <button
@@ -198,6 +240,7 @@ export default function NotificationBell({ role }: Props) {
             ) : notifications.length > 0 ? (
               notifications.slice(0, 8).map((notification) => {
                 const { icon, bg } = getIconProps(notification.type);
+
                 return (
                   <button
                     key={notification.id}
@@ -209,7 +252,9 @@ export default function NotificationBell({ role }: Props) {
                         : "bg-white hover:bg-slate-50"
                     }`}
                   >
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${bg}`}>
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${bg}`}
+                    >
                       {icon}
                     </div>
                     <div className="flex flex-1 flex-col gap-1">
@@ -252,7 +297,9 @@ export default function NotificationBell({ role }: Props) {
             }}
             className="w-full cursor-pointer border-t border-slate-100 bg-slate-50 p-3 text-center transition-colors hover:bg-slate-100"
           >
-            <span className="text-sm font-bold text-blue-600">Xem tất cả thông báo</span>
+            <span className="text-sm font-bold text-blue-600">
+              Xem tất cả thông báo
+            </span>
           </button>
         </div>
       )}

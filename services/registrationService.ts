@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import axios from "axios";
 import {
   CourseRegistrationStatus,
   CourseRegistrationStatusValue,
@@ -165,6 +166,33 @@ const mapToCourseRegistrationRecord = (dto: any): RegistrationRecord => {
   };
 };
 
+const extractApiErrorMessage = (error: unknown, fallbackMessage: string): string => {
+  if (axios.isAxiosError(error)) {
+    const responseData = error.response?.data as
+      | { message?: string; errors?: string[]; error?: string }
+      | undefined;
+
+    const validationMessage =
+      Array.isArray(responseData?.errors) && responseData.errors.length > 0
+        ? responseData.errors[0]
+        : undefined;
+
+    return (
+      validationMessage ||
+      responseData?.message ||
+      responseData?.error ||
+      error.message ||
+      fallbackMessage
+    );
+  }
+
+  if (error instanceof Error) {
+    return error.message || fallbackMessage;
+  }
+
+  return fallbackMessage;
+};
+
 export const registrationService = {
   async getAllCourseRegistrations(): Promise<RegistrationRecord[]> {
     try {
@@ -227,19 +255,31 @@ export const registrationService = {
   },
 
   async createRegistration(examBatchId: string, studentId: string, isPaid = false): Promise<void> {
-    await api.post("/ExamRegistration", {
-      examBatchId,
-      studentId,
-      isPaid,
-    });
+    try {
+      await api.post("/ExamRegistration", {
+        examBatchId,
+        studentId,
+        isPaid,
+      });
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "Không thể tạo đăng ký thi cho học viên này."),
+      );
+    }
   },
 
   async createBulk(examBatchId: string, studentIds: string[], isPaid = false): Promise<void> {
-    await api.post("/ExamRegistration/bulk", {
-      examBatchId,
-      studentIds,
-      isPaid,
-    });
+    try {
+      await api.post("/ExamRegistration/bulk", {
+        examBatchId,
+        studentIds,
+        isPaid,
+      });
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "Không thể tạo đăng ký thi hàng loạt."),
+      );
+    }
   },
 
   async getTermCandidates(termId: string, examBatchId: string): Promise<TermRegistrationCandidate[]> {
