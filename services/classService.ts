@@ -112,6 +112,11 @@ export const classService = {
     return response.data.data || [];
   },
 
+  async getClassesByTerm(termId: string): Promise<ClassDto[]> {
+    const response = await api.get<ApiResponse<ClassDto[]>>(`/Class/term/${termId}`);
+    return response.data.data || [];
+  },
+
   async getTeachingClasses(): Promise<ClassDto[]> {
     const response = await api.get<ApiResponse<ClassDto[]>>("/Class/teaching");
     return response.data.data || [];

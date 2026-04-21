@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Search, X } from "lucide-react";
-import { ExamBatch } from "@/types/exam";
+import { ExamBatch, ExamBatchStatus } from "@/types/exam";
 import { UserListItem } from "@/services/userService";
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
   students: UserListItem[];
   loadingStudents: boolean;
   defaultBatchId: string;
+  registeredStudentIds?: string[];
   onClose: () => void;
   onSubmit: (studentId: string, examBatchId: string) => Promise<void>;
 }
@@ -21,6 +22,7 @@ export default function ManualRegistrationModal({
   students,
   loadingStudents,
   defaultBatchId,
+  registeredStudentIds = [],
   onClose,
   onSubmit,
 }: Props) {
@@ -28,32 +30,61 @@ export default function ManualRegistrationModal({
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState(defaultBatchId);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const availableBatches = useMemo(
+    () =>
+      batches.filter(
+        (batch) =>
+          batch.status === ExamBatchStatus.OpenForRegistration ||
+          batch.id === selectedBatchId,
+      ),
+    [batches, selectedBatchId],
+  );
+
+  const effectiveRegisteredStudentIds =
+    selectedBatchId === defaultBatchId ? registeredStudentIds : [];
 
   useEffect(() => {
     if (!isOpen) return;
     setSelectedBatchId(defaultBatchId);
     setSelectedStudentId("");
     setSearch("");
+    setSubmitError(null);
   }, [defaultBatchId, isOpen]);
 
   const filteredStudents = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return students;
-    return students.filter((student) =>
+    const availableStudents = students.filter(
+      (student) => !effectiveRegisteredStudentIds.includes(student.id),
+    );
+
+    if (!keyword) return availableStudents;
+
+    return availableStudents.filter((student) =>
       [student.fullName, student.email, student.phone]
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(keyword)),
     );
-  }, [search, students]);
+  }, [effectiveRegisteredStudentIds, search, students]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
     if (!selectedStudentId || !selectedBatchId) return;
+
     setSubmitting(true);
+    setSubmitError(null);
+
     try {
       await onSubmit(selectedStudentId, selectedBatchId);
       onClose();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Không thể tạo đăng ký thi. Vui lòng thử lại.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -61,12 +92,13 @@ export default function ManualRegistrationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="w-full max-w-4xl rounded-3xl bg-white shadow-2xl max-h-[calc(100vh-48px)] overflow-hidden flex flex-col">
+      <div className="flex max-h-[calc(100vh-48px)] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
           <div>
             <h2 className="text-2xl font-black text-slate-900">Đăng ký thủ công</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Tìm học viên trong hệ thống và gán vào một đợt thi. Mặc định trạng thái sẽ là chờ duyệt.
+              Tìm học viên trong hệ thống và gán vào một đợt thi. Mặc định trạng thái
+              sẽ là chờ duyệt.
             </p>
           </div>
           <button
@@ -86,17 +118,21 @@ export default function ManualRegistrationModal({
               </label>
               <select
                 value={selectedBatchId}
-                onChange={(event) => setSelectedBatchId(event.target.value)}
+                onChange={(event) => {
+                  setSelectedBatchId(event.target.value);
+                  setSubmitError(null);
+                }}
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold outline-none transition focus:border-blue-500"
               >
                 <option value="">-- Chọn đợt thi --</option>
-                {batches.map((batch) => (
+                {availableBatches.map((batch) => (
                   <option key={batch.id} value={batch.id}>
                     {batch.batchName}
                   </option>
                 ))}
               </select>
             </div>
+
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-500">
                 Tìm học viên
@@ -120,11 +156,19 @@ export default function ManualRegistrationModal({
               <div>Email</div>
               <div>Số điện thoại</div>
             </div>
+
             <div className="max-h-[360px] overflow-y-auto">
               {loadingStudents ? (
                 <div className="flex items-center justify-center gap-3 px-4 py-16 text-sm text-slate-500">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   Đang tải danh sách học viên...
+                </div>
+              ) : students.length > 0 &&
+                filteredStudents.length === 0 &&
+                effectiveRegisteredStudentIds.length > 0 &&
+                !search.trim() ? (
+                <div className="px-4 py-16 text-center text-sm text-slate-500">
+                  Tất cả học viên trong danh sách này đã được đăng ký ở đợt thi đang chọn.
                 </div>
               ) : filteredStudents.length === 0 ? (
                 <div className="px-4 py-16 text-center text-sm text-slate-500">
@@ -140,7 +184,10 @@ export default function ManualRegistrationModal({
                       type="radio"
                       name="manual-registration-student"
                       checked={selectedStudentId === student.id}
-                      onChange={() => setSelectedStudentId(student.id)}
+                      onChange={() => {
+                        setSelectedStudentId(student.id);
+                        setSubmitError(null);
+                      }}
                       className="h-4 w-4"
                     />
                     <div className="font-semibold text-slate-900">{student.fullName}</div>
@@ -154,6 +201,12 @@ export default function ManualRegistrationModal({
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+          {submitError && (
+            <div className="mr-auto rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {submitError}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={onClose}

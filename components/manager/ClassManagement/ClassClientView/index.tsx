@@ -79,6 +79,10 @@ export default function ClassClientView() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTermId, setSelectedTermId] = useState("");
+  const [selectedCourseName, setSelectedCourseName] = useState("");
+  const [selectedInstructorName, setSelectedInstructorName] = useState("");
+  const [searchName, setSearchName] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAutoAssignModalOpen, setIsAutoAssignModalOpen] = useState(false);
@@ -126,11 +130,54 @@ export default function ClassClientView() {
     fetchData();
   }, [isLoaded, isSignedIn]);
 
-  const totalItems = classes.length;
+  const courseOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          rawClasses
+            .map((item) => item.courseName?.trim())
+            .filter((item): item is string => Boolean(item))
+        )
+      ).sort((a, b) => a.localeCompare(b, "vi")),
+    [rawClasses]
+  );
+
+  const instructorOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          rawClasses
+            .map((item) => item.instructorName?.trim())
+            .filter((item): item is string => Boolean(item))
+        )
+      ).sort((a, b) => a.localeCompare(b, "vi")),
+    [rawClasses]
+  );
+
+  const filteredClasses = useMemo(() => {
+    const normalizedSearch = searchName.trim().toLowerCase();
+
+    return classes.filter((item) => {
+      const matchesTerm = !selectedTermId || rawClasses.find((raw) => raw.id === item.id)?.termId === selectedTermId;
+      const matchesCourse = !selectedCourseName || item.courseName === selectedCourseName;
+      const matchesInstructor = !selectedInstructorName || item.instructorName === selectedInstructorName;
+      const matchesName =
+        !normalizedSearch ||
+        item.name.toLowerCase().includes(normalizedSearch);
+
+      return matchesTerm && matchesCourse && matchesInstructor && matchesName;
+    });
+  }, [classes, rawClasses, searchName, selectedCourseName, selectedInstructorName, selectedTermId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchName, selectedCourseName, selectedInstructorName, selectedTermId]);
+
+  const totalItems = filteredClasses.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const paginatedClasses = useMemo(
-    () => classes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-    [classes, currentPage]
+    () => filteredClasses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
+    [filteredClasses, currentPage]
   );
 
   const handleRefresh = () => {
@@ -303,6 +350,89 @@ export default function ClassClientView() {
             <div className="bg-slate-100 p-2.5 rounded-lg text-slate-600">
               <ShieldCheck className="w-6 h-6" />
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 md:p-6">
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Bộ lọc lớp học</h3>
+              <p className="text-sm text-slate-500 mt-1">Lọc theo kỳ học, khóa học, tên lớp và giảng viên.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedTermId("");
+                setSelectedCourseName("");
+                setSelectedInstructorName("");
+                setSearchName("");
+              }}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <label className="flex flex-col gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Kỳ học</span>
+              <select
+                value={selectedTermId}
+                onChange={(event) => setSelectedTermId(event.target.value)}
+                className="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none focus:border-blue-400"
+              >
+                <option value="">Tất cả kỳ học</option>
+                {terms.map((term) => (
+                  <option key={term.id} value={term.id}>
+                    {term.name} - {term.courseName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Khóa học</span>
+              <select
+                value={selectedCourseName}
+                onChange={(event) => setSelectedCourseName(event.target.value)}
+                className="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none focus:border-blue-400"
+              >
+                <option value="">Tất cả khóa học</option>
+                {courseOptions.map((courseName) => (
+                  <option key={courseName} value={courseName}>
+                    {courseName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Giảng viên</span>
+              <select
+                value={selectedInstructorName}
+                onChange={(event) => setSelectedInstructorName(event.target.value)}
+                className="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none focus:border-blue-400"
+              >
+                <option value="">Tất cả giảng viên</option>
+                {instructorOptions.map((instructorName) => (
+                  <option key={instructorName} value={instructorName}>
+                    {instructorName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Tên lớp</span>
+              <input
+                value={searchName}
+                onChange={(event) => setSearchName(event.target.value)}
+                placeholder="Nhập tên lớp..."
+                className="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none focus:border-blue-400"
+              />
+            </label>
           </div>
         </div>
       </div>

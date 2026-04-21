@@ -1,9 +1,94 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Header from "@/components/ui/header";
 import Sidebar from "@/components/ui/sidebar";
+import { contactService } from "@/services/contactService";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/contact.module.css";
 
+type ContactForm = {
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+  subject: string;
+  message: string;
+};
+
+const initialForm: ContactForm = {
+  fullName: "",
+  phoneNumber: "",
+  email: "",
+  subject: "",
+  message: "",
+};
+
 export default function ContactPage() {
+  const [form, setForm] = useState<ContactForm>(initialForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
+
+  const isDisabled = useMemo(() => {
+    return (
+      isSubmitting ||
+      !form.fullName.trim() ||
+      !form.phoneNumber.trim() ||
+      !form.email.trim() ||
+      !form.message.trim()
+    );
+  }, [form, isSubmitting]);
+
+  const handleChange =
+    (field: keyof ContactForm) =>
+    (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      const value = event.target.value;
+      setForm((prev) => ({ ...prev, [field]: value }));
+      setSubmitError("");
+      setSubmitSuccess("");
+    };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isDisabled) return;
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    try {
+      await contactService.sendContact({
+        fullName: form.fullName.trim(),
+        phoneNumber: form.phoneNumber.trim(),
+        email: form.email.trim(),
+        subject: form.subject.trim() || undefined,
+        message: form.message.trim(),
+      });
+
+      setSubmitSuccess(
+        "Đã gửi liên hệ thành công. Trung tâm sẽ phản hồi sớm qua email hoặc số điện thoại bạn đã cung cấp."
+      );
+      setForm(initialForm);
+    } catch (error: any) {
+      const responseData = error?.response?.data;
+      const validationErrors = responseData?.errors;
+
+      const apiMessage = Array.isArray(validationErrors)
+        ? validationErrors[0]
+        : validationErrors && typeof validationErrors === "object"
+          ? Object.values(validationErrors).flat()[0]
+          : responseData?.message ||
+            responseData?.detailed ||
+            "Không thể gửi liên hệ lúc này. Vui lòng thử lại sau.";
+      setSubmitError(apiMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div>
       <Header />
@@ -53,8 +138,8 @@ export default function ContactPage() {
                         <span className="material-symbols-outlined">mail</span>
                       </div>
                       <div>
-                        <span>Email</span>
-                        <strong>support@trainingcenter.com</strong>
+                        <span>Email hệ thống</span>
+                        <strong>hungghfgfgf244@gmail.com</strong>
                       </div>
                     </div>
                     <div className={styles.contactItem}>
@@ -128,33 +213,67 @@ export default function ContactPage() {
                 </p>
               </div>
 
-              <form className={styles.messageForm}>
+              <form className={styles.messageForm} onSubmit={handleSubmit}>
                 <div className={styles.formGroup}>
                   <label>Họ và tên</label>
-                  <input placeholder="Nguyễn Văn A" />
+                  <input
+                    value={form.fullName}
+                    onChange={handleChange("fullName")}
+                    placeholder="Nguyễn Văn A"
+                  />
                 </div>
 
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label>Số điện thoại</label>
-                    <input placeholder="+84 000 000 000" />
+                    <input
+                      value={form.phoneNumber}
+                      onChange={handleChange("phoneNumber")}
+                      placeholder="+84 000 000 000"
+                    />
                   </div>
                   <div className={styles.formGroup}>
                     <label>Email</label>
-                    <input placeholder="tenban@example.com" />
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange("email")}
+                      placeholder="tenban@example.com"
+                    />
                   </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Chủ đề</label>
+                  <input
+                    value={form.subject}
+                    onChange={handleChange("subject")}
+                    placeholder="Ví dụ: Tư vấn khóa học B"
+                  />
                 </div>
 
                 <div className={styles.formGroup}>
                   <label>Nội dung</label>
                   <textarea
                     rows={5}
+                    value={form.message}
+                    onChange={handleChange("message")}
                     placeholder="Hãy cho chúng tôi biết rõ yêu cầu của bạn..."
                   />
                 </div>
 
+                {submitSuccess ? (
+                  <div className={styles.formSuccess}>{submitSuccess}</div>
+                ) : null}
+
+                {submitError ? (
+                  <div className={styles.formError}>{submitError}</div>
+                ) : null}
+
                 <div className={styles.formActions}>
-                  <button type="button">Gửi tin nhắn</button>
+                  <button type="submit" disabled={isDisabled}>
+                    {isSubmitting ? "Đang gửi..." : "Gửi tin nhắn"}
+                  </button>
                 </div>
               </form>
             </section>

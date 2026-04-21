@@ -290,6 +290,10 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
       isStatusEqual(record.status, ExamRegistrationStatus.Pending) &&
       record.isEligibleForApproval === true,
   ).length;
+  const registeredStudentIds = useMemo(
+    () => registrations.map((record) => record.studentId).filter(Boolean),
+    [registrations],
+  );
 
   if (loadingPage) {
     return (
@@ -440,6 +444,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
         students={students}
         loadingStudents={loadingStudents}
         defaultBatchId={batchFilter}
+        registeredStudentIds={registeredStudentIds}
         onClose={() => setIsManualOpen(false)}
         onSubmit={handleManualSubmit}
       />

@@ -84,6 +84,11 @@ interface ApiResponse<T> {
 }
 
 export const scheduleService = {
+  async getAll(): Promise<ClassSchedule[]> {
+    const response = await api.get<ApiResponse<ClassSchedule[]>>("/Schedule");
+    return response.data.data || [];
+  },
+
   async getDetail(id: string): Promise<ClassSchedule | null> {
     const response = await api.get<ApiResponse<ClassSchedule>>(`/Schedule/${id}`);
     return response.data.data ?? null;
@@ -91,6 +96,11 @@ export const scheduleService = {
 
   async getByClass(classId: string): Promise<ClassSchedule[]> {
     const response = await api.get<ApiResponse<ClassSchedule[]>>(`/Schedule/Class/${classId}`);
+    return response.data.data || [];
+  },
+
+  async getByTerm(termId: string): Promise<ClassSchedule[]> {
+    const response = await api.get<ApiResponse<ClassSchedule[]>>(`/Schedule/term/${termId}`);
     return response.data.data || [];
   },
 

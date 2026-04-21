@@ -11,12 +11,19 @@ export default function SyncUser() {
   const { getToken } = useAuth();
   const { setRole } = useUserRole();
   const lastSyncedClerkId = useRef<string | null>(null);
+  const lastSyncAttemptAt = useRef<number>(0);
 
   useEffect(() => {
     const syncWithBackend = async () => {
       if (!isLoaded || !isSignedIn || !user || lastSyncedClerkId.current === user.id) {
         return;
       }
+
+      const now = Date.now();
+      if (now - lastSyncAttemptAt.current < 3000) {
+        return;
+      }
+      lastSyncAttemptAt.current = now;
 
       try {
         const token = await getToken();
@@ -63,6 +70,7 @@ export default function SyncUser() {
   useEffect(() => {
     if (!isSignedIn) {
       lastSyncedClerkId.current = null;
+      lastSyncAttemptAt.current = 0;
       setRole("");
     }
   }, [isSignedIn, setRole]);
