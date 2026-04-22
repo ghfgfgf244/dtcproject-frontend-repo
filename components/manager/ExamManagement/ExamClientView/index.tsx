@@ -1,15 +1,13 @@
-// src/app/(manager)/training-manager/exams/_components/ExamClientView/index.tsx
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { Search, Plus, ClipboardCheck, Loader2 } from "lucide-react";
-import { ExamBatch, Exam, ExamBatchStatus } from "@/types/exam";
-import { EXAM_TABS } from "@/constants/exam-data";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ClipboardCheck, Loader2, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
+import { Exam, ExamBatch, ExamBatchScopeType } from "@/types/exam";
+import { EXAM_TABS } from "@/constants/exam-data";
 import { examService } from "@/services/examService";
-
 import ExamBatchTable from "../ExamBatchTable";
 import ExamCardList from "../ExamCardList";
 import BatchStats from "../BatchStats";
@@ -22,22 +20,20 @@ const EXAMS_PER_PAGE = 4;
 
 export default function ExamClientView() {
   const { getToken } = useAuth();
-  
-  // 1. State quản lý dữ liệu
+  const nationalBatchReadOnlyMessage =
+    "Đợt thi quốc gia chỉ hiển thị để theo dõi. Bạn không thể thêm, sửa hoặc xóa bài thi trong đợt này.";
   const [batches, setBatches] = useState<ExamBatch[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 2. State quản lý UI cơ bản
-  const [selectedBatchId, setSelectedBatchId] = useState<string>("");
+  const [selectedBatchId, setSelectedBatchId] = useState("");
   const [activeTab, setActiveTab] = useState<string | number>("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedLicenseType, setSelectedLicenseType] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLicenseType, setSelectedLicenseType] = useState("all");
   const [batchPage, setBatchPage] = useState(1);
   const [examPage, setExamPage] = useState(1);
 
-  // 3. State quản lý Modal
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<ExamBatch | null>(null);
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
@@ -47,27 +43,27 @@ export default function ExamClientView() {
   const [isExamConfirmModalOpen, setIsExamConfirmModalOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<Exam | null>(null);
 
-  // --- FETCH DATA ---
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
       const token = await getToken();
       setAuthToken(token);
-      
+
       const [fetchedBatches, fetchedExams] = await Promise.all([
         examService.getAllExamBatches(),
-        examService.getAllExams()
+        examService.getAllExams(),
       ]);
-      
+
       setBatches(fetchedBatches);
       setExams(fetchedExams);
-      
+
       if (fetchedBatches.length > 0 && !selectedBatchId) {
         setSelectedBatchId(fetchedBatches[0].id);
       }
-    } catch (err: any) {
-      console.error("Lỗi khi tải dữ liệu:", err);
+    } catch (fetchError) {
+      console.error("Failed to load exam data:", fetchError);
       setError("Không thể tải dữ liệu đợt thi. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
@@ -76,9 +72,8 @@ export default function ExamClientView() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  // --- HANDLERS ---
   const handleCreateBatch = () => {
     setEditingBatch(null);
     setIsBatchModalOpen(true);
@@ -90,11 +85,25 @@ export default function ExamClientView() {
   };
 
   const handleCreateExam = () => {
+    const selectedBatch = batches.find((batch) => batch.id === selectedBatchId);
+
+    if (selectedBatch?.scopeType === ExamBatchScopeType.National) {
+      window.alert(nationalBatchReadOnlyMessage);
+      return;
+    }
+
     setEditingExam(null);
     setIsExamModalOpen(true);
   };
 
   const handleEditExam = (exam: Exam) => {
+    const currentBatch = batches.find((batch) => batch.id === exam.examBatchId);
+
+    if (currentBatch?.scopeType === ExamBatchScopeType.National) {
+      window.alert(nationalBatchReadOnlyMessage);
+      return;
+    }
+
     setEditingExam(exam);
     setIsExamModalOpen(true);
   };
@@ -106,17 +115,19 @@ export default function ExamClientView() {
 
   const handleConfirmDeleteBatch = async () => {
     if (!batchToDelete) return;
+
     try {
       const token = await getToken();
       setAuthToken(token);
       await examService.deleteExamBatch(batchToDelete.id);
-      
-      setBatches(prev => prev.filter(b => b.id !== batchToDelete.id));
+
+      setBatches((prev) => prev.filter((item) => item.id !== batchToDelete.id));
       if (selectedBatchId === batchToDelete.id) {
         setSelectedBatchId("");
       }
-    } catch (err) {
-      alert("Lỗi khi xóa đợt thi");
+    } catch (deleteError) {
+      console.error(deleteError);
+      window.alert("Không thể xóa đợt thi đã chọn.");
     } finally {
       setIsConfirmModalOpen(false);
       setBatchToDelete(null);
@@ -124,22 +135,31 @@ export default function ExamClientView() {
   };
 
   const handleDeleteExamClick = (exam: Exam) => {
+    const currentBatch = batches.find((batch) => batch.id === exam.examBatchId);
+
+    if (currentBatch?.scopeType === ExamBatchScopeType.National) {
+      window.alert(nationalBatchReadOnlyMessage);
+      return;
+    }
+
     setExamToDelete(exam);
     setIsExamConfirmModalOpen(true);
   };
 
   const handleConfirmDeleteExam = async () => {
     if (!examToDelete) return;
+
     try {
       const token = await getToken();
       setAuthToken(token);
       await examService.deleteExam(examToDelete.id);
-      setExams(prev => prev.filter(ex => ex.id !== examToDelete.id));
-    } catch (err) {
-      alert("Lỗi khi xóa bài thi");
+      setExams((prev) => prev.filter((item) => item.id !== examToDelete.id));
+    } catch (deleteError) {
+      console.error(deleteError);
+      window.alert("Không thể xóa bài thi đã chọn.");
     } finally {
       setIsExamConfirmModalOpen(false);
-      examToDelete && setExamToDelete(null);
+      setExamToDelete(null);
     }
   };
 
@@ -147,18 +167,20 @@ export default function ExamClientView() {
     try {
       const token = await getToken();
       setAuthToken(token);
-      
+
       if (data.id) {
         const updated = await examService.updateExamBatch(data.id, data);
-        setBatches(prev => prev.map(b => b.id === updated.id ? updated : b));
+        setBatches((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       } else {
         const created = await examService.createExamBatch(data);
-        setBatches(prev => [created, ...prev]);
+        setBatches((prev) => [created, ...prev]);
         setSelectedBatchId(created.id);
       }
+
       setIsBatchModalOpen(false);
-    } catch (err) {
-      alert("Lỗi khi lưu đợt thi");
+    } catch (submitError) {
+      console.error(submitError);
+      window.alert("Không thể lưu đợt thi.");
     }
   };
 
@@ -166,56 +188,68 @@ export default function ExamClientView() {
     try {
       const token = await getToken();
       setAuthToken(token);
-      
+
       if (data.id) {
         const updated = await examService.updateExam(data.id, data);
-        setExams(prev => prev.map(e => e.id === updated.id ? updated : e));
+        setExams((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       } else {
         const created = await examService.createExam(data);
-        setExams(prev => [...prev, created]);
+        setExams((prev) => [...prev, created]);
       }
+
       setIsExamModalOpen(false);
-    } catch (err: any) {
-      console.error("Exam submit error:", err);
-      const backendError = err.response?.data?.message || err.response?.data?.errors?.join(', ') || "Lỗi không xác định";
-      alert(`Lỗi khi lưu bài thi: ${backendError}`);
+    } catch (submitError: any) {
+      console.error("Exam submit error:", submitError);
+      const backendError =
+        submitError.response?.data?.message ||
+        submitError.response?.data?.errors?.join(", ") ||
+        "Lỗi không xác định";
+      window.alert(`Không thể lưu bài thi: ${backendError}`);
     }
   };
 
-  // --- LOGIC LỌC DỮ LIỆU ---
   const filteredBatches = useMemo(() => {
     return batches.filter((batch) => {
       const matchTab = activeTab === "all" || batch.status === activeTab;
       const query = searchQuery.toLowerCase();
-      const matchSearch =
-        batch.batchName.toLowerCase().includes(query);
-
+      const matchSearch = batch.batchName.toLowerCase().includes(query);
       return matchTab && matchSearch;
     });
-  }, [batches, activeTab, searchQuery]);
+  }, [activeTab, batches, searchQuery]);
 
   useEffect(() => {
     setBatchPage(1);
-  }, [activeTab, searchQuery, batches.length]);
+  }, [activeTab, batches.length, searchQuery]);
 
-  const totalBatchPages = Math.max(1, Math.ceil(filteredBatches.length / BATCHES_PER_PAGE));
+  const totalBatchPages = Math.max(
+    1,
+    Math.ceil(filteredBatches.length / BATCHES_PER_PAGE),
+  );
+
   const paginatedBatches = useMemo(() => {
     const start = (batchPage - 1) * BATCHES_PER_PAGE;
     return filteredBatches.slice(start, start + BATCHES_PER_PAGE);
-  }, [filteredBatches, batchPage]);
+  }, [batchPage, filteredBatches]);
 
-  const currentBatchId = filteredBatches.some(b => b.id === selectedBatchId)
+  const currentBatchId = filteredBatches.some((batch) => batch.id === selectedBatchId)
     ? selectedBatchId
     : filteredBatches[0]?.id || "";
 
-  const selectedBatch = batches.find((b) => b.id === currentBatchId);
+  const selectedBatch = batches.find((batch) => batch.id === currentBatchId) || null;
+  const selectedBatchIsNational =
+    selectedBatch?.scopeType === ExamBatchScopeType.National;
+
   const currentExams = exams
-    .filter((ex) => ex.examBatchId === currentBatchId)
-    .filter((ex) => selectedLicenseType === "all" || String(ex.licenseType) === selectedLicenseType);
+    .filter((exam) => exam.examBatchId === currentBatchId)
+    .filter(
+      (exam) =>
+        selectedLicenseType === "all" ||
+        String(exam.licenseType) === selectedLicenseType,
+    );
 
   useEffect(() => {
     setExamPage(1);
-  }, [currentBatchId, selectedLicenseType, exams.length]);
+  }, [currentBatchId, exams.length, selectedLicenseType]);
 
   const totalExamPages = Math.max(1, Math.ceil(currentExams.length / EXAMS_PER_PAGE));
   const paginatedExams = useMemo(() => {
@@ -225,9 +259,9 @@ export default function ExamClientView() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-        <p className="text-slate-500 font-medium">Đang tải dữ liệu kỳ thi...</p>
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <p className="font-medium text-slate-500">Đang tải dữ liệu kỳ thi...</p>
       </div>
     );
   }
@@ -235,49 +269,49 @@ export default function ExamClientView() {
   return (
     <>
       <div className="flex flex-col space-y-6">
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-lg text-sm font-medium">
+        {error ? (
+          <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
-        )}
+        ) : null}
 
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Tìm kiếm kỳ thi, đợt thi hoặc khóa học..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all shadow-sm"
+              placeholder="Tìm kiếm kỳ thi hoặc đợt thi..."
+              className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm outline-none transition-all focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto shrink-0">
-            <Link 
+
+          <div className="flex w-full shrink-0 flex-col items-center gap-3 sm:w-auto sm:flex-row">
+            <Link
               href="/training-manager/registrations"
-              className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-all active:scale-95 w-full sm:w-auto whitespace-nowrap"
+              className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-95 sm:w-auto"
             >
-              <ClipboardCheck className="w-4 h-4 text-blue-600" /> Duyệt đăng ký
+              <ClipboardCheck className="h-4 w-4 text-blue-600" />
+              Duyệt đăng ký
             </Link>
 
             <button
               onClick={handleCreateBatch}
-              className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 transition-all active:scale-95 w-full sm:w-auto whitespace-nowrap"
+              className="flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-blue-700 active:scale-95 sm:w-auto"
             >
-              <Plus className="w-4 h-4" /> Tạo đợt thi mới
+              <Plus className="h-4 w-4" />
+              Tạo đợt thi mới
             </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-slate-200 gap-8 overflow-x-auto">
+        <div className="flex gap-8 overflow-x-auto border-b border-slate-200">
           {EXAM_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`pb-4 border-b-2 text-sm font-bold whitespace-nowrap transition-colors ${
+              className={`whitespace-nowrap border-b-2 pb-4 text-sm font-bold transition-colors ${
                 activeTab === tab.id
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-slate-500 hover:text-slate-700"
@@ -288,7 +322,6 @@ export default function ExamClientView() {
           ))}
         </div>
 
-        {/* Bảng Đợt Thi */}
         <ExamBatchTable
           batches={paginatedBatches}
           selectedId={currentBatchId}
@@ -302,7 +335,7 @@ export default function ExamClientView() {
           onDeleteClick={handleDeleteClickBatch}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <ExamCardList
               batchName={selectedBatch?.batchName}
@@ -317,6 +350,10 @@ export default function ExamClientView() {
               onDeleteClick={handleDeleteExamClick}
               selectedLicenseType={selectedLicenseType}
               onLicenseFilterChange={setSelectedLicenseType}
+              canManageExams={!selectedBatchIsNational && !!selectedBatch}
+              readOnlyReason={
+                selectedBatchIsNational ? nationalBatchReadOnlyMessage : undefined
+              }
             />
           </div>
 
@@ -331,7 +368,6 @@ export default function ExamClientView() {
         </div>
       </div>
 
-      {/* --- RENDER MODALS --- */}
       <ExamBatchModal
         isOpen={isBatchModalOpen}
         onClose={() => setIsBatchModalOpen(false)}
@@ -345,7 +381,7 @@ export default function ExamClientView() {
         batchContext={{
           id: currentBatchId,
           name: selectedBatch?.batchName || "",
-          courseId: "", // Removing courseId from batch context as individual exams have their own courses
+          courseId: "",
         }}
         initialData={editingExam}
         onSubmit={handleExamSubmit}
@@ -361,8 +397,8 @@ export default function ExamClientView() {
 
       <ConfirmModal
         isOpen={isExamConfirmModalOpen}
-        title="Xác nhận xóa kỳ thi"
-        message={`Bạn có chắc chắn muốn xóa kỳ thi "${examToDelete?.examName}" không? Dữ liệu liên quan sẽ bị xóa vĩnh viễn.`}
+        title="Xác nhận xóa bài thi"
+        message={`Bạn có chắc chắn muốn xóa bài thi "${examToDelete?.examName}" không? Dữ liệu liên quan sẽ bị xóa vĩnh viễn.`}
         onCancel={() => setIsExamConfirmModalOpen(false)}
         onConfirm={handleConfirmDeleteExam}
       />

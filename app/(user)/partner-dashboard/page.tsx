@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Copy, UserPlus, Wallet, PiggyBank, Loader2, Check, Plus } from "lucide-react";
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
@@ -8,7 +8,7 @@ import styles from "@/styles/partner-dashboard.module.css";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
 import { userService, UserProfile } from "@/services/userService";
-import { collaboratorService, ReferralCodeResponse, Commission } from "@/services/collaboratorService";
+import { collaboratorService, Commission, ReferralCodeResponse } from "@/services/collaboratorService";
 
 export default function PartnerDashboardPage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
@@ -38,14 +38,14 @@ export default function PartnerDashboardPage() {
           return;
         }
 
-        const [myToken, myComms] = await Promise.all([
+        const [myToken, myCommissions] = await Promise.all([
           collaboratorService.getMyReferralCode(),
           collaboratorService.getMyCommissions(),
         ]);
 
         setTokenData(myToken);
-        setCommissions(myComms || []);
-      } catch (error: any) {
+        setCommissions(myCommissions || []);
+      } catch (error) {
         console.error("Error fetching partner data:", error);
       } finally {
         setLoading(false);
@@ -54,6 +54,23 @@ export default function PartnerDashboardPage() {
 
     fetchData();
   }, [isClerkLoaded, clerkUser, getToken]);
+
+  const pendingCommissions = useMemo(
+    () => commissions.filter((commission) => commission.status === "Pending"),
+    [commissions],
+  );
+  const paidCommissions = useMemo(
+    () => commissions.filter((commission) => commission.status === "Paid"),
+    [commissions],
+  );
+
+  const totalCommission = commissions.reduce((sum, commission) => sum + commission.amount, 0);
+  const currentCycleCommission = pendingCommissions.reduce(
+    (sum, commission) => sum + commission.amount,
+    0,
+  );
+  const paidCommissionTotal = paidCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+  const currentCycleUsage = tokenData?.usedCount || 0;
 
   if (loading || !isClerkLoaded) {
     return (
@@ -86,7 +103,8 @@ export default function PartnerDashboardPage() {
             <div style={{ fontSize: "64px", marginBottom: "20px" }}>🛡️</div>
             <h2 style={{ fontSize: "24px", color: "#1e293b", marginBottom: "16px" }}>Quyền truy cập hạn chế</h2>
             <p style={{ color: "#64748b", marginBottom: "30px", lineHeight: "1.6" }}>
-              Trang này chỉ dành riêng cho cộng tác viên. Tài khoản hiện tại của bạn ({profile.roleName}) không có quyền truy cập dữ liệu này.
+              Trang này chỉ dành riêng cho cộng tác viên. Tài khoản hiện tại của bạn ({profile.roleName})
+              không có quyền truy cập dữ liệu này.
             </p>
             <button
               onClick={() => (window.location.href = "/")}
@@ -122,7 +140,7 @@ export default function PartnerDashboardPage() {
 
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
       let randomCode = "";
-      for (let i = 0; i < 8; i++) {
+      for (let index = 0; index < 8; index += 1) {
         randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
       }
 
@@ -132,27 +150,14 @@ export default function PartnerDashboardPage() {
 
       const newToken = await collaboratorService.getMyReferralCode();
       setTokenData(newToken);
-      alert(`Mã giới thiệu "${randomCode}" đã được tạo thành công!`);
+      window.alert(`Mã giới thiệu "${randomCode}" đã được tạo thành công.`);
     } catch (error: any) {
-      const msg = error.response?.data?.message || "Lỗi khi tạo mã giới thiệu.";
-      alert(msg);
+      const message = error.response?.data?.message || "Không thể tạo mã giới thiệu.";
+      window.alert(message);
     } finally {
       setGenerating(false);
     }
   };
-
-  const totalCommission = commissions.reduce((sum, commission) => sum + commission.amount, 0);
-
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  const termCommission = commissions
-    .filter((commission) => {
-      const date = new Date(commission.createdAt);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    })
-    .reduce((sum, commission) => sum + commission.amount, 0);
-
-  const codeUsers = tokenData?.usedCount || 0;
 
   return (
     <div className={shellStyles.page}>
@@ -164,7 +169,8 @@ export default function PartnerDashboardPage() {
             <div>
               <h1>Bảng điều khiển cộng tác viên</h1>
               <p>
-                Chào buổi sáng, {profile?.fullName || clerkUser?.fullName}. Đây là hiệu suất giới thiệu của bạn.
+                Chào {profile?.fullName || clerkUser?.fullName}. Đây là tình hình sử dụng mã giới thiệu
+                và hoa hồng hiện tại của bạn.
               </p>
             </div>
 
@@ -202,6 +208,9 @@ export default function PartnerDashboardPage() {
                   </button>
                 )}
               </div>
+              <p className={styles.refLabel} style={{ marginTop: 10 }}>
+                Hoa hồng: 5% mỗi khóa học. Học viên được giảm 5% học phí khi dùng mã của bạn.
+              </p>
             </div>
           </header>
 
@@ -210,9 +219,11 @@ export default function PartnerDashboardPage() {
               <div className={styles.iconCircle}>
                 <UserPlus size={18} />
               </div>
-              <span className={styles.metricLabel}>Lượt sử dụng mã</span>
-              <div className={styles.metricValue}>{codeUsers}</div>
-              <span className={styles.metricDelta}>Tổng số lượt thành công</span>
+              <span className={styles.metricLabel}>Lượt dùng mã trong chu kỳ hiện tại</span>
+              <div className={styles.metricValue}>{currentCycleUsage}</div>
+              <span className={styles.metricDelta}>
+                Sau khi trung tâm thanh toán, bộ đếm sẽ trở về 0 và bắt đầu chu kỳ mới.
+              </span>
               <div className={styles.metricFoot} />
             </article>
 
@@ -220,10 +231,10 @@ export default function PartnerDashboardPage() {
               <div className={styles.iconCircle}>
                 <Wallet size={18} />
               </div>
-              <span className={styles.metricLabel}>Tổng hoa hồng</span>
-              <div className={styles.metricValue}>{totalCommission.toLocaleString()}</div>
+              <span className={styles.metricLabel}>Hoa hồng chờ thanh toán</span>
+              <div className={styles.metricValue}>{currentCycleCommission.toLocaleString("vi-VN")}</div>
               <span className={styles.metricSub}>VND</span>
-              <span className={styles.metricHint}>Thu nhập trọn đời</span>
+              <span className={styles.metricHint}>Tính từ các lượt dùng mã chưa được đối soát</span>
               <div className={styles.metricFootSoft} />
             </article>
 
@@ -231,11 +242,22 @@ export default function PartnerDashboardPage() {
               <div className={`${styles.iconCircle} ${styles.iconOrange}`}>
                 <PiggyBank size={18} />
               </div>
-              <span className={styles.metricLabel}>Hoa hồng tháng này</span>
-              <div className={styles.metricValue}>{termCommission.toLocaleString()}</div>
+              <span className={styles.metricLabel}>Đã thanh toán</span>
+              <div className={styles.metricValue}>{paidCommissionTotal.toLocaleString("vi-VN")}</div>
               <span className={styles.metricSub}>VND</span>
-              <span className={styles.metricHint}>Dự kiến thanh toán vào ngày 15 hằng tháng</span>
+              <span className={styles.metricHint}>Tổng hoa hồng đã nhận</span>
               <div className={styles.metricFootWarm} />
+            </article>
+
+            <article className={styles.metricCard}>
+              <div className={styles.iconCircle}>
+                <Wallet size={18} />
+              </div>
+              <span className={styles.metricLabel}>Tổng hoa hồng tích lũy</span>
+              <div className={styles.metricValue}>{totalCommission.toLocaleString("vi-VN")}</div>
+              <span className={styles.metricSub}>VND</span>
+              <span className={styles.metricHint}>Bao gồm cả đã thanh toán và đang chờ</span>
+              <div className={styles.metricFoot} />
             </article>
           </section>
 
@@ -243,7 +265,7 @@ export default function PartnerDashboardPage() {
             <div className={styles.chartHeader}>
               <div>
                 <h2>Lịch sử hoa hồng gần đây</h2>
-                <p>Theo dõi các khoản thu nhập từ việc giới thiệu học viên.</p>
+                <p>Theo dõi các khoản hoa hồng phát sinh từ từng lượt học viên dùng mã.</p>
               </div>
             </div>
 
@@ -252,34 +274,46 @@ export default function PartnerDashboardPage() {
                 <p className={styles.emptyText}>Chưa có dữ liệu hoa hồng.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "10px" }}>
-                  {commissions.slice(0, 5).map((commission) => (
+                  {commissions.slice(0, 8).map((commission) => (
                     <div
                       key={commission.id}
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        padding: "12px",
+                        padding: "14px",
                         backgroundColor: "#f8fafc",
-                        borderRadius: "10px",
-                        border: "1px solid #f1f5f9",
+                        borderRadius: "12px",
+                        border: "1px solid #e2e8f0",
+                        gap: "12px",
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: "600", color: "#334155" }}>+{commission.amount.toLocaleString()} VND</div>
-                        <div style={{ fontSize: "12px", color: "#94a3b8" }}>{new Date(commission.createdAt).toLocaleDateString("vi-VN")}</div>
+                        <div style={{ fontWeight: 700, color: "#334155" }}>
+                          +{commission.amount.toLocaleString("vi-VN")} VND
+                        </div>
+                        <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
+                          {commission.studentName || "Học viên"} - {commission.courseName || "Khóa học"}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                          Mã: {commission.referralCode || "-"} | Ngày ghi nhận:{" "}
+                          {new Date(commission.createdAt).toLocaleDateString("vi-VN")}
+                        </div>
                       </div>
+
                       <span
                         style={{
-                          fontSize: "11px",
-                          padding: "4px 10px",
+                          fontSize: 11,
+                          padding: "6px 10px",
                           borderRadius: "20px",
-                          backgroundColor: commission.status === "Paid" ? "#dcfce7" : "#fef9c3",
-                          color: commission.status === "Paid" ? "#166534" : "#854d0e",
-                          fontWeight: "600",
+                          backgroundColor:
+                            commission.status === "Paid" ? "#dcfce7" : "#fef3c7",
+                          color: commission.status === "Paid" ? "#166534" : "#92400e",
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        {commission.status === "Paid" ? "Đã trả" : "Chờ xử lý"}
+                        {commission.status === "Paid" ? "Đã thanh toán" : "Chờ thanh toán"}
                       </span>
                     </div>
                   ))}

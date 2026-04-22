@@ -1,4 +1,11 @@
 import api from "@/lib/api";
+import {
+  ExamScoreboardQuery,
+  ExamScoreboardResponse,
+  ExamScoreImportResponse,
+  UpsertStudentExamScoresRequest,
+} from "@/types/exam-result";
+import { ExamBatch, Exam } from "@/types/exam";
 
 export enum ExamType {
   Theory = 1,
@@ -41,17 +48,17 @@ export const examService = {
     return response.data.data || [];
   },
 
-  getAllExamBatches: async (): Promise<any[]> => {
+  getAllExamBatches: async (): Promise<ExamBatch[]> => {
     const response = await api.get("/ExamBatch");
     return response.data.data || [];
   },
 
-  createExamBatch: async (data: any): Promise<any> => {
+  createExamBatch: async (data: Partial<ExamBatch>): Promise<ExamBatch> => {
     const response = await api.post("/ExamBatch", data);
     return response.data.data;
   },
 
-  updateExamBatch: async (id: string, data: any): Promise<any> => {
+  updateExamBatch: async (id: string, data: Partial<ExamBatch>): Promise<ExamBatch> => {
     const response = await api.put(`/ExamBatch/${id}`, data);
     return response.data.data;
   },
@@ -64,22 +71,68 @@ export const examService = {
     await api.delete(`/ExamBatch/${id}`);
   },
 
-  getAllExams: async (): Promise<any[]> => {
+  getAllExams: async (): Promise<Exam[]> => {
     const response = await api.get("/Exam");
     return response.data.data || [];
   },
 
-  createExam: async (data: any): Promise<any> => {
+  createExam: async (data: Partial<Exam>): Promise<Exam> => {
     const response = await api.post("/Exam", data);
     return response.data.data;
   },
 
-  updateExam: async (id: string, data: any): Promise<any> => {
+  updateExam: async (id: string, data: Partial<Exam>): Promise<Exam> => {
     const response = await api.put(`/Exam/${id}`, data);
     return response.data.data;
   },
 
   deleteExam: async (id: string): Promise<void> => {
     await api.delete(`/Exam/${id}`);
+  },
+
+  getScoreboard: async (
+    query: ExamScoreboardQuery
+  ): Promise<ExamScoreboardResponse> => {
+    const response = await api.get("/Exam/scoreboard", { params: query });
+    return response.data.data;
+  },
+
+  upsertScoreboard: async (
+    data: UpsertStudentExamScoresRequest
+  ): Promise<any> => {
+    const response = await api.post("/Exam/scoreboard", data);
+    return response.data.data;
+  },
+
+  importScoreboard: async (
+    file: File,
+    data: { courseId: string; termId: string; examBatchId: string }
+  ): Promise<ExamScoreImportResponse> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("courseId", data.courseId);
+    formData.append("termId", data.termId);
+    formData.append("examBatchId", data.examBatchId);
+
+    const response = await api.post("/Exam/scoreboard/import", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data.data;
+  },
+
+  downloadScoreboardTemplate: async (params: {
+    courseId: string;
+    termId: string;
+    examBatchId: string;
+  }): Promise<Blob> => {
+    const response = await api.get("/Exam/scoreboard/import-template", {
+      params,
+      responseType: "blob",
+    });
+
+    return response.data;
   }
 };

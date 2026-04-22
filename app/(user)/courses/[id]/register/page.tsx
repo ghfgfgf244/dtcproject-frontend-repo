@@ -6,6 +6,10 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { courseService } from "@/services/courseService";
 import { registrationService } from "@/services/registrationService";
 import { documentService } from "@/services/documentService";
+import {
+  collaboratorService,
+  ReferralCodeValidationResponse,
+} from "@/services/collaboratorService";
 import { setAuthToken } from "@/lib/api";
 import { Course } from "@/types/course";
 
@@ -39,6 +43,9 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [referralPreview, setReferralPreview] =
+    useState<ReferralCodeValidationResponse | null>(null);
+  const [validatingReferral, setValidatingReferral] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
   const [docs, setDocs] = useState<DocsState>({
@@ -47,9 +54,20 @@ export default function RegisterPage() {
     idBack: { file: null, status: "idle" },
   });
 
-  const formattedPrice = useMemo(() => {
-    return course ? new Intl.NumberFormat("vi-VN").format(course.price) : "";
-  }, [course]);
+  const formattedPrice = useMemo(
+    () => (course ? new Intl.NumberFormat("vi-VN").format(course.price) : ""),
+    [course],
+  );
+
+  const referralDiscountAmount = useMemo(() => {
+    if (!course || !referralPreview?.isValid) return 0;
+    return Math.round(course.price * (referralPreview.discountRate / 100));
+  }, [course, referralPreview]);
+
+  const finalPrice = useMemo(() => {
+    if (!course) return 0;
+    return Math.max(course.price - referralDiscountAmount, 0);
+  }, [course, referralDiscountAmount]);
 
   useEffect(() => {
     async function fetchData() {
@@ -71,7 +89,9 @@ export default function RegisterPage() {
 
         const findDoc = (keywords: string[]) =>
           sortedDocs.find((doc) =>
-            keywords.some((keyword) => doc.fileName.toLowerCase().includes(keyword.toLowerCase())),
+            keywords.some((keyword) =>
+              doc.fileName.toLowerCase().includes(keyword.toLowerCase()),
+            ),
           );
 
         const existingPhoto = findDoc(["photo", "avatar", "profile", "chan dung"]);
@@ -95,9 +115,9 @@ export default function RegisterPage() {
             status: existingBack ? "success" : "idle",
           },
         }));
-      } catch (err: any) {
+      } catch (err) {
         console.error("Fetch error:", err);
-        setError("Không thể tải thông tin khóa học. Vui lòng kiểm tra kết nối mạng.");
+        setError("Không thể tải thông tin khóa học. Vui lòng thử lại.");
       } finally {
         setLoading(false);
       }
@@ -105,6 +125,30 @@ export default function RegisterPage() {
 
     fetchData();
   }, [courseId, getToken, isSignedIn]);
+
+  const handleValidateReferralCode = async (rawCode: string) => {
+    const normalizedCode = rawCode.trim();
+    if (!normalizedCode) {
+      setReferralPreview(null);
+      return;
+    }
+
+    try {
+      setValidatingReferral(true);
+      const preview = await collaboratorService.validateReferralCode(normalizedCode, courseId);
+      setReferralPreview(preview);
+    } catch (validationError) {
+      console.error("Referral validation error:", validationError);
+      setReferralPreview({
+        isValid: false,
+        discountRate: 5,
+        commissionRate: 5,
+        message: "Không thể kiểm tra mã giới thiệu lúc này.",
+      });
+    } finally {
+      setValidatingReferral(false);
+    }
+  };
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -124,7 +168,12 @@ export default function RegisterPage() {
     if (!course) return;
 
     if (!agreed) {
-      setError("Bạn cần đồng ý với điều khoản và chính sách trước khi đăng ký.");
+      setError("Bạn cần đồng ý với điều khoản trước khi đăng ký.");
+      return;
+    }
+
+    if (referralCode.trim() && referralPreview && !referralPreview.isValid) {
+      setError("Mã giới thiệu không hợp lệ hoặc đã ngừng hoạt động.");
       return;
     }
 
@@ -133,7 +182,7 @@ export default function RegisterPage() {
 
     if (!isSignedIn) {
       const missingIdentity: string[] = [];
-      if (!fullName.trim()) missingIdentity.push("Họ tên");
+      if (!fullName.trim()) missingIdentity.push("Họ và tên");
       if (!email.trim()) missingIdentity.push("Email");
       if (!phone.trim()) missingIdentity.push("Số điện thoại");
 
@@ -161,7 +210,7 @@ export default function RegisterPage() {
 
       const formData = new FormData();
       formData.append("CourseId", course.id);
-      formData.append("TotalFee", course.price.toString());
+      formData.append("TotalFee", finalPrice.toString());
 
       if (!isSignedIn) {
         formData.append("FullName", fullName.trim());
@@ -184,6 +233,7 @@ export default function RegisterPage() {
           : "Nếu kỳ hiện tại đã đủ chỗ, trung tâm sẽ ưu tiên xếp bạn vào kỳ tiếp theo phù hợp.";
 
       setSuccessMessage(placementNotice);
+      setReferralCode("");
     } catch (err: any) {
       console.error("Submit error:", err);
       const message =
@@ -209,7 +259,7 @@ export default function RegisterPage() {
     return (
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-slate-600">{label}</span>
-        <label className="relative flex h-48 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center transition hover:bg-slate-100 group">
+        <label className="group relative flex h-48 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center transition hover:bg-slate-100">
           {previewUrl ? (
             <div className="relative h-full w-full">
               <img src={previewUrl} className="h-full w-full object-contain" alt={previewAlt} />
@@ -269,8 +319,8 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
-                  <p className="text-xs text-slate-500">Học phí</p>
-                  <p className="font-semibold text-sky-600">{formattedPrice}đ</p>
+                  <p className="text-xs text-slate-500">Học phí gốc</p>
+                  <p className="font-semibold text-sky-600">{formattedPrice} đ</p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
@@ -279,8 +329,8 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
-                  <p className="text-xs text-slate-500">Hỗ trợ</p>
-                  <p className="font-semibold">Trọn gói</p>
+                  <p className="text-xs text-slate-500">Ưu đãi referral</p>
+                  <p className="font-semibold text-emerald-600">Giảm 5%</p>
                 </div>
               </div>
             </div>
@@ -304,7 +354,7 @@ export default function RegisterPage() {
                     </h3>
                     <p className="mb-4 text-xs text-slate-500">
                       Bạn chưa đăng nhập. Hệ thống sẽ tạo hồ sơ học viên nội bộ từ thông tin bên dưới
-                      để lưu đăng ký và hồ sơ giấy tờ.
+                      để lưu đăng ký và giấy tờ của bạn.
                     </p>
                   </div>
 
@@ -353,8 +403,23 @@ export default function RegisterPage() {
                   placeholder="Ví dụ: REF123"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
+                  onBlur={(e) => handleValidateReferralCode(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-400"
                 />
+                {validatingReferral ? (
+                  <p className="text-xs text-slate-500">Đang kiểm tra mã giới thiệu...</p>
+                ) : null}
+                {referralPreview?.isValid ? (
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                    Mã hợp lệ, thuộc về cộng tác viên <strong>{referralPreview.collaboratorName}</strong>.
+                    Bạn được giảm <strong>{referralPreview.discountRate}%</strong> học phí.
+                  </div>
+                ) : null}
+                {!validatingReferral && referralCode.trim() && referralPreview && !referralPreview.isValid ? (
+                  <div className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                    {referralPreview.message || "Mã giới thiệu không hợp lệ hoặc đã ngừng hoạt động."}
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex flex-col gap-2 md:col-span-2">
@@ -367,6 +432,30 @@ export default function RegisterPage() {
                 />
               </div>
 
+              <div className="md:col-span-2">
+                <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-700">Tổng hợp học phí</p>
+                  <div className="mt-3 space-y-2 text-sm text-slate-700">
+                    <div className="flex items-center justify-between">
+                      <span>Học phí gốc</span>
+                      <strong>{formattedPrice} đ</strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Giảm giá theo mã cộng tác viên</span>
+                      <strong className="text-emerald-600">
+                        -{new Intl.NumberFormat("vi-VN").format(referralDiscountAmount)} đ
+                      </strong>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-sky-100 pt-2 text-base">
+                      <span className="font-semibold text-slate-900">Học phí cần thanh toán</span>
+                      <strong className="text-sky-600">
+                        {new Intl.NumberFormat("vi-VN").format(finalPrice)} đ
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-4 md:col-span-2">
                 <h3 className="mb-4 border-b border-slate-200 pb-2 text-sm font-semibold uppercase tracking-wider text-sky-600">
                   Giấy tờ yêu cầu
@@ -376,26 +465,11 @@ export default function RegisterPage() {
                 </p>
               </div>
 
-              {renderUploadCard(
-                "Ảnh chân dung (3x4)",
-                "photo",
-                "Tải ảnh chân dung",
-                "Xem trước ảnh chân dung",
-              )}
-              {renderUploadCard(
-                "CCCD/CMND (Mặt trước)",
-                "idFront",
-                "Tải mặt trước",
-                "Xem trước mặt trước CCCD/CMND",
-              )}
+              {renderUploadCard("Ảnh chân dung (3x4)", "photo", "Tải ảnh chân dung", "Ảnh chân dung")}
+              {renderUploadCard("CCCD/CMND (Mặt trước)", "idFront", "Tải mặt trước", "CCCD mặt trước")}
 
               <div className="md:col-span-2 md:w-1/2">
-                {renderUploadCard(
-                  "CCCD/CMND (Mặt sau)",
-                  "idBack",
-                  "Tải mặt sau",
-                  "Xem trước mặt sau CCCD/CMND",
-                )}
+                {renderUploadCard("CCCD/CMND (Mặt sau)", "idBack", "Tải mặt sau", "CCCD mặt sau")}
               </div>
             </div>
 
@@ -415,8 +489,8 @@ export default function RegisterPage() {
                 />
                 <span className="transition group-hover:text-slate-900">
                   Tôi đồng ý với các{" "}
-                  <span className="text-sky-600 hover:underline">điều khoản và chính sách</span>{" "}
-                  của trung tâm đào tạo.
+                  <span className="text-sky-600 hover:underline">điều khoản và chính sách</span> của
+                  trung tâm đào tạo.
                 </span>
               </label>
             </div>
@@ -466,17 +540,32 @@ export default function RegisterPage() {
                   Hồ sơ của bạn đã được ghi nhận
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Trung tâm đã nhận thông tin đăng ký khóa học. Bạn có thể theo dõi trạng thái
-                  duyệt trong khu vực khóa học của mình sau khi đăng nhập.
+                  Trung tâm đã nhận thông tin đăng ký khóa học. Bạn có thể theo dõi trạng thái duyệt
+                  trong khu vực khóa học của mình sau khi đăng nhập.
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-sky-100 bg-sky-50/80 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-700">
-                Thông tin dự kiến xếp kỳ
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-700">{successMessage}</p>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-sky-100 bg-sky-50/80 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-700">
+                  Thông tin dự kiến xếp kỳ
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{successMessage}</p>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
+                  Học phí áp dụng
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  Học phí cuối cùng của bạn là{" "}
+                  <strong>{new Intl.NumberFormat("vi-VN").format(finalPrice)} đ</strong>
+                  {referralPreview?.isValid
+                    ? ` sau khi áp dụng mã giới thiệu của ${referralPreview.collaboratorName}.`
+                    : "."}
+                </p>
+              </div>
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

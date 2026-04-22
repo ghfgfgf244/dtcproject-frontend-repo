@@ -4,8 +4,12 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Loader2, Plus, Users } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
-import { ExamBatch } from "@/types/exam";
-import { RegistrationRecord, ExamRegistrationStatus, TermRegistrationCandidate } from "@/types/registration";
+import { ExamBatch, ExamBatchScopeType } from "@/types/exam";
+import {
+  ExamRegistrationStatus,
+  RegistrationRecord,
+  TermRegistrationCandidate,
+} from "@/types/registration";
 import { TermRecord } from "@/types/term";
 import { UserListItem, userService } from "@/services/userService";
 import { examService } from "@/services/examService";
@@ -29,33 +33,40 @@ const statusOptions = [
   { value: "cancelled", label: "Đã hủy" },
 ];
 
-// FIX: status can be either ExamRegistrationStatus (number) or CourseRegistrationStatus (string)
-// Handle both variants to ensure filters work correctly
 const getStatusKey = (status: ExamRegistrationStatus | string): string => {
-  // Numeric enum path (ExamRegistration)
   if (typeof status === "number") {
     switch (status) {
-      case ExamRegistrationStatus.Approved:  return "approved";
-      case ExamRegistrationStatus.Rejected:  return "rejected";
-      case ExamRegistrationStatus.Cancelled: return "cancelled";
-      default:                               return "pending";
+      case ExamRegistrationStatus.Approved:
+        return "approved";
+      case ExamRegistrationStatus.Rejected:
+        return "rejected";
+      case ExamRegistrationStatus.Cancelled:
+        return "cancelled";
+      default:
+        return "pending";
     }
   }
-  // String path (CourseRegistration)
+
   switch (status.toLowerCase()) {
-    case "approved":  return "approved";
-    case "rejected":  return "rejected";
-    case "cancelled": return "cancelled";
-    default:          return "pending";
+    case "approved":
+      return "approved";
+    case "rejected":
+      return "rejected";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return "pending";
   }
 };
 
-// FIX: normalize status to ExamRegistrationStatus for numeric comparisons
 const isStatusEqual = (
   status: ExamRegistrationStatus | string,
   target: ExamRegistrationStatus,
 ): boolean => {
-  if (typeof status === "number") return status === target;
+  if (typeof status === "number") {
+    return status === target;
+  }
+
   return getStatusKey(status) === getStatusKey(target);
 };
 
@@ -91,6 +102,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
 
       setLoadingTable(true);
       setError(null);
+
       try {
         await withAuth();
         const data = await registrationService.getRegistrationsByBatch(examBatchId);
@@ -109,6 +121,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
     const bootstrap = async () => {
       setLoadingPage(true);
       setError(null);
+
       try {
         await withAuth();
         const [batchData, termData] = await Promise.all([
@@ -123,7 +136,8 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
         setBatchFilter(defaultBatchId);
 
         if (defaultBatchId) {
-          const registrationData = await registrationService.getRegistrationsByBatch(defaultBatchId);
+          const registrationData =
+            await registrationService.getRegistrationsByBatch(defaultBatchId);
           setRegistrations(registrationData);
         } else {
           setRegistrations([]);
@@ -147,6 +161,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
   const openManualModal = async () => {
     setLoadingStudents(true);
     setError(null);
+
     try {
       await withAuth();
       const studentData = await userService.getStudents();
@@ -174,6 +189,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
 
       setLoadingCandidates(true);
       setError(null);
+
       try {
         await withAuth();
         const candidates = await registrationService.getTermCandidates(termId, examBatchId);
@@ -191,6 +207,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
   const handleManualSubmit = async (studentId: string, examBatchId: string) => {
     await withAuth();
     await registrationService.createRegistration(examBatchId, studentId, false);
+
     if (examBatchId === batchFilter) {
       await loadRegistrations(examBatchId);
     } else {
@@ -201,6 +218,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
   const handleBulkSubmit = async (studentIds: string[], examBatchId: string) => {
     await withAuth();
     await registrationService.createBulk(examBatchId, studentIds, false);
+
     if (examBatchId === batchFilter) {
       await loadRegistrations(examBatchId);
     } else {
@@ -227,7 +245,6 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
   };
 
   const handleApproveAll = async () => {
-    // FIX: use isStatusEqual() so both string and numeric status are handled correctly
     const eligibleIds = registrations
       .filter(
         (record) =>
@@ -281,19 +298,28 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
     setCurrentPage(1);
   }, [batchFilter, statusFilter]);
 
-  // FIX: use isStatusEqual() to handle both string and numeric status
-  const pendingCount = registrations.filter(
-    (record) => isStatusEqual(record.status, ExamRegistrationStatus.Pending),
+  const pendingCount = registrations.filter((record) =>
+    isStatusEqual(record.status, ExamRegistrationStatus.Pending),
   ).length;
+
   const eligibleCount = registrations.filter(
     (record) =>
       isStatusEqual(record.status, ExamRegistrationStatus.Pending) &&
       record.isEligibleForApproval === true,
   ).length;
+
   const registeredStudentIds = useMemo(
     () => registrations.map((record) => record.studentId).filter(Boolean),
     [registrations],
   );
+
+  const selectedBatch = useMemo(
+    () => batches.find((batch) => batch.id === batchFilter) || null,
+    [batchFilter, batches],
+  );
+
+  const selectedBatchIsNational =
+    selectedBatch?.scopeType === ExamBatchScopeType.National;
 
   if (loadingPage) {
     return (
@@ -311,9 +337,11 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
             Quản lý đăng ký thi
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Theo dõi danh sách học viên theo từng đợt thi, xác nhận lệ phí và duyệt hồ sơ đủ điều kiện.
+            Theo dõi danh sách học viên theo từng đợt thi, xác nhận lệ phí và duyệt
+            hồ sơ đủ điều kiện.
           </p>
         </div>
+
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -323,6 +351,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
             <Plus className="h-4 w-4" />
             Đăng ký thủ công
           </button>
+
           <button
             type="button"
             onClick={openBulkModal}
@@ -331,6 +360,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
             <Users className="h-4 w-4" />
             Đăng ký hàng loạt
           </button>
+
           <button
             type="button"
             onClick={handleApproveAll}
@@ -355,6 +385,7 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
             <option value="">-- Chọn đợt thi --</option>
             {batches.map((batch) => (
               <option key={batch.id} value={batch.id}>
+                [{batch.scopeType === ExamBatchScopeType.National ? "Quốc gia" : "Trung tâm"}]{" "}
                 {batch.batchName}
               </option>
             ))}
@@ -393,11 +424,19 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
         </div>
       </div>
 
-      {error && (
+      {selectedBatchIsNational ? (
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-medium text-violet-800">
+          Bạn đang làm việc với <strong>đợt thi quốc gia</strong>. Trang này vẫn cho
+          phép tạo đăng ký thi, xác nhận lệ phí và duyệt hồ sơ, nhưng cấu hình đợt
+          thi và danh sách bài thi sẽ được quản lý ở khu vực riêng.
+        </div>
+      ) : null}
+
+      {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
         </div>
-      )}
+      ) : null}
 
       {loadingTable ? (
         <div className="flex justify-center rounded-3xl border border-slate-200 bg-white p-20">
@@ -421,19 +460,24 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <h3 className="text-sm font-black text-slate-900">Đăng ký thủ công</h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Tìm đúng học viên trong cơ sở dữ liệu, chọn đợt thi và tạo hồ sơ ở trạng thái chờ duyệt.
+            Tìm đúng học viên trong cơ sở dữ liệu, chọn đợt thi và tạo hồ sơ ở
+            trạng thái chờ duyệt.
           </p>
         </div>
+
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <h3 className="text-sm font-black text-slate-900">Đăng ký hàng loạt</h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Chọn một kỳ học để lấy danh sách học viên theo term, sau đó đăng ký vào cùng một đợt thi.
+            Chọn một kỳ học để lấy danh sách học viên theo term, sau đó đăng ký vào
+            cùng một đợt thi.
           </p>
         </div>
+
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <h3 className="text-sm font-black text-slate-900">Duyệt hàng loạt</h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Chỉ những học viên đã nộp lệ phí và có tỷ lệ tham gia từ 80% số buổi học trở lên mới được duyệt hàng loạt.
+            Chỉ những học viên đã nộp lệ phí và có tỷ lệ tham gia từ 80% số buổi
+            học trở lên mới được duyệt hàng loạt.
           </p>
         </div>
       </div>

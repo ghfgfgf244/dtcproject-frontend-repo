@@ -1,6 +1,9 @@
 import React from "react";
 import { Check, ChevronLeft, ChevronRight, Wallet, X } from "lucide-react";
-import { RegistrationRecord } from "@/types/registration";
+import {
+  ExamRegistrationStatus,
+  RegistrationRecord,
+} from "@/types/registration";
 
 interface Props {
   data: RegistrationRecord[];
@@ -14,16 +17,50 @@ interface Props {
   onTogglePayment: (record: RegistrationRecord) => void;
 }
 
-const getApprovalBadge = (status: RegistrationRecord["approvalStatus"]) => {
-  switch (status) {
-    case "Đã duyệt":
+const getStatusKey = (status: RegistrationRecord["status"]) => {
+  if (typeof status === "number") {
+    switch (status) {
+      case ExamRegistrationStatus.Approved:
+        return "approved";
+      case ExamRegistrationStatus.Rejected:
+        return "rejected";
+      case ExamRegistrationStatus.Cancelled:
+        return "cancelled";
+      default:
+        return "pending";
+    }
+  }
+
+  const normalized = status.toString().toLowerCase();
+  if (normalized === "approved") return "approved";
+  if (normalized === "rejected") return "rejected";
+  if (normalized === "cancelled") return "cancelled";
+  return "pending";
+};
+
+const getApprovalBadge = (status: RegistrationRecord["status"]) => {
+  switch (getStatusKey(status)) {
+    case "approved":
       return "bg-emerald-100 text-emerald-700";
-    case "Từ chối":
+    case "rejected":
       return "bg-red-100 text-red-700";
-    case "Đã hủy":
+    case "cancelled":
       return "bg-slate-200 text-slate-600";
     default:
       return "bg-amber-100 text-amber-700";
+  }
+};
+
+const getApprovalLabel = (status: RegistrationRecord["status"]) => {
+  switch (getStatusKey(status)) {
+    case "approved":
+      return "Đã duyệt";
+    case "rejected":
+      return "Từ chối";
+    case "cancelled":
+      return "Đã hủy";
+    default:
+      return "Chờ duyệt";
   }
 };
 
@@ -72,7 +109,10 @@ export default function RegistrationTable({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {data.map((record) => {
-              const canReview = record.status === 1;
+              const approvalKey = getStatusKey(record.status);
+              const canReview = approvalKey === "pending";
+              const paymentLabel = record.isPaid ? "Đã nộp lệ phí" : "Chưa nộp lệ phí";
+
               return (
                 <tr key={record.id} className="transition hover:bg-slate-50">
                   <td className="px-6 py-4">
@@ -90,10 +130,12 @@ export default function RegistrationTable({
                       </div>
                     </div>
                   </td>
+
                   <td className="px-6 py-4">
                     <p className="text-sm font-semibold text-slate-800">{record.examBatch}</p>
                     <p className="text-xs text-slate-500">{record.registrationDate}</p>
                   </td>
+
                   <td className="px-6 py-4">
                     <p className="text-sm font-semibold text-slate-800">{record.termName || "-"}</p>
                     <p className="text-xs text-slate-500">
@@ -101,6 +143,7 @@ export default function RegistrationTable({
                       {record.licenseType ? ` • ${record.licenseType}` : ""}
                     </p>
                   </td>
+
                   <td className="px-6 py-4 text-center">
                     <p className="text-sm font-black text-slate-900">
                       {(record.attendanceRate ?? 0).toFixed(0)}%
@@ -109,6 +152,7 @@ export default function RegistrationTable({
                       {record.presentCount ?? 0}/{record.totalSessions ?? 0} buổi
                     </p>
                   </td>
+
                   <td className="px-6 py-4 text-center">
                     <button
                       type="button"
@@ -120,17 +164,18 @@ export default function RegistrationTable({
                       }`}
                     >
                       <Wallet className="h-3.5 w-3.5" />
-                      {record.paymentStatus}
+                      {paymentLabel}
                     </button>
                   </td>
+
                   <td className="px-6 py-4 text-center">
                     <div className="space-y-2">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${getApprovalBadge(
-                          record.approvalStatus,
+                          record.status,
                         )}`}
                       >
-                        {record.approvalStatus}
+                        {getApprovalLabel(record.status)}
                       </span>
                       <p
                         className={`text-xs font-semibold ${
@@ -141,6 +186,7 @@ export default function RegistrationTable({
                       </p>
                     </div>
                   </td>
+
                   <td className="px-6 py-4">
                     {canReview ? (
                       <div className="flex justify-end gap-2">
@@ -164,13 +210,14 @@ export default function RegistrationTable({
                       </div>
                     ) : (
                       <p className="text-right text-xs font-bold text-slate-500">
-                        {record.approvalStatus}
+                        {getApprovalLabel(record.status)}
                       </p>
                     )}
                   </td>
                 </tr>
               );
             })}
+
             {data.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">
@@ -188,6 +235,7 @@ export default function RegistrationTable({
             ? "Không có dữ liệu đăng ký"
             : `Hiển thị ${startItem}-${endItem} trên tổng số ${totalItems} đăng ký`}
         </p>
+
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -197,9 +245,11 @@ export default function RegistrationTable({
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
+
           <div className="rounded-full bg-blue-600 px-4 py-2 text-xs font-black text-white">
             {currentPage}/{totalPages}
           </div>
+
           <button
             type="button"
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}

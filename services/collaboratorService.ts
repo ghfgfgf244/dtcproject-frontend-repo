@@ -10,13 +10,28 @@ export interface ReferralCodeResponse {
   commissionRate: number;
 }
 
+export interface ReferralCodeValidationResponse {
+  isValid: boolean;
+  code?: string;
+  collaboratorId?: string;
+  collaboratorName?: string;
+  discountRate: number;
+  commissionRate: number;
+  message?: string;
+}
+
 export interface Commission {
   id: string;
   collaboratorId: string;
+  referralRegistrationId?: string;
   amount: number;
   status: string;
   createdAt: string;
   paidAt?: string;
+  referralCode?: string;
+  studentName?: string;
+  courseName?: string;
+  discountAmount?: number;
 }
 
 export const collaboratorService = {
@@ -41,12 +56,26 @@ export const collaboratorService = {
     return response.data.message;
   },
 
+  validateReferralCode: async (
+    code: string,
+    courseId?: string,
+  ): Promise<ReferralCodeValidationResponse> => {
+    const response = await api.get<{ data: ReferralCodeValidationResponse }>(
+      "/Collaborator/token/validate",
+      {
+        params: { code, courseId },
+      },
+    );
+
+    return response.data.data;
+  },
+
   /**
    * Fetch recent usage of the referral code.
    */
   getTokenUsage: async (): Promise<number> => {
-    const response = await api.get<{ usedCount: number }>("/Collaborator/token/usage");
-    return response.data.usedCount;
+    const response = await api.get<{ data: { usedCount: number } }>("/Collaborator/token/usage");
+    return response.data.data.usedCount;
   },
 
   /**
@@ -61,7 +90,7 @@ export const collaboratorService = {
    * Fetch the global commission rate.
    */
   getCommissionRate: async (): Promise<number> => {
-    const response = await api.get<{ commissionRate: number }>("/Collaborator/commission/rate");
-    return response.data.commissionRate;
+    const response = await api.get<{ data: { commissionRate: number } }>("/Collaborator/commission/rate");
+    return response.data.data.commissionRate;
   }
 };

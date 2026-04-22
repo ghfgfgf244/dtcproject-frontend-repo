@@ -19,8 +19,7 @@ interface Props {
   onSubmit: (data: CollabFormData) => void;
 }
 
-const createSeed = () =>
-  Math.random().toString(36).slice(2, 6).toUpperCase();
+const createSeed = () => Math.random().toString(36).slice(2, 6).toUpperCase();
 
 const buildReferralCode = (fullName: string, seed: string) => {
   const year = new Date().getFullYear();
@@ -98,12 +97,12 @@ export default function CollaboratorModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
-      <div className="absolute inset-0" onClick={onClose}></div>
+      <div className="absolute inset-0" onClick={onClose} />
       <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between px-8 pb-4 pt-8">
           <div>
             <h3 className="text-xl font-black tracking-tight text-slate-900">
-              {initialData ? "Cập nhật Cộng tác viên" : "Thêm mới Cộng tác viên"}
+              {initialData ? "Cập nhật cộng tác viên" : "Thêm mới cộng tác viên"}
             </h3>
             <p className="mt-1 text-xs font-medium text-slate-500">
               Nhập thông tin chi tiết cho tài khoản cộng tác viên.
@@ -218,7 +217,7 @@ export default function CollaboratorModal({
                   checked={isActive}
                   onChange={() => setIsActive(!isActive)}
                 />
-                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-['']"></div>
+                <div className="h-6 w-11 rounded-full bg-slate-200 peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-['']" />
               </label>
             </div>
           </div>

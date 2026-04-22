@@ -21,11 +21,16 @@ export interface CollaboratorAdminRecord {
 export interface CommissionAdminRecord {
   id: string;
   collaboratorId: string;
+  referralRegistrationId?: string;
   collaboratorName: string;
   amount: number;
   status: string;
   createdAt: string;
   paidAt: string | null;
+  referralCode?: string;
+  studentName?: string;
+  courseName?: string;
+  discountAmount?: number;
 }
 
 export const collaboratorAdminService = {

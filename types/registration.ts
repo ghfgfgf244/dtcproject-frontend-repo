@@ -21,6 +21,8 @@ export interface RegistrationResponse {
   registrationDate: string;
   status: CourseRegistrationStatus;
   totalFee: number;
+  originalFee: number;
+  discountAmount: number;
   notes?: string;
   studentName?: string;
   email?: string;
@@ -35,6 +37,8 @@ export interface RegistrationResponse {
   suggestedTermName?: string;
   suggestedTermStartDate?: string;
   placementMessage?: string;
+  appliedReferralCode?: string;
+  appliedReferralCollaboratorName?: string;
   photoUrl?: string;
   idFrontUrl?: string;
   idBackUrl?: string;
