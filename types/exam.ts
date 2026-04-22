@@ -7,6 +7,11 @@ export enum ExamBatchStatus {
   Cancelled = 6
 }
 
+export enum ExamBatchScopeType {
+  Center = 1,
+  National = 2,
+}
+
 export enum ExamType {
   Theory = 1,
   Simulation = 2,
@@ -40,7 +45,9 @@ export enum ExamStatus {
 
 export interface ExamBatch {
   id: string;
-  courseId?: string;
+  scopeType: ExamBatchScopeType;
+  centerId?: string | null;
+  centerName?: string | null;
   batchName: string;
   registrationStartDate: string;
   registrationEndDate: string;

@@ -2,7 +2,11 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Search, X } from "lucide-react";
-import { ExamBatch, ExamBatchStatus } from "@/types/exam";
+import {
+  ExamBatch,
+  ExamBatchScopeType,
+  ExamBatchStatus,
+} from "@/types/exam";
 import { UserListItem } from "@/services/userService";
 
 interface Props {
@@ -127,6 +131,7 @@ export default function ManualRegistrationModal({
                 <option value="">-- Chọn đợt thi --</option>
                 {availableBatches.map((batch) => (
                   <option key={batch.id} value={batch.id}>
+                    [{batch.scopeType === ExamBatchScopeType.National ? "Quốc gia" : "Trung tâm"}]{" "}
                     {batch.batchName}
                   </option>
                 ))}
@@ -201,11 +206,11 @@ export default function ManualRegistrationModal({
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
-          {submitError && (
+          {submitError ? (
             <div className="mr-auto rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
               {submitError}
             </div>
-          )}
+          ) : null}
 
           <button
             type="button"

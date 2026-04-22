@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Users, X } from "lucide-react";
-import { ExamBatch } from "@/types/exam";
+import { ExamBatch, ExamBatchScopeType } from "@/types/exam";
 import { TermRecord } from "@/types/term";
 import { TermRegistrationCandidate } from "@/types/registration";
 
@@ -118,6 +118,7 @@ export default function BulkRegistrationModal({
                 <option value="">-- Chọn đợt thi --</option>
                 {batches.map((batch) => (
                   <option key={batch.id} value={batch.id}>
+                    [{batch.scopeType === ExamBatchScopeType.National ? "Quốc gia" : "Trung tâm"}]{" "}
                     {batch.batchName}
                   </option>
                 ))}
