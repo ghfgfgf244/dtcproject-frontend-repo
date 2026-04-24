@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Plus, Users } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
 import { ExamBatch, ExamBatchScopeType } from "@/types/exam";
 import {
   ExamRegistrationStatus,
+  RegistrationBatchPage,
   RegistrationRecord,
   TermRegistrationCandidate,
 } from "@/types/registration";
@@ -23,7 +24,7 @@ interface Props {
   initialData?: RegistrationRecord[];
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 8;
 
 const statusOptions = [
   { value: "all", label: "Tất cả trạng thái" },
@@ -71,8 +72,19 @@ const isStatusEqual = (
 };
 
 export default function RegistrationClientView({ initialData = [] }: Props) {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [registrations, setRegistrations] = useState<RegistrationRecord[]>(initialData);
+  const [pagination, setPagination] = useState<RegistrationBatchPage>({
+    pageNumber: 1,
+    pageSize: ITEMS_PER_PAGE,
+    totalItems: initialData.length,
+    totalPages: initialData.length === 0 ? 0 : 1,
+    pendingCount: initialData.filter((record) =>
+      isStatusEqual(record.status, ExamRegistrationStatus.Pending),
+    ).length,
+    eligibleCount: initialData.filter((record) => record.isEligibleForApproval === true).length,
+    items: initialData,
+  });
   const [batches, setBatches] = useState<ExamBatch[]>([]);
   const [terms, setTerms] = useState<TermRecord[]>([]);
   const [students, setStudents] = useState<UserListItem[]>([]);
@@ -83,20 +95,47 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [batchFilter, setBatchFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const didBootstrapRef = useRef(false);
+  const lastAutoLoadedBatchRef = useRef("");
+
+  const resolveStatusFilter = useCallback((): ExamRegistrationStatus | undefined => {
+    switch (statusFilter) {
+      case "pending":
+        return ExamRegistrationStatus.Pending;
+      case "approved":
+        return ExamRegistrationStatus.Approved;
+      case "rejected":
+        return ExamRegistrationStatus.Rejected;
+      case "cancelled":
+        return ExamRegistrationStatus.Cancelled;
+      default:
+        return undefined;
+    }
+  }, [statusFilter]);
 
   const withAuth = useCallback(async () => {
-    const token = await getToken();
+    const token = await getToken({ skipCache: true });
     setAuthToken(token);
+    return token;
   }, [getToken]);
 
   const loadRegistrations = useCallback(
     async (examBatchId: string) => {
       if (!examBatchId) {
         setRegistrations([]);
+        setPagination((prev) => ({
+          ...prev,
+          pageNumber: 1,
+          totalItems: 0,
+          totalPages: 0,
+          pendingCount: 0,
+          eligibleCount: 0,
+          items: [],
+        }));
         return;
       }
 
@@ -105,8 +144,13 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
 
       try {
         await withAuth();
-        const data = await registrationService.getRegistrationsByBatch(examBatchId);
-        setRegistrations(data);
+        const data = await registrationService.getRegistrationsByBatch(examBatchId, {
+          pageNumber: currentPage,
+          pageSize: ITEMS_PER_PAGE,
+          status: resolveStatusFilter(),
+        });
+        setRegistrations(data.items);
+        setPagination(data);
       } catch (loadError) {
         console.error(loadError);
         setError("Không thể tải danh sách đăng ký thi.");
@@ -114,10 +158,29 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
         setLoadingTable(false);
       }
     },
-    [withAuth],
+    [currentPage, resolveStatusFilter, withAuth],
   );
 
   useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!isSignedIn) {
+      didBootstrapRef.current = false;
+      setBatches([]);
+      setTerms([]);
+      setRegistrations([]);
+      setLoadingPage(false);
+      return;
+    }
+
+    if (didBootstrapRef.current) {
+      return;
+    }
+
+    didBootstrapRef.current = true;
+
     const bootstrap = async () => {
       setLoadingPage(true);
       setError(null);
@@ -135,14 +198,9 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
         const defaultBatchId = batchData[0]?.id ?? "";
         setBatchFilter(defaultBatchId);
 
-        if (defaultBatchId) {
-          const registrationData =
-            await registrationService.getRegistrationsByBatch(defaultBatchId);
-          setRegistrations(registrationData);
-        } else {
-          setRegistrations([]);
-        }
+        setRegistrations([]);
       } catch (bootstrapError) {
+        didBootstrapRef.current = false;
         console.error(bootstrapError);
         setError("Không thể khởi tạo dữ liệu đăng ký thi.");
       } finally {
@@ -151,12 +209,26 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
     };
 
     bootstrap();
-  }, [withAuth]);
+  }, [isLoaded, isSignedIn, withAuth]);
 
   useEffect(() => {
-    if (!batchFilter) return;
+    if (!isLoaded || !isSignedIn || loadingPage) return;
+
+    if (!batchFilter) {
+      lastAutoLoadedBatchRef.current = "";
+      setRegistrations([]);
+      return;
+    }
+
+    const requestKey = `${batchFilter}-${statusFilter}-${currentPage}`;
+
+    if (lastAutoLoadedBatchRef.current === requestKey) {
+      return;
+    }
+
+    lastAutoLoadedBatchRef.current = requestKey;
     loadRegistrations(batchFilter);
-  }, [batchFilter, loadRegistrations]);
+  }, [batchFilter, currentPage, isLoaded, isSignedIn, loadingPage, loadRegistrations, statusFilter]);
 
   const openManualModal = async () => {
     setLoadingStudents(true);
@@ -274,39 +346,13 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
     await loadRegistrations(batchFilter);
   };
 
-  const filteredData = useMemo(() => {
-    return registrations.filter((record) => {
-      if (statusFilter === "all") return true;
-      return getStatusKey(record.status) === statusFilter;
-    });
-  }, [registrations, statusFilter]);
-
-  const totalItems = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
-  );
-
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
-
   useEffect(() => {
     setCurrentPage(1);
+    lastAutoLoadedBatchRef.current = "";
   }, [batchFilter, statusFilter]);
 
-  const pendingCount = registrations.filter((record) =>
-    isStatusEqual(record.status, ExamRegistrationStatus.Pending),
-  ).length;
-
-  const eligibleCount = registrations.filter(
-    (record) =>
-      isStatusEqual(record.status, ExamRegistrationStatus.Pending) &&
-      record.isEligibleForApproval === true,
-  ).length;
+  const pendingCount = pagination.pendingCount;
+  const eligibleCount = pagination.eligibleCount;
 
   const registeredStudentIds = useMemo(
     () => registrations.map((record) => record.studentId).filter(Boolean),
@@ -444,10 +490,10 @@ export default function RegistrationClientView({ initialData = [] }: Props) {
         </div>
       ) : (
         <RegistrationTable
-          data={paginatedData}
+          data={registrations}
           currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
+          totalPages={Math.max(1, pagination.totalPages)}
+          totalItems={pagination.totalItems}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={setCurrentPage}
           onApprove={handleApprove}

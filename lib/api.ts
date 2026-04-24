@@ -39,7 +39,14 @@ if (typeof window === "undefined") {
 api.interceptors.request.use(async (config) => {
   if (typeof window !== "undefined" && (window as any).Clerk && (window as any).Clerk.session) {
     try {
-      const token = await (window as any).Clerk.session.getToken();
+      const hasAuthorization =
+        Boolean(config.headers?.Authorization) || Boolean(config.headers?.authorization);
+
+      if (hasAuthorization) {
+        return config;
+      }
+
+      const token = await (window as any).Clerk.session.getToken({ skipCache: true });
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

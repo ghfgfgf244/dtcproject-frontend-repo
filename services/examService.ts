@@ -5,7 +5,13 @@ import {
   ExamScoreImportResponse,
   UpsertStudentExamScoresRequest,
 } from "@/types/exam-result";
-import { ExamBatch, Exam } from "@/types/exam";
+import {
+  ExamBatch,
+  Exam,
+  ExamBatchPagedResponse,
+  ExamBatchScopeType,
+  ExamBatchStatus,
+} from "@/types/exam";
 
 export enum ExamType {
   Theory = 1,
@@ -51,6 +57,37 @@ export const examService = {
   getAllExamBatches: async (): Promise<ExamBatch[]> => {
     const response = await api.get("/ExamBatch");
     return response.data.data || [];
+  },
+
+  getExamBatchesPaged: async (params?: {
+    pageNumber?: number;
+    pageSize?: number;
+    keyword?: string;
+    status?: ExamBatchStatus;
+    scopeType?: ExamBatchScopeType;
+  }): Promise<ExamBatchPagedResponse> => {
+    const response = await api.get("/ExamBatch/paged", {
+      params: {
+        pageNumber: params?.pageNumber ?? 1,
+        pageSize: params?.pageSize ?? 8,
+        keyword: params?.keyword || undefined,
+        status: params?.status,
+        scopeType: params?.scopeType,
+      },
+    });
+
+    const payload = response.data.data || {};
+    return {
+      pageNumber: payload.pageNumber ?? params?.pageNumber ?? 1,
+      pageSize: payload.pageSize ?? params?.pageSize ?? 8,
+      totalItems: payload.totalItems ?? 0,
+      totalPages: payload.totalPages ?? 1,
+      pendingItems: payload.pendingItems ?? 0,
+      approvedItems: payload.approvedItems ?? 0,
+      totalCandidates: payload.totalCandidates ?? 0,
+      totalCapacity: payload.totalCapacity ?? 0,
+      items: payload.items ?? [],
+    };
   },
 
   createExamBatch: async (data: Partial<ExamBatch>): Promise<ExamBatch> => {

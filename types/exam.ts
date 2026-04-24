@@ -57,6 +57,18 @@ export interface ExamBatch {
   currentCandidates: number;
 }
 
+export interface ExamBatchPagedResponse {
+  pageNumber: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  pendingItems: number;
+  approvedItems: number;
+  totalCandidates: number;
+  totalCapacity: number;
+  items: ExamBatch[];
+}
+
 export interface Exam {
   id: string;
   examBatchId: string;

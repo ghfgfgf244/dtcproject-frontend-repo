@@ -48,8 +48,11 @@ export const courseService = {
     try {
       const response = await api.get<{ data: Course[] }>("/Course/admin/all");
       return response.data.data;
-    } catch (error) {
-      console.error("Failed to fetch admin courses:", error);
+    } catch (error: any) {
+      console.warn(
+        "Không thể tải danh sách khóa học quản lý:",
+        error?.response?.status || error?.message || error,
+      );
       return [];
     }
   },

@@ -5,16 +5,25 @@ import { useAuth } from "@clerk/nextjs";
 import {
   CalendarRange,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Loader2,
+  Search,
   UsersRound,
-  XCircle,
 } from "lucide-react";
 import { setAuthToken } from "@/lib/api";
 import { examService } from "@/services/examService";
-import { ExamBatch, ExamBatchStatus } from "@/types/exam";
+import {
+  ExamBatch,
+  ExamBatchPagedResponse,
+  ExamBatchScopeType,
+  ExamBatchStatus,
+} from "@/types/exam";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/admin-exams.module.css";
+
+const PAGE_SIZE = 8;
 
 const STATUS_LABELS: Record<number, string> = {
   [ExamBatchStatus.Pending]: "Chờ admin duyệt",
@@ -41,55 +50,91 @@ function formatDate(dateString: string) {
 export default function AdminExamsPage() {
   const { getToken } = useAuth();
   const [batches, setBatches] = useState<ExamBatch[]>([]);
+  const [pagination, setPagination] = useState<ExamBatchPagedResponse>({
+    pageNumber: 1,
+    pageSize: PAGE_SIZE,
+    totalItems: 0,
+    totalPages: 1,
+    pendingItems: 0,
+    approvedItems: 0,
+    totalCandidates: 0,
+    totalCapacity: 0,
+    items: [],
+  });
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [selectedBatch, setSelectedBatch] = useState<ExamBatch | null>(null);
+  const [keywordInput, setKeywordInput] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | ExamBatchStatus>("all");
+  const [scopeFilter, setScopeFilter] = useState<"all" | ExamBatchScopeType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchBatches = useCallback(async () => {
     setLoading(true);
     try {
       const token = await getToken();
       setAuthToken(token);
-      const data = await examService.getAllExamBatches();
-      setBatches(data);
+
+      const data = await examService.getExamBatchesPaged({
+        pageNumber: currentPage,
+        pageSize: PAGE_SIZE,
+        keyword,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        scopeType: scopeFilter === "all" ? undefined : scopeFilter,
+      });
+
+      setPagination(data);
+      setBatches(data.items);
+      setSelectedBatch((current) =>
+        current ? data.items.find((item) => item.id === current.id) ?? null : null,
+      );
     } catch (error) {
       console.error("Failed to fetch exam batches:", error);
       setBatches([]);
+      setPagination({
+        pageNumber: currentPage,
+        pageSize: PAGE_SIZE,
+        totalItems: 0,
+        totalPages: 1,
+        pendingItems: 0,
+        approvedItems: 0,
+        totalCandidates: 0,
+        totalCapacity: 0,
+        items: [],
+      });
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [currentPage, getToken, keyword, scopeFilter, statusFilter]);
 
   useEffect(() => {
     fetchBatches();
   }, [fetchBatches]);
 
-  const stats = useMemo(() => {
-    const pending = batches.filter((batch) => batch.status === ExamBatchStatus.Pending).length;
-    const approved = batches.filter(
-      (batch) =>
-        batch.status === ExamBatchStatus.OpenForRegistration ||
-        batch.status === ExamBatchStatus.ClosedForRegistration ||
-        batch.status === ExamBatchStatus.InProgress ||
-        batch.status === ExamBatchStatus.Completed,
-    ).length;
-    const totalCandidates = batches.reduce(
-      (sum, batch) => sum + (batch.currentCandidates ?? 0),
-      0,
-    );
-    const totalCapacity = batches.reduce(
-      (sum, batch) => sum + (batch.maxCandidates ?? 0),
-      0,
-    );
+  const stats = useMemo(
+    () => ({
+      total: pagination.totalItems,
+      pending: pagination.pendingItems,
+      approved: pagination.approvedItems,
+      totalCandidates: pagination.totalCandidates,
+      totalCapacity: pagination.totalCapacity,
+    }),
+    [pagination],
+  );
 
-    return {
-      total: batches.length,
-      pending,
-      approved,
-      totalCandidates,
-      totalCapacity,
-    };
-  }, [batches]);
+  const handleApplyFilter = () => {
+    setCurrentPage(1);
+    setKeyword(keywordInput.trim());
+  };
+
+  const handleResetFilter = () => {
+    setKeywordInput("");
+    setKeyword("");
+    setStatusFilter("all");
+    setScopeFilter("all");
+    setCurrentPage(1);
+  };
 
   const handleUpdateStatus = async (batch: ExamBatch, status: ExamBatchStatus) => {
     setSubmittingId(batch.id);
@@ -117,8 +162,8 @@ export default function AdminExamsPage() {
             <p className={styles.eyebrow}>Điều phối thi sát hạch</p>
             <h1>Duyệt đợt thi</h1>
             <p>
-              Admin xác nhận có tổ chức đợt thi hay không trước khi hệ thống mở đăng
-              ký cho học viên.
+              Admin xác nhận có tổ chức đợt thi hay không trước khi hệ thống mở đăng ký
+              cho học viên.
             </p>
           </div>
         </header>
@@ -130,7 +175,7 @@ export default function AdminExamsPage() {
             </div>
             <span className={styles.statLabel}>Tổng số đợt thi</span>
             <strong className={styles.statValue}>{stats.total}</strong>
-            <p className={styles.statHint}>Tổng số đợt thi đang có trong hệ thống.</p>
+            <p className={styles.statHint}>Tổng số đợt thi phù hợp với bộ lọc hiện tại.</p>
           </article>
 
           <article className={styles.statCard}>
@@ -139,7 +184,7 @@ export default function AdminExamsPage() {
             </div>
             <span className={styles.statLabel}>Đang chờ duyệt</span>
             <strong className={styles.statValue}>{stats.pending}</strong>
-            <p className={styles.statHint}>Những đợt thi cần admin xác nhận tổ chức.</p>
+            <p className={styles.statHint}>Các đợt thi đang chờ admin xác nhận tổ chức.</p>
           </article>
 
           <article className={styles.statCard}>
@@ -159,7 +204,7 @@ export default function AdminExamsPage() {
             <strong className={styles.statValue}>
               {stats.totalCandidates}/{stats.totalCapacity}
             </strong>
-            <p className={styles.statHint}>Tổng số ứng viên đã ghi nhận trên tất cả đợt thi.</p>
+            <p className={styles.statHint}>Tổng số ứng viên đã ghi nhận trên các đợt thi đang lọc.</p>
           </article>
         </div>
 
@@ -167,15 +212,74 @@ export default function AdminExamsPage() {
           <div className={styles.tableHeader}>
             <div>
               <h2>Danh sách đợt thi</h2>
-              <p>Nhấn vào từng dòng để xem chi tiết và quyết định phê duyệt.</p>
+              <p>Nhấn vào từng dòng để xem chi tiết, duyệt hoặc từ chối đợt thi.</p>
             </div>
             <div className={styles.tableMeta}>
               <span>{stats.pending} đợt chờ duyệt</span>
             </div>
           </div>
 
+          <div className={styles.filterBar}>
+            <label className={styles.searchBox}>
+              <Search className="h-4 w-4" />
+              <input
+                value={keywordInput}
+                onChange={(event) => setKeywordInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleApplyFilter();
+                  }
+                }}
+                placeholder="Tìm theo tên đợt thi hoặc trung tâm..."
+              />
+            </label>
+
+            <select
+              className={styles.select}
+              value={statusFilter}
+              onChange={(event) => {
+                const value = event.target.value;
+                setStatusFilter(value === "all" ? "all" : Number(value) as ExamBatchStatus);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value={ExamBatchStatus.Pending}>Chờ admin duyệt</option>
+              <option value={ExamBatchStatus.OpenForRegistration}>Đã duyệt tổ chức</option>
+              <option value={ExamBatchStatus.ClosedForRegistration}>Đã đóng đăng ký</option>
+              <option value={ExamBatchStatus.InProgress}>Đang diễn ra</option>
+              <option value={ExamBatchStatus.Completed}>Đã kết thúc</option>
+              <option value={ExamBatchStatus.Cancelled}>Đã từ chối</option>
+            </select>
+
+            <select
+              className={styles.select}
+              value={scopeFilter}
+              onChange={(event) => {
+                const value = event.target.value;
+                setScopeFilter(value === "all" ? "all" : Number(value) as ExamBatchScopeType);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="all">Tất cả phạm vi</option>
+              <option value={ExamBatchScopeType.Center}>Trung tâm</option>
+              <option value={ExamBatchScopeType.National}>Quốc gia</option>
+            </select>
+
+            <div className={styles.filterActions}>
+              <button type="button" className={styles.secondaryBtn} onClick={handleResetFilter}>
+                Xóa lọc
+              </button>
+              <button type="button" className={styles.primaryBtn} onClick={handleApplyFilter}>
+                Áp dụng
+              </button>
+            </div>
+          </div>
+
           <div className={`${styles.row} ${styles.head}`}>
             <span>Tên đợt thi</span>
+            <span>Phạm vi</span>
             <span>Mở đăng ký</span>
             <span>Đóng đăng ký</span>
             <span>Ngày thi</span>
@@ -191,7 +295,7 @@ export default function AdminExamsPage() {
             </div>
           ) : batches.length === 0 ? (
             <div className={styles.emptyState}>
-              <span>Hiện chưa có đợt thi nào để duyệt.</span>
+              <span>Không có đợt thi nào phù hợp với bộ lọc hiện tại.</span>
             </div>
           ) : (
             <div className={styles.list}>
@@ -215,8 +319,11 @@ export default function AdminExamsPage() {
                   >
                     <div className={styles.batchCell}>
                       <strong>{batch.batchName}</strong>
-                      <span>Nhấn để xem chi tiết đợt thi</span>
+                      <span>{batch.centerName || "Kỳ thi quốc gia"}</span>
                     </div>
+                    <span className={styles.range}>
+                      {batch.scopeType === ExamBatchScopeType.National ? "Quốc gia" : "Trung tâm"}
+                    </span>
                     <span className={styles.range}>{formatDate(batch.registrationStartDate)}</span>
                     <span className={styles.range}>{formatDate(batch.registrationEndDate)}</span>
                     <span className={styles.range}>{formatDate(batch.examStartDate)}</span>
@@ -258,6 +365,40 @@ export default function AdminExamsPage() {
               })}
             </div>
           )}
+
+          <div className={styles.paginationBar}>
+            <p className={styles.paginationInfo}>
+              Hiển thị{" "}
+              {pagination.totalItems === 0 ? 0 : (pagination.pageNumber - 1) * pagination.pageSize + 1}
+              {" - "}
+              {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalItems)} /{" "}
+              {pagination.totalItems} đợt thi
+            </p>
+
+            <div className={styles.paginationActions}>
+              <button
+                type="button"
+                className={styles.pageButton}
+                disabled={pagination.pageNumber <= 1}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className={styles.pageIndicator}>
+                {pagination.pageNumber}/{Math.max(1, pagination.totalPages)}
+              </span>
+              <button
+                type="button"
+                className={styles.pageButton}
+                disabled={pagination.pageNumber >= pagination.totalPages}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(pagination.totalPages, prev + 1))
+                }
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -285,6 +426,14 @@ export default function AdminExamsPage() {
               <div className={styles.fieldBlock}>
                 <span>Tên đợt thi</span>
                 <div className={styles.valuePill}>{selectedBatch.batchName}</div>
+              </div>
+              <div className={styles.fieldBlock}>
+                <span>Phạm vi</span>
+                <div className={styles.valuePill}>
+                  {selectedBatch.scopeType === ExamBatchScopeType.National
+                    ? "Quốc gia"
+                    : selectedBatch.centerName || "Trung tâm"}
+                </div>
               </div>
               <div className={styles.fieldBlock}>
                 <span>Trạng thái</span>
@@ -317,8 +466,8 @@ export default function AdminExamsPage() {
             </div>
 
             <div className={styles.notice}>
-              Đợt thi chỉ nên được duyệt khi thời gian tổ chức phù hợp và trung tâm đủ năng
-              lực tiếp nhận số lượng ứng viên hiện tại.
+              Đợt thi chỉ nên được duyệt khi thời gian tổ chức phù hợp và đơn vị tổ chức đủ
+              năng lực tiếp nhận số lượng ứng viên hiện tại.
             </div>
 
             {selectedBatch.status === ExamBatchStatus.Pending && (

@@ -16,10 +16,12 @@ import { scheduleService } from "@/services/scheduleService";
 import { termService } from "@/services/termService";
 import { userService } from "@/services/userService";
 import { addressService } from "@/services/addressService";
+import { courseService } from "@/services/courseService";
 import { ClassFormData, ClassRecord, ClassType } from "@/types/class";
 import { TermRecord } from "@/types/term";
 import { UserListItem } from "@/services/userService";
 import { AddressOption } from "@/services/addressService";
+import { Course } from "@/types/course";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -74,6 +76,7 @@ export default function ClassClientView() {
   const [classes, setClasses] = useState<ClassRecord[]>([]);
   const [rawClasses, setRawClasses] = useState<ClassDto[]>([]);
   const [terms, setTerms] = useState<TermRecord[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [instructors, setInstructors] = useState<UserListItem[]>([]);
   const [addresses, setAddresses] = useState<AddressOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,9 +109,10 @@ export default function ClassClientView() {
     try {
       await ensureAuthToken();
 
-      const [classData, termData, instructorData, addressData] = await Promise.all([
+      const [classData, termData, courseData, instructorData, addressData] = await Promise.all([
         classService.getAllClasses(),
         termService.getAllTerms(),
+        courseService.getAllAdminCourses(),
         userService.getInstructors(),
         addressService.getAll(),
       ]);
@@ -116,6 +120,7 @@ export default function ClassClientView() {
       setRawClasses(classData);
       setClasses(classData.map(mapClassRecord));
       setTerms(termData);
+      setCourses(courseData);
       setInstructors(instructorData);
       setAddresses(addressData);
     } catch (error) {
@@ -130,17 +135,22 @@ export default function ClassClientView() {
     fetchData();
   }, [isLoaded, isSignedIn]);
 
-  const courseOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          rawClasses
-            .map((item) => item.courseName?.trim())
-            .filter((item): item is string => Boolean(item))
-        )
-      ).sort((a, b) => a.localeCompare(b, "vi")),
-    [rawClasses]
-  );
+  const courseOptions = useMemo(() => {
+    const fromCourses = courses
+      .map((item) => item.courseName?.trim())
+      .filter((item): item is string => Boolean(item));
+
+    const fromTerms = terms
+      .map((item) => item.courseName?.trim())
+      .filter((item): item is string => Boolean(item));
+
+    const fromClasses = rawClasses
+      .map((item) => item.courseName?.trim())
+      .filter((item): item is string => Boolean(item));
+
+    return Array.from(new Set([...fromCourses, ...fromTerms, ...fromClasses]))
+      .sort((a, b) => a.localeCompare(b, "vi"));
+  }, [courses, rawClasses, terms]);
 
   const instructorOptions = useMemo(
     () =>
