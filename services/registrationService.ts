@@ -4,6 +4,7 @@ import {
   CourseRegistrationStatus,
   CourseRegistrationStatusValue,
   ExamRegistrationStatus,
+  RegistrationBatchPage,
   RegistrationRecord,
   RegistrationResponse,
   TermRegistrationCandidate,
@@ -65,6 +66,20 @@ const getCourseApprovalLabel = (
     default:
       return "Chờ duyệt";
   }
+};
+
+const normalizePlacementMessage = (message?: string | null): string | undefined => {
+  if (!message) {
+    return undefined;
+  }
+
+  const trimmed = message.trim();
+  const legacyMessages: Record<string, string> = {
+    "Chua tim thay ky hoc con cho trong o cac dot hien co.":
+      "Chưa tìm thấy kỳ học còn chỗ trống ở các đợt hiện có.",
+  };
+
+  return legacyMessages[trimmed] ?? trimmed;
 };
 
 const mapToRegistrationRecord = (dto: any): RegistrationRecord => {
@@ -159,7 +174,7 @@ const mapToCourseRegistrationRecord = (dto: any): RegistrationRecord => {
     suggestedTermId: dto.suggestedTermId ?? undefined,
     suggestedTermName: dto.suggestedTermName ?? undefined,
     suggestedTermStartDate: dto.suggestedTermStartDate ?? undefined,
-    placementMessage: dto.placementMessage ?? undefined,
+    placementMessage: normalizePlacementMessage(dto.placementMessage),
     photoUrl: dto.photoUrl ?? undefined,
     idFrontUrl: dto.idFrontUrl ?? undefined,
     idBackUrl: dto.idBackUrl ?? undefined,
@@ -232,13 +247,55 @@ export const registrationService = {
     });
   },
 
-  async getRegistrationsByBatch(batchId: string): Promise<RegistrationRecord[]> {
+  async getRegistrationsByBatch(
+    batchId: string,
+    options?: {
+      pageNumber?: number;
+      pageSize?: number;
+      status?: ExamRegistrationStatus;
+    },
+  ): Promise<RegistrationBatchPage> {
     try {
-      const response = await api.get<ApiResponse<any[]>>(`/ExamRegistration/Batch/${batchId}`);
-      return (response.data.data || []).map(mapToRegistrationRecord);
+      const response = await api.get<
+        ApiResponse<{
+          pageNumber: number;
+          pageSize: number;
+          totalItems: number;
+          totalPages: number;
+          pendingCount: number;
+          eligibleCount: number;
+          items: any[];
+        }>
+      >(`/ExamRegistration/Batch/${batchId}`, {
+        params: {
+          pageNumber: options?.pageNumber ?? 1,
+          pageSize: options?.pageSize ?? 8,
+          status: options?.status,
+        },
+      });
+
+      const payload = response.data.data;
+
+      return {
+        pageNumber: payload?.pageNumber ?? 1,
+        pageSize: payload?.pageSize ?? options?.pageSize ?? 8,
+        totalItems: payload?.totalItems ?? 0,
+        totalPages: payload?.totalPages ?? 0,
+        pendingCount: payload?.pendingCount ?? 0,
+        eligibleCount: payload?.eligibleCount ?? 0,
+        items: (payload?.items || []).map(mapToRegistrationRecord),
+      };
     } catch (error) {
       console.error("Failed to fetch registrations:", error);
-      return [];
+      return {
+        pageNumber: options?.pageNumber ?? 1,
+        pageSize: options?.pageSize ?? 8,
+        totalItems: 0,
+        totalPages: 0,
+        pendingCount: 0,
+        eligibleCount: 0,
+        items: [],
+      };
     }
   },
 

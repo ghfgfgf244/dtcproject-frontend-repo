@@ -15,6 +15,13 @@ import { registrationService } from "@/services/registrationService";
 import { RegistrationResponse } from "@/types/registration";
 
 const ROLE_LABELS: Record<string, string> = {
+  "3": "Giảng viên",
+  admin: "Quản trị viên",
+  trainingmanager: "Quản lý đào tạo",
+  enrollmentmanager: "Quản lý tuyển sinh",
+  instructor: "Giảng viên",
+  student: "Học viên",
+  collaborator: "Cộng tác viên",
   Admin: "Quản trị viên",
   TrainingManager: "Quản lý đào tạo",
   EnrollmentManager: "Quản lý tuyển sinh",
@@ -29,7 +36,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 function translateRole(role: string) {
-  return ROLE_LABELS[role] || role;
+  const normalizedRole = role.trim().replace(/[\s_-]/g, "").toLowerCase();
+  return ROLE_LABELS[normalizedRole] || ROLE_LABELS[role.trim()] || role;
 }
 
 function translateRegistrationStatus(status?: string) {

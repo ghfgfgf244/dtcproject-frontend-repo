@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { X, CalendarCheck, Info } from "lucide-react";
 import styles from "@/components/manager/Modals/modal.module.css";
 import { ExamBatch, ExamBatchScopeType } from "@/types/exam";
@@ -22,19 +22,29 @@ function toDateTimeLocal(value?: string) {
 }
 
 export default function ExamBatchModal({ isOpen, onClose, initialData, onSubmit }: Props) {
-  if (!isOpen) return null;
-
   const isEditing = Boolean(initialData?.id);
+  const [scopeType, setScopeType] = useState<ExamBatchScopeType>(
+    initialData?.scopeType ?? ExamBatchScopeType.Center,
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setScopeType(initialData?.scopeType ?? ExamBatchScopeType.Center);
+    }
+  }, [initialData?.scopeType, isOpen]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const selectedScopeType = Number(formData.get("scopeType") || scopeType) as ExamBatchScopeType;
 
     const batchData: Partial<ExamBatch> = {
       ...(isEditing && initialData?.id ? { id: initialData.id } : {}),
-      scopeType: initialData?.scopeType ?? ExamBatchScopeType.Center,
-      centerId: initialData?.centerId ?? undefined,
-      centerName: initialData?.centerName ?? undefined,
+      scopeType: selectedScopeType,
+      centerId: selectedScopeType === ExamBatchScopeType.Center ? initialData?.centerId ?? undefined : null,
+      centerName: selectedScopeType === ExamBatchScopeType.Center ? initialData?.centerName ?? undefined : null,
       batchName: String(formData.get("batchName") || ""),
       status: Number(formData.get("status")) as ExamBatch["status"],
       registrationStartDate: String(formData.get("registrationStartDate") || ""),
@@ -109,6 +119,22 @@ export default function ExamBatchModal({ isOpen, onClose, initialData, onSubmit 
 
                 <div>
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                    Phạm vi đợt thi <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    name="scopeType"
+                    value={scopeType}
+                    onChange={(event) => setScopeType(Number(event.target.value) as ExamBatchScopeType)}
+                    className="w-full cursor-pointer rounded-lg bg-slate-100 px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-600"
+                  >
+                    <option value={ExamBatchScopeType.Center}>Trung tâm hiện tại</option>
+                    <option value={ExamBatchScopeType.National}>Quốc gia</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-slate-500">
                     Số ứng viên tối đa <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -122,7 +148,7 @@ export default function ExamBatchModal({ isOpen, onClose, initialData, onSubmit 
                 </div>
 
                 <div className="md:col-span-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                  {initialData?.scopeType === ExamBatchScopeType.National ? (
+                  {scopeType === ExamBatchScopeType.National ? (
                     <span>Phạm vi đợt thi: Quốc gia.</span>
                   ) : (
                     <span>

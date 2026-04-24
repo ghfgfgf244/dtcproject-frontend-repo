@@ -309,7 +309,7 @@ function ScoreModal({
 }
 
 export default function ResultClientView() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [terms, setTerms] = useState<TermRecord[]>([]);
@@ -338,8 +338,9 @@ export default function ResultClientView() {
   });
 
   const withAuth = useCallback(async () => {
-    const token = await getToken();
+    const token = await getToken({ skipCache: true });
     setAuthToken(token);
+    return token;
   }, [getToken]);
 
   const termOptions = useMemo(() => {
@@ -434,10 +435,15 @@ export default function ResultClientView() {
   }, [searchInput]);
 
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      return;
+    }
+
     const bootstrap = async () => {
       setLoadingFilters(true);
 
       try {
+        await withAuth();
         const [courseData, termData, batchData] = await Promise.all([
           courseService.getAllAdminCourses(),
           termService.getAllTerms(),
@@ -479,7 +485,7 @@ export default function ResultClientView() {
     };
 
     bootstrap();
-  }, []);
+  }, [isLoaded, isSignedIn, withAuth]);
 
   useEffect(() => {
     if (!selectedCourseId) {

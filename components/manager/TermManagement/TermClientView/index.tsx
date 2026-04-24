@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function TermClientView({ initialTerms = [] }: Props) {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [terms, setTerms] = useState<TermRecord[]>(initialTerms);
   const [loading, setLoading] = useState(true);
   const [courseFilter, setCourseFilter] = useState<string>("All");
@@ -26,11 +26,26 @@ export default function TermClientView({ initialTerms = [] }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [termToDelete, setTermToDelete] = useState<TermRecord | null>(null);
 
+  const ensureAuthToken = useCallback(async () => {
+    const token = await getToken({ skipCache: true });
+    setAuthToken(token);
+    return token;
+  }, [getToken]);
+
   const fetchTerms = useCallback(async () => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!isSignedIn) {
+      setTerms([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const token = await getToken();
-      setAuthToken(token);
+      await ensureAuthToken();
       const data = await termService.getAllTerms();
       setTerms(data);
     } catch (error) {
@@ -39,7 +54,7 @@ export default function TermClientView({ initialTerms = [] }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [ensureAuthToken, isLoaded, isSignedIn]);
 
   useEffect(() => {
     fetchTerms();
@@ -63,8 +78,7 @@ export default function TermClientView({ initialTerms = [] }: Props) {
     if (!termToDelete) return;
 
     try {
-      const token = await getToken();
-      setAuthToken(token);
+      await ensureAuthToken();
       await termService.deleteTerm(termToDelete.id);
       toast.success("Đã xóa học kỳ thành công!");
       fetchTerms();
@@ -78,8 +92,7 @@ export default function TermClientView({ initialTerms = [] }: Props) {
 
   const handleSave = async (data: Partial<TermRecord>) => {
     try {
-      const token = await getToken();
-      setAuthToken(token);
+      await ensureAuthToken();
 
       if (editingTerm) {
         const updated = await termService.updateTerm(editingTerm.id, {
@@ -118,8 +131,7 @@ export default function TermClientView({ initialTerms = [] }: Props) {
 
   const handleToggleStatus = async (term: TermRecord) => {
     try {
-      const token = await getToken();
-      setAuthToken(token);
+      await ensureAuthToken();
 
       const updated = await termService.updateTerm(term.id, {
         isActive: !term.isActive,

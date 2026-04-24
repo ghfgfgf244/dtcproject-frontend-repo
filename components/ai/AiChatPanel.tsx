@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { aiAdvisorService } from "@/services/aiAdvisorService";
 import { AiChatPanelResult } from "@/types/ai";
 
@@ -14,6 +14,97 @@ type Props = {
   emptyStateDescription?: string;
   onAsk?: (prompt: string) => Promise<AiChatPanelResult>;
 };
+
+type AnswerSection = {
+  title: string;
+  items: string[];
+};
+
+function cleanAiText(value?: string | null) {
+  if (!value) return "";
+
+  return value
+    .replace(/\r/g, "")
+    .replace(/\\n/g, "\n")
+    .replace(/\uFFFD/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function normalizeAnswerLines(answer?: string | null) {
+  return cleanAiText(answer)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function isSectionHeading(line: string) {
+  return /:$/.test(line) && !/^\d+[.)]/.test(line);
+}
+
+function stripListPrefix(line: string) {
+  return line
+    .replace(/^\d+[.)]\s*/, "")
+    .replace(/^[-*•]\s*/, "")
+    .trim();
+}
+
+function parseAnswer(answer?: string | null): {
+  intro: string[];
+  sections: AnswerSection[];
+  closing: string[];
+} {
+  const lines = normalizeAnswerLines(answer);
+
+  if (lines.length === 0) {
+    return { intro: [], sections: [], closing: [] };
+  }
+
+  const intro: string[] = [];
+  const sections: AnswerSection[] = [];
+  const closing: string[] = [];
+  let currentSection: AnswerSection | null = null;
+
+  for (const line of lines) {
+    if (isSectionHeading(line)) {
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+
+      currentSection = {
+        title: line.replace(/:$/, "").trim(),
+        items: [],
+      };
+      continue;
+    }
+
+    if (currentSection) {
+      currentSection.items.push(stripListPrefix(line));
+      continue;
+    }
+
+    intro.push(stripListPrefix(line));
+  }
+
+  if (currentSection) {
+    sections.push(currentSection);
+  }
+
+  const lastSection = sections[sections.length - 1];
+  if (
+    lastSection &&
+    ["mẹo học nhanh", "ghi nhớ nhanh", "tóm lại", "kết luận"].includes(
+      lastSection.title.toLowerCase(),
+    )
+  ) {
+    closing.push(...lastSection.items);
+    sections.pop();
+  }
+
+  return { intro, sections, closing };
+}
 
 export default function AiChatPanel({
   title = "Trợ lý AI",
@@ -29,6 +120,8 @@ export default function AiChatPanel({
   const [result, setResult] = useState<AiChatPanelResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const parsedAnswer = useMemo(() => parseAnswer(result?.answer), [result?.answer]);
 
   const handleAsk = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -98,7 +191,72 @@ export default function AiChatPanel({
             ) : null}
           </div>
 
-          <div className="text-sm leading-6 text-slate-700">{result.answer}</div>
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+            {parsedAnswer.intro.length > 0 ? (
+              <div className="space-y-3">
+                {parsedAnswer.intro.map((paragraph, index) => (
+                  <p key={`intro-${index}`} className="text-sm leading-7 text-slate-700">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+
+            {parsedAnswer.sections.length > 0 ? (
+              <div className="space-y-3">
+                {parsedAnswer.sections.map((section, index) => (
+                  <div
+                    key={`${section.title}-${index}`}
+                    className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4"
+                  >
+                    <div className="mb-3 flex items-center gap-3">
+                      <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-sky-700">
+                        Mục {index + 1}
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        {section.title}
+                      </h3>
+                    </div>
+
+                    <div className="space-y-2">
+                      {section.items.map((item, itemIndex) => (
+                        <div
+                          key={`${section.title}-${itemIndex}`}
+                          className="flex items-start gap-3"
+                        >
+                          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-sky-500" />
+                          <p className="text-sm leading-7 text-slate-700">{item}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {parsedAnswer.closing.length > 0 ? (
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                  Ghi nhớ nhanh
+                </p>
+                <div className="mt-2 space-y-2">
+                  {parsedAnswer.closing.map((item, index) => (
+                    <p key={`closing-${index}`} className="text-sm leading-7 text-amber-900">
+                      {item}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {parsedAnswer.intro.length === 0 &&
+            parsedAnswer.sections.length === 0 &&
+            parsedAnswer.closing.length === 0 ? (
+              <p className="text-sm leading-7 text-slate-700">
+                {cleanAiText(result.answer)}
+              </p>
+            ) : null}
+          </div>
 
           {result.suggestedTopics?.length ? (
             <div>

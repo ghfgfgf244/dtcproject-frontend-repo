@@ -5,13 +5,16 @@ import { TermRecord } from "@/types/term";
  * Maps the backend TermResponseDto to the frontend TermRecord.
  */
 const mapToTermRecord = (dto: any): TermRecord => {
+  const startDate = dto.startDate ? String(dto.startDate).split('T')[0] : '';
+  const endDate = dto.endDate ? String(dto.endDate).split('T')[0] : '';
+
   return {
     id: dto.id,
     courseId: dto.courseId,
     name: dto.termName,
     courseName: dto.courseName || 'Khóa học không xác định',
-    startDate: dto.startDate.split('T')[0],
-    endDate: dto.endDate.split('T')[0],
+    startDate,
+    endDate,
     currentStudents: dto.currentStudents || 0,
     maxStudents: dto.maxStudents || 0,
     isActive: dto.isActive

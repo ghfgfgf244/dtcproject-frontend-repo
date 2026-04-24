@@ -37,6 +37,12 @@
   padding: 24px;
 }
 
+.contentStack {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
 .catalogSection {
   display: flex;
   flex-direction: column;
@@ -196,5 +202,9 @@
 
   .paginationActions button {
     flex: 1;
+  }
+
+  .contentStack {
+    gap: 24px;
   }
 }

@@ -112,6 +112,16 @@ export interface TermRegistrationCandidate {
   alreadyRegistered: boolean;
 }
 
+export interface RegistrationBatchPage {
+  pageNumber: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  pendingCount: number;
+  eligibleCount: number;
+  items: RegistrationRecord[];
+}
+
 export const EXAM_LEVEL_LABELS: Record<number, string> = {
   1: "A1",
   2: "A",
