@@ -51,8 +51,6 @@ export default function RoleRedirect() {
     // Prevent double redirect
     if (hasRedirected.current) return;
 
-    console.log(`[RoleRedirect] Redirecting role="${role}" from pathname="${pathname}"`);
-
     // ── Manager roles → their dashboard ──────────────────────────────────────
     const targetManagerPath = MANAGER_ROLE_REDIRECTS[role];
     if (targetManagerPath) {
