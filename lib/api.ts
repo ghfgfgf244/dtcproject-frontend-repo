@@ -31,7 +31,7 @@ export const setAuthToken = (token: string | null) => {
 if (typeof window === "undefined") {
   const https = require("https");
   api.defaults.httpsAgent = new https.Agent({
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
   });
 }
 
