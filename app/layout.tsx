@@ -57,6 +57,12 @@ export default function RootLayout({
           dividerText: "custom-clerk-dividerText",
           dividerLine: "custom-clerk-dividerLine",
           footerActionLink: "custom-clerk-footerActionLink",
+          otpCodeField: "custom-clerk-otpCodeField",
+          otpCodeFieldInputs: "custom-clerk-otpCodeFieldInputs",
+          otpCodeFieldInput: "custom-clerk-otpCodeFieldInput",
+          otpCodeFieldInputContainer: "custom-clerk-otpCodeFieldInputContainer",
+          otpCodeFieldErrorText: "custom-clerk-otpCodeFieldErrorText",
+          otpCodeFieldSuccessText: "custom-clerk-otpCodeFieldSuccessText",
         },
       }}
     >

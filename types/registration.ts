@@ -98,6 +98,17 @@ export interface RegistrationRecord {
   idBackUrl?: string;
 }
 
+export interface RegistrationTermOption {
+  id: string;
+  termName: string;
+  startDate: string;
+  endDate: string;
+  currentStudents: number;
+  maxStudents: number;
+  isCurrentAssignment: boolean;
+  isLateForAutoPlacement: boolean;
+}
+
 export interface TermRegistrationCandidate {
   studentId: string;
   studentName: string;
@@ -119,6 +130,16 @@ export interface RegistrationBatchPage {
   totalPages: number;
   pendingCount: number;
   eligibleCount: number;
+  items: RegistrationRecord[];
+}
+
+export interface CourseRegistrationPage {
+  pageNumber: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  newRegistrationsThisMonth: number;
+  pendingRegistrations: number;
   items: RegistrationRecord[];
 }
 

@@ -47,7 +47,7 @@ export default function CourseAdvisorWidget() {
 
         setDistrictSuggestions(Array.from(suggestions).slice(0, 20));
       } catch (fetchError) {
-        console.error("Failed to load center districts:", fetchError);
+        console.warn("Failed to load center districts:", fetchError);
       }
     };
 
@@ -98,8 +98,8 @@ export default function CourseAdvisorWidget() {
           Tư vấn khóa học, trung tâm và địa điểm thi
         </h2>
         <p className="text-sm leading-6 text-slate-600">
-          Hệ thống sẽ ưu tiên hạng bằng, khu vực, kỳ học còn chỗ và lịch thi đã
-          được xếp để đưa ra gợi ý phù hợp nhất.
+          Hệ thống sẽ ưu tiên hạng bằng, khu vực, kỳ học còn chỗ và lịch thi đã được xếp để
+          đưa ra gợi ý phù hợp nhất.
         </p>
       </div>
 
@@ -157,8 +157,8 @@ export default function CourseAdvisorWidget() {
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-xs text-slate-500">
-          Nếu dữ liệu chưa đủ cho một tiêu chí, hệ thống sẽ nói rõ và ưu tiên
-          gợi ý gần nhất đang có.
+          Nếu dữ liệu chưa đủ cho một tiêu chí, hệ thống sẽ nói rõ và ưu tiên gợi ý gần nhất
+          đang có.
         </p>
         <button
           type="button"
@@ -179,17 +179,11 @@ export default function CourseAdvisorWidget() {
             summary={result.message}
             model={result.model}
             tone="info"
-            highlights={result.suggestions
-              .slice(0, 4)
-              .map((item) => item.courseName)}
+            highlights={result.suggestions.slice(0, 4).map((item) => item.courseName)}
           />
           {result.suggestions.map((suggestion, index) => (
             <AiSuggestionCard
-              key={
-                suggestion.courseId ??
-                suggestion.centerId ??
-                `${suggestion.title}-${index}`
-              }
+              key={suggestion.courseId ?? suggestion.centerId ?? `${suggestion.title}-${index}`}
               suggestion={suggestion}
             />
           ))}

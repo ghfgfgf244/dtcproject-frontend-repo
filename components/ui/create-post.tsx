@@ -6,20 +6,21 @@ import styles from "@/styles/feed.module.css";
 import PostModal, { BlogEditorValues } from "@/components/ui/post-modal";
 import { blogService } from "@/services/blogService";
 import { setAuthToken } from "@/lib/api";
+import { useUserRole } from "@/contexts/UserRoleContext";
 import toast from "react-hot-toast";
 
-// Roles that can create blog posts
-const CREATOR_ROLES = ["Admin", "TrainingManager", "Collaborator", "EnrollmentManager"];
+const CREATOR_ROLES = ["admin", "trainingmanager", "collaborator", "enrollmentmanager"];
 
 export default function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
   const { user } = useUser();
   const { getToken } = useAuth();
+  const { role: dbRole } = useUserRole();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get current user role from Clerk public metadata
-  const userRole = (user?.publicMetadata?.role as string) ?? "";
-  const canCreate = CREATOR_ROLES.includes(userRole);
+  const clerkRole = (user?.publicMetadata?.role as string) ?? "";
+  const normalizedRole = (dbRole || clerkRole || "").replace(/[\s_-]+/g, "").trim().toLowerCase();
+  const canCreate = CREATOR_ROLES.includes(normalizedRole);
 
   if (!canCreate) return null;
 
@@ -53,24 +54,22 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
       <div className={styles.createPost}>
         <div className={styles.createPostInner}>
           <div className={styles.createAvatar}>
-            {user?.imageUrl
-              ? <img src={user.imageUrl} alt="avatar" className={styles.createAvatarImg} />
-              : <span>{(user?.fullName?.[0] ?? "U").toUpperCase()}</span>
-            }
+            {user?.imageUrl ? (
+              <img src={user.imageUrl} alt="avatar" className={styles.createAvatarImg} />
+            ) : (
+              <span>{(user?.fullName?.[0] ?? "U").toUpperCase()}</span>
+            )}
           </div>
-          <button
-            className={styles.createPostTrigger}
-            onClick={() => setOpen(true)}
-          >
+          <button className={styles.createPostTrigger} onClick={() => setOpen(true)}>
             {user?.fullName ? `${user.fullName} ơi, bạn đang nghĩ gì vậy?` : "Bạn đang nghĩ gì vậy?"}
           </button>
         </div>
         <div className={styles.createActions}>
           <button className={styles.createActionBtn} onClick={() => setOpen(true)}>
-            📷 Ảnh/Video
+            Ảnh/Video
           </button>
           <button className={styles.postButton} onClick={() => setOpen(true)}>
-            ✏️ Viết bài
+            Viết bài
           </button>
         </div>
       </div>

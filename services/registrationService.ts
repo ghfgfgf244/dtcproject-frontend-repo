@@ -1,12 +1,14 @@
 import api from "@/lib/api";
 import axios from "axios";
 import {
+  CourseRegistrationPage,
   CourseRegistrationStatus,
   CourseRegistrationStatusValue,
   ExamRegistrationStatus,
   RegistrationBatchPage,
   RegistrationRecord,
   RegistrationResponse,
+  RegistrationTermOption,
   TermRegistrationCandidate,
 } from "@/types/registration";
 
@@ -82,16 +84,18 @@ const normalizePlacementMessage = (message?: string | null): string | undefined 
   return legacyMessages[trimmed] ?? trimmed;
 };
 
-const mapToRegistrationRecord = (dto: any): RegistrationRecord => {
-  const initials = dto.studentName
-    ? dto.studentName
+const getInitials = (fullName?: string) =>
+  fullName
+    ? fullName
         .split(" ")
-        .map((word: string) => word[0])
+        .map((word) => word[0])
         .join("")
         .slice(0, 2)
         .toUpperCase()
     : "HV";
 
+const mapToRegistrationRecord = (dto: any): RegistrationRecord => {
+  const initials = getInitials(dto.studentName);
   const colorIndex = `${dto.id ?? dto.studentId ?? ""}`.length % avatarColors.length;
   const attendanceRate = Number(dto.attendanceRate ?? 0);
 
@@ -138,14 +142,7 @@ const mapToCandidate = (dto: any): TermRegistrationCandidate => ({
 });
 
 const mapToCourseRegistrationRecord = (dto: any): RegistrationRecord => {
-  const initials = dto.studentName
-    ? dto.studentName
-        .split(" ")
-        .map((word: string) => word[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "HV";
+  const initials = getInitials(dto.studentName);
   const colorIndex = `${dto.id ?? dto.userId ?? ""}`.length % avatarColors.length;
   const status = getCourseStatusValue(dto.status);
 
@@ -181,6 +178,17 @@ const mapToCourseRegistrationRecord = (dto: any): RegistrationRecord => {
   };
 };
 
+const mapToTermOption = (dto: any): RegistrationTermOption => ({
+  id: dto.id,
+  termName: dto.termName ?? "",
+  startDate: dto.startDate ? new Date(dto.startDate).toLocaleDateString("vi-VN") : "",
+  endDate: dto.endDate ? new Date(dto.endDate).toLocaleDateString("vi-VN") : "",
+  currentStudents: Number(dto.currentStudents ?? 0),
+  maxStudents: Number(dto.maxStudents ?? 0),
+  isCurrentAssignment: Boolean(dto.isCurrentAssignment),
+  isLateForAutoPlacement: Boolean(dto.isLateForAutoPlacement),
+});
+
 const extractApiErrorMessage = (error: unknown, fallbackMessage: string): string => {
   if (axios.isAxiosError(error)) {
     const responseData = error.response?.data as
@@ -209,12 +217,115 @@ const extractApiErrorMessage = (error: unknown, fallbackMessage: string): string
 };
 
 export const registrationService = {
+  async getCourseRegistrationsPaged(options?: {
+    pageNumber?: number;
+    pageSize?: number;
+    search?: string;
+    licenseType?: string;
+    status?: CourseRegistrationStatus | "ALL";
+  }): Promise<CourseRegistrationPage> {
+    try {
+      const response = await api.get<
+        ApiResponse<{
+          pageNumber: number;
+          pageSize: number;
+          totalItems: number;
+          totalPages: number;
+          newRegistrationsThisMonth: number;
+          pendingRegistrations: number;
+          items: any[];
+        }>
+      >("/CourseRegistration/all/paged", {
+        params: {
+          pageNumber: options?.pageNumber ?? 1,
+          pageSize: options?.pageSize ?? 8,
+          search: options?.search?.trim() || undefined,
+          licenseType:
+            options?.licenseType && options.licenseType !== "ALL"
+              ? options.licenseType
+              : undefined,
+          status:
+            options?.status && options.status !== "ALL" ? options.status : undefined,
+        },
+      });
+
+      const payload = response.data.data;
+
+      return {
+        pageNumber: payload?.pageNumber ?? 1,
+        pageSize: payload?.pageSize ?? options?.pageSize ?? 8,
+        totalItems: payload?.totalItems ?? 0,
+        totalPages: payload?.totalPages ?? 0,
+        newRegistrationsThisMonth: payload?.newRegistrationsThisMonth ?? 0,
+        pendingRegistrations: payload?.pendingRegistrations ?? 0,
+        items: (payload?.items || []).map(mapToCourseRegistrationRecord),
+      };
+    } catch (error) {
+      console.warn("Failed to fetch paged course registrations, switching to fallback mode:", error);
+      const statusFilter =
+        options?.status && options.status !== "ALL" ? options.status : undefined;
+      const searchFilter = options?.search?.trim().toLowerCase() || "";
+      const licenseFilter =
+        options?.licenseType && options.licenseType !== "ALL" ? options.licenseType : undefined;
+      const pageNumber = options?.pageNumber ?? 1;
+      const pageSize = options?.pageSize ?? 8;
+
+      const [registrations, stats] = await Promise.all([
+        this.getAllCourseRegistrations(),
+        this.getRegistrationStats(),
+      ]);
+
+      const filtered = registrations.filter((item) => {
+        if (statusFilter && item.status !== statusFilter) {
+          return false;
+        }
+
+        if (licenseFilter && item.licenseType !== licenseFilter) {
+          return false;
+        }
+
+        if (searchFilter) {
+          const haystack = [
+            item.studentName,
+            item.studentId,
+            item.email,
+            item.phone,
+            item.courseName,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+          if (!haystack.includes(searchFilter)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      const totalItems = filtered.length;
+      const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize);
+      const startIndex = (pageNumber - 1) * pageSize;
+
+      return {
+        pageNumber,
+        pageSize,
+        totalItems,
+        totalPages,
+        newRegistrationsThisMonth: stats?.newRegistrationsThisMonth ?? 0,
+        pendingRegistrations: stats?.pendingRegistrations ?? 0,
+        items: filtered.slice(startIndex, startIndex + pageSize),
+      };
+    }
+  },
+
   async getAllCourseRegistrations(): Promise<RegistrationRecord[]> {
     try {
       const response = await api.get<{ data: any[] }>("/CourseRegistration/all");
       return (response.data.data || []).map(mapToCourseRegistrationRecord);
     } catch (error) {
-      console.error("Failed to fetch all course registrations:", error);
+      console.warn("Failed to fetch all course registrations:", error);
       return [];
     }
   },
@@ -224,7 +335,7 @@ export const registrationService = {
       const response = await api.get<{ data: any }>("/CourseRegistration/stats");
       return response.data.data;
     } catch (error) {
-      console.error("Failed to fetch registration stats:", error);
+      console.warn("Failed to fetch registration stats:", error);
       return { newRegistrationsThisMonth: 0, pendingRegistrations: 0 };
     }
   },
@@ -245,6 +356,24 @@ export const registrationService = {
       status: statusValueMap[status],
       reason: reason.trim(),
     });
+  },
+
+  async getRegistrationTermOptions(id: string): Promise<RegistrationTermOption[]> {
+    try {
+      const response = await api.get<ApiResponse<any[]>>(`/CourseRegistration/${id}/term-options`);
+      return (response.data.data || []).map(mapToTermOption);
+    } catch (error) {
+      console.error("Failed to fetch registration term options:", error);
+      return [];
+    }
+  },
+
+  async reassignRegistrationTerm(id: string, termId: string): Promise<RegistrationRecord> {
+    const response = await api.put<ApiResponse<any>>(`/CourseRegistration/${id}/term-assignment`, {
+      termId,
+    });
+
+    return mapToCourseRegistrationRecord(response.data.data);
   },
 
   async getRegistrationsByBatch(
@@ -333,9 +462,7 @@ export const registrationService = {
         isPaid,
       });
     } catch (error) {
-      throw new Error(
-        extractApiErrorMessage(error, "Không thể tạo đăng ký thi hàng loạt."),
-      );
+      throw new Error(extractApiErrorMessage(error, "Không thể tạo đăng ký thi hàng loạt."));
     }
   },
 

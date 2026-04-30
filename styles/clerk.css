@@ -135,3 +135,50 @@
     color: #6b6545 !important;
     font-size: 14px !important;
 }
+
+/* OTP / verification code */
+.custom-clerk-card input[autocomplete="one-time-code"] {
+    color: transparent !important;
+    caret-color: transparent !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.custom-clerk-card input[autocomplete="one-time-code"]::placeholder {
+    color: transparent !important;
+}
+
+.custom-clerk-otpCodeField {
+    width: 100% !important;
+}
+
+.custom-clerk-otpCodeFieldInputs {
+    gap: 10px !important;
+    justify-content: center !important;
+}
+
+.custom-clerk-otpCodeFieldInputContainer {
+    background: #fffaf0 !important;
+    border: 1px solid #e4dcc8 !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+}
+
+.custom-clerk-otpCodeFieldInput {
+    color: #8b7a4b !important;
+    caret-color: #8b7a4b !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.custom-clerk-otpCodeFieldInput:focus,
+.custom-clerk-otpCodeFieldInput[data-active="true"] {
+    border-color: #c7a56b !important;
+    box-shadow: 0 0 0 2px rgba(199, 165, 107, 0.18) !important;
+}
+
+.custom-clerk-otpCodeFieldErrorText,
+.custom-clerk-otpCodeFieldSuccessText {
+    text-align: center !important;
+}

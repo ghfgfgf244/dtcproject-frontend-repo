@@ -41,6 +41,10 @@ export default function PostCard({ post }: { post: PostData }) {
     try { return formatTime(timeStr); } catch { return timeStr; }
   };
 
+  const normalizedHtml = (post.content || "")
+    .replace(/<p><br><\/p>/g, "")
+    .trim();
+
   return (
     <Card className={styles.card}>
       <div className={styles.postHeader}>
@@ -65,7 +69,7 @@ export default function PostCard({ post }: { post: PostData }) {
       {/* Render rich HTML content safely */}
       <div
         className={styles.content + " " + styles.richContent}
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        dangerouslySetInnerHTML={{ __html: normalizedHtml }}
       />
 
       {/* Cover image if any */}
