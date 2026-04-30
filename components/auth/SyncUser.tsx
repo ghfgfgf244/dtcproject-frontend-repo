@@ -47,7 +47,7 @@ export default function SyncUser() {
           avatarUrl: user.imageUrl,
           phone: user.primaryPhoneNumber?.phoneNumber,
           role: undefined,
-          centerId: user.publicMetadata?.centerId as string,
+          centerId: undefined,
         };
 
         const response = await authService.syncUser(syncData);

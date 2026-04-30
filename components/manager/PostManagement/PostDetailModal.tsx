@@ -3,6 +3,7 @@
 import { Blog } from "@/services/blogService";
 import styles from "@/styles/feed.module.css";
 import { X, User, Calendar, Tag } from "lucide-react";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 type PostDetailModalProps = {
   open: boolean;
@@ -17,6 +18,8 @@ export default function PostDetailModal({
 }: PostDetailModalProps) {
   if (!open || !post) return null;
 
+  const safeContent = sanitizeHtml(post.content);
+
   return (
     <div className={styles.postOverlay} onClick={onClose}>
       <div
@@ -27,8 +30,8 @@ export default function PostDetailModal({
           <h3 className="text-xl font-bold text-slate-900 line-clamp-1">
             {post.title}
           </h3>
-          <button 
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500" 
+          <button
+            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
             onClick={onClose}
           >
             <X size={20} />
@@ -36,7 +39,6 @@ export default function PostDetailModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-          {/* Header Info */}
           <div className="mb-8 flex flex-wrap gap-4 text-sm text-slate-500">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
@@ -46,7 +48,7 @@ export default function PostDetailModal({
             </div>
             <div className="flex items-center gap-2">
               <Calendar size={16} />
-              <span>{new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
+              <span>{new Date(post.createdAt).toLocaleDateString("vi-VN")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Tag size={16} />
@@ -56,23 +58,21 @@ export default function PostDetailModal({
             </div>
           </div>
 
-          {/* Hero Image */}
           {post.avatar && (
             <div className="mb-8 rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
-              <img 
-                src={post.avatar} 
-                alt={post.title} 
+              <img
+                src={post.avatar}
+                alt={post.title}
                 className="w-full h-auto max-h-[400px] object-cover"
               />
             </div>
           )}
 
-          {/* Content */}
-          <div 
+          <div
             className="prose prose-slate max-w-none text-slate-800 leading-relaxed
                      prose-headings:font-bold prose-headings:text-slate-900
                      prose-img:rounded-xl prose-a:text-blue-600"
-            dangerouslySetInnerHTML={{ __html: post.content }} 
+            dangerouslySetInnerHTML={{ __html: safeContent }}
           />
         </div>
 

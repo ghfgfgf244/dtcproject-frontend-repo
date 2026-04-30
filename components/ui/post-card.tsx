@@ -4,14 +4,15 @@ import Avatar from "../ui/avatar";
 import { Card } from "../ui/card";
 import styles from "@/styles/feed.module.css";
 import toast from "react-hot-toast";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 export type PostData = {
   id: string;
   author: string;
   avatar?: string;
   time: string;
-  content: string;    // HTML content from Quill
-  image?: string;     // cover photo
+  content: string;
+  image?: string;
   title?: string;
 };
 
@@ -21,7 +22,6 @@ export default function PostCard({ post }: { post: PostData }) {
     toast.success("Đã sao chép link vào bộ nhớ đệm!");
   };
 
-  // Format relative time
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
     const now = new Date();
@@ -38,12 +38,16 @@ export default function PostCard({ post }: { post: PostData }) {
   };
 
   const displayTime = (timeStr: string) => {
-    try { return formatTime(timeStr); } catch { return timeStr; }
+    try {
+      return formatTime(timeStr);
+    } catch {
+      return timeStr;
+    }
   };
 
-  const normalizedHtml = (post.content || "")
-    .replace(/<p><br><\/p>/g, "")
-    .trim();
+  const normalizedHtml = sanitizeHtml(
+    (post.content || "").replace(/<p><br><\/p>/g, "").trim()
+  );
 
   return (
     <Card className={styles.card}>
@@ -56,7 +60,6 @@ export default function PostCard({ post }: { post: PostData }) {
           </div>
         </div>
 
-        {/* Share button replaces Edit/Delete */}
         <button
           className={styles.shareBtn}
           onClick={handleShare}
@@ -66,13 +69,11 @@ export default function PostCard({ post }: { post: PostData }) {
         </button>
       </div>
 
-      {/* Render rich HTML content safely */}
       <div
         className={styles.content + " " + styles.richContent}
         dangerouslySetInnerHTML={{ __html: normalizedHtml }}
       />
 
-      {/* Cover image if any */}
       {post.image && (
         <img
           src={post.image}

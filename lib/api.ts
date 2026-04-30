@@ -31,22 +31,29 @@ export const setAuthToken = (token: string | null) => {
 if (typeof window === "undefined") {
   const https = require("https");
   api.defaults.httpsAgent = new https.Agent({
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
   });
 }
 
 // Optional: Add axios interceptors for auth tokens
 api.interceptors.request.use(async (config) => {
-  if (typeof window !== "undefined" && (window as any).Clerk && (window as any).Clerk.session) {
+  if (
+    typeof window !== "undefined" &&
+    (window as any).Clerk &&
+    (window as any).Clerk.session
+  ) {
     try {
       const hasAuthorization =
-        Boolean(config.headers?.Authorization) || Boolean(config.headers?.authorization);
+        Boolean(config.headers?.Authorization) ||
+        Boolean(config.headers?.authorization);
 
       if (hasAuthorization) {
         return config;
       }
 
-      const token = await (window as any).Clerk.session.getToken({ skipCache: true });
+      const token = await (window as any).Clerk.session.getToken({
+        skipCache: true,
+      });
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

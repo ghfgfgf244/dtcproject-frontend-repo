@@ -29,7 +29,7 @@ export default function RegisterPage() {
   const params = useParams();
   const router = useRouter();
   const { getToken } = useAuth();
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const courseId = params.id as string;
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -69,6 +69,24 @@ export default function RegisterPage() {
     return Math.max(course.price - referralDiscountAmount, 0);
   }, [course, referralDiscountAmount]);
 
+  const signedInFullName = useMemo(
+    () =>
+      user?.fullName ||
+      [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+      "",
+    [user],
+  );
+
+  const signedInEmail = useMemo(
+    () => user?.primaryEmailAddress?.emailAddress || "",
+    [user],
+  );
+
+  const signedInPhone = useMemo(
+    () => user?.primaryPhoneNumber?.phoneNumber || "",
+    [user],
+  );
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -77,6 +95,12 @@ export default function RegisterPage() {
 
         const data = await courseService.getCourseById(courseId);
         setCourse(data);
+
+        if (isSignedIn) {
+          setFullName((prev) => prev || signedInFullName);
+          setEmail((prev) => prev || signedInEmail);
+          setPhone((prev) => prev || signedInPhone);
+        }
 
         if (!isSignedIn) {
           return;
@@ -124,7 +148,7 @@ export default function RegisterPage() {
     }
 
     fetchData();
-  }, [courseId, getToken, isSignedIn]);
+  }, [courseId, getToken, isSignedIn, signedInEmail, signedInFullName, signedInPhone]);
 
   const handleValidateReferralCode = async (rawCode: string) => {
     const normalizedCode = rawCode.trim();
@@ -208,14 +232,22 @@ export default function RegisterPage() {
       const token = await getToken();
       setAuthToken(token ?? null);
 
+      const effectiveFullName = fullName.trim() || signedInFullName.trim();
+      const effectiveEmail = email.trim() || signedInEmail.trim();
+      const effectivePhone = phone.trim() || signedInPhone.trim();
+
       const formData = new FormData();
       formData.append("CourseId", course.id);
       formData.append("TotalFee", finalPrice.toString());
 
-      if (!isSignedIn) {
-        formData.append("FullName", fullName.trim());
-        formData.append("Email", email.trim());
-        formData.append("Phone", phone.trim());
+      if (effectiveFullName) {
+        formData.append("FullName", effectiveFullName);
+      }
+      if (effectiveEmail) {
+        formData.append("Email", effectiveEmail);
+      }
+      if (effectivePhone) {
+        formData.append("Phone", effectivePhone);
       }
 
       if (notes.trim()) formData.append("Notes", notes.trim());
@@ -235,7 +267,7 @@ export default function RegisterPage() {
       setSuccessMessage(placementNotice);
       setReferralCode("");
     } catch (err: any) {
-      console.error("Submit error:", err);
+      console.warn("Submit error:", err);
       const message =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0] ||
