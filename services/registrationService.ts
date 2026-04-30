@@ -504,7 +504,7 @@ export const registrationService = {
       );
       return response.data.data ?? null;
     } catch (error) {
-      console.error("Failed to register course:", error);
+      console.warn("Failed to register course:", error);
       throw error;
     }
   },
