@@ -38,8 +38,13 @@ interface ApiResponse<T> {
 
 export const centerService = {
   getAll: async (): Promise<Center[]> => {
-    const res = await api.get<ApiResponse<Center[]>>("/Center");
-    return res.data.data || [];
+    try {
+      const res = await api.get<ApiResponse<Center[]>>("/Center");
+      return res.data.data || [];
+    } catch (error) {
+      console.warn("Failed to fetch centers:", error);
+      return [];
+    }
   },
 
   getById: async (id: string): Promise<Center> => {

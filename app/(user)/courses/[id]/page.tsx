@@ -60,21 +60,23 @@ export default async function CourseDetail({ params }: PageProps) {
           className="w-full h-full object-cover opacity-70"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent p-10 flex flex-col justify-end">
+        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent p-6 md:p-10 md:pr-[22rem] flex flex-col justify-end">
           <span className="bg-sky-100 text-sky-700 text-xs px-3 py-1 rounded-full w-fit mb-4 font-semibold uppercase">
             Hạng {licenseType || "Khác"}
           </span>
 
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">{courseName}</h1>
+          <div className="max-w-full">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 break-words leading-tight">{courseName}</h1>
 
-          <p className="max-w-2xl text-slate-600">
+          <p className="max-w-2xl text-slate-600 break-words">
             {description ||
               "Đào tạo bài bản từ lý thuyết đến thực hành, cam kết thi đậu và hỗ trợ học viên tận tình trong suốt quá trình học."}
           </p>
+          </div>
         </div>
 
         {/* PRICE BOX */}
-        <div className="absolute right-10 bottom-10 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl w-[260px] border border-slate-200">
+        <div className="absolute left-6 right-6 bottom-6 md:left-auto md:right-10 md:bottom-10 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl md:w-[260px] border border-slate-200">
           <div className="text-3xl font-bold text-sky-600 mb-1">
             {price?.toLocaleString()}đ
           </div>

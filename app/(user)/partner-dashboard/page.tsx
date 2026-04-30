@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Copy, UserPlus, Wallet, PiggyBank, Loader2, Check, Plus } from "lucide-react";
+import { useUser, useAuth } from "@clerk/nextjs";
+import toast from "react-hot-toast";
+
 import Sidebar from "@/components/ui/sidebar";
 import shellStyles from "@/styles/user-shell.module.css";
 import styles from "@/styles/partner-dashboard.module.css";
-import { useUser, useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
 import { userService, UserProfile } from "@/services/userService";
 import { collaboratorService, Commission, ReferralCodeResponse } from "@/services/collaboratorService";
@@ -101,7 +103,9 @@ export default function PartnerDashboardPage() {
             }}
           >
             <div style={{ fontSize: "64px", marginBottom: "20px" }}>🛡️</div>
-            <h2 style={{ fontSize: "24px", color: "#1e293b", marginBottom: "16px" }}>Quyền truy cập hạn chế</h2>
+            <h2 style={{ fontSize: "24px", color: "#1e293b", marginBottom: "16px" }}>
+              Quyền truy cập hạn chế
+            </h2>
             <p style={{ color: "#64748b", marginBottom: "30px", lineHeight: "1.6" }}>
               Trang này chỉ dành riêng cho cộng tác viên. Tài khoản hiện tại của bạn ({profile.roleName})
               không có quyền truy cập dữ liệu này.
@@ -150,10 +154,10 @@ export default function PartnerDashboardPage() {
 
       const newToken = await collaboratorService.getMyReferralCode();
       setTokenData(newToken);
-      window.alert(`Mã giới thiệu "${randomCode}" đã được tạo thành công.`);
+      toast.success(`Mã giới thiệu "${randomCode}" đã được tạo thành công.`);
     } catch (error: any) {
       const message = error.response?.data?.message || "Không thể tạo mã giới thiệu.";
-      window.alert(message);
+      toast.error(message);
     } finally {
       setGenerating(false);
     }
@@ -306,8 +310,7 @@ export default function PartnerDashboardPage() {
                           fontSize: 11,
                           padding: "6px 10px",
                           borderRadius: "20px",
-                          backgroundColor:
-                            commission.status === "Paid" ? "#dcfce7" : "#fef3c7",
+                          backgroundColor: commission.status === "Paid" ? "#dcfce7" : "#fef3c7",
                           color: commission.status === "Paid" ? "#166534" : "#92400e",
                           fontWeight: 700,
                           whiteSpace: "nowrap",
