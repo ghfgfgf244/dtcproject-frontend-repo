@@ -89,9 +89,23 @@ export const courseService = {
   },
 
   /**
-   * [ADMIN/MANAGER] Deactivate (soft-delete) a course.
+   * [ADMIN/MANAGER] Deactivate a course.
    */
   async deactivateCourse(id: string): Promise<void> {
+    await api.post(`/Course/${id}/deactivate`);
+  },
+
+  /**
+   * [ADMIN/MANAGER] Activate a course.
+   */
+  async activateCourse(id: string): Promise<void> {
+    await api.post(`/Course/${id}/activate`);
+  },
+
+  /**
+   * [ADMIN/MANAGER] Delete a course.
+   */
+  async deleteCourse(id: string): Promise<void> {
     await api.delete(`/Course/${id}`);
   },
 };

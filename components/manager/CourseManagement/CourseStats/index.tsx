@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Layers, Zap, Ban } from "lucide-react";
+import { Ban, Layers, Zap } from "lucide-react";
 
 interface CourseStatsData {
   total: number;
@@ -17,9 +17,12 @@ interface CourseStatsProps {
 export default function CourseStats({ stats, loading }: CourseStatsProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-32 bg-slate-100 animate-pulse rounded-xl border border-slate-200"></div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        {[...Array(3)].map((_, index) => (
+          <div
+            key={index}
+            className="h-32 animate-pulse rounded-xl border border-slate-200 bg-slate-100"
+          />
         ))}
       </div>
     );
@@ -30,7 +33,6 @@ export default function CourseStats({ stats, loading }: CourseStatsProps) {
       label: "Tổng số khóa học",
       value: stats.total,
       icon: Layers,
-      color: "blue",
       bgColor: "bg-blue-50",
       textColor: "text-blue-600",
     },
@@ -38,7 +40,6 @@ export default function CourseStats({ stats, loading }: CourseStatsProps) {
       label: "Đang hoạt động",
       value: stats.active,
       icon: Zap,
-      color: "emerald",
       bgColor: "bg-emerald-50",
       textColor: "text-emerald-600",
     },
@@ -46,25 +47,32 @@ export default function CourseStats({ stats, loading }: CourseStatsProps) {
       label: "Tạm dừng",
       value: stats.suspended,
       icon: Ban,
-      color: "red",
       bgColor: "bg-red-50",
       textColor: "text-red-500",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {items.map((item, idx) => (
-        <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between mb-2">
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-wider">{item.label}</p>
-            <div className={`w-10 h-10 rounded-lg ${item.bgColor} flex items-center justify-center ${item.textColor}`}>
-              <item.icon className="w-5 h-5" />
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+        >
+          <div className="mb-2 flex items-start justify-between">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              {item.label}
+            </p>
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-lg ${item.bgColor} ${item.textColor}`}
+            >
+              <item.icon className="h-5 w-5" />
             </div>
           </div>
-          <div>
-            <h3 className="text-3xl font-black text-slate-900">{String(item.value).padStart(2, '0')}</h3>
-          </div>
+
+          <h3 className="text-3xl font-black text-slate-900">
+            {String(item.value).padStart(2, "0")}
+          </h3>
         </div>
       ))}
     </div>

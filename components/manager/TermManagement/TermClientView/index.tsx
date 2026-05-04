@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Plus, CalendarCheck2, Loader2 } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "react-hot-toast";
@@ -16,11 +16,16 @@ interface Props {
   initialTerms?: TermRecord[];
 }
 
+const ITEMS_PER_PAGE = 8;
+
 export default function TermClientView({ initialTerms = [] }: Props) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const [terms, setTerms] = useState<TermRecord[]>(initialTerms);
   const [loading, setLoading] = useState(true);
   const [courseFilter, setCourseFilter] = useState<string>("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(initialTerms.length);
+  const [totalPages, setTotalPages] = useState(initialTerms.length > 0 ? 1 : 0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTerm, setEditingTerm] = useState<TermRecord | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -32,40 +37,54 @@ export default function TermClientView({ initialTerms = [] }: Props) {
     return token;
   }, [getToken]);
 
-  const fetchTerms = useCallback(async () => {
-    if (!isLoaded) {
-      return;
-    }
+  const fetchTerms = useCallback(
+    async (page = currentPage, licenseType = courseFilter) => {
+      if (!isLoaded) {
+        return;
+      }
 
-    if (!isSignedIn) {
-      setTerms([]);
-      setLoading(false);
-      return;
-    }
+      if (!isSignedIn) {
+        setTerms([]);
+        setTotalItems(0);
+        setTotalPages(0);
+        setLoading(false);
+        return;
+      }
 
-    setLoading(true);
-    try {
-      await ensureAuthToken();
-      const data = await termService.getAllTerms();
-      setTerms(data);
-    } catch (error) {
-      console.error("Error fetching terms:", error);
-      toast.error("Không thể tải danh sách học kỳ.");
-    } finally {
-      setLoading(false);
-    }
-  }, [ensureAuthToken, isLoaded, isSignedIn]);
+      setLoading(true);
+      try {
+        await ensureAuthToken();
+        const data = await termService.getTermsPaged({
+          pageNumber: page,
+          pageSize: ITEMS_PER_PAGE,
+          licenseType,
+        });
+
+        setTerms(data.items);
+        setTotalItems(data.totalItems);
+        setTotalPages(data.totalPages);
+
+        if (data.totalPages > 0 && page > data.totalPages) {
+          setCurrentPage(data.totalPages);
+        }
+      } catch (error) {
+        console.error("Error fetching terms:", error);
+        toast.error("Không thể tải danh sách học kỳ.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [courseFilter, currentPage, ensureAuthToken, isLoaded, isSignedIn],
+  );
 
   useEffect(() => {
-    fetchTerms();
-  }, [fetchTerms]);
+    fetchTerms(currentPage, courseFilter);
+  }, [currentPage, courseFilter, fetchTerms]);
 
-  const filteredTerms = useMemo(() => {
-    return terms.filter((term) => {
-      if (courseFilter === "All") return true;
-      return term.courseName.toUpperCase().includes(courseFilter.toUpperCase());
-    });
-  }, [courseFilter, terms]);
+  const handleFilterChange = (value: string) => {
+    setCourseFilter(value);
+    setCurrentPage(1);
+  };
 
   const activeCount = terms.filter((term) => term.isActive).length;
 
@@ -81,9 +100,9 @@ export default function TermClientView({ initialTerms = [] }: Props) {
       await ensureAuthToken();
       await termService.deleteTerm(termToDelete.id);
       toast.success("Đã xóa học kỳ thành công!");
-      fetchTerms();
+      await fetchTerms();
     } catch (error: any) {
-      toast.error(error.message || "Lỗi khi xóa học kỳ.");
+      toast.error(error?.message || "Lỗi khi xóa học kỳ.");
     } finally {
       setIsDeleteModalOpen(false);
       setTermToDelete(null);
@@ -105,7 +124,6 @@ export default function TermClientView({ initialTerms = [] }: Props) {
 
         if (updated) {
           toast.success("Cập nhật học kỳ thành công!");
-          fetchTerms();
         }
       } else {
         const created = await termService.createTerm({
@@ -118,14 +136,14 @@ export default function TermClientView({ initialTerms = [] }: Props) {
 
         if (created) {
           toast.success("Tạo học kỳ mới thành công!");
-          fetchTerms();
         }
       }
 
       setIsModalOpen(false);
+      await fetchTerms();
     } catch (error: any) {
       console.error("Error saving term:", error);
-      toast.error(error.message || "Lỗi khi lưu thông tin học kỳ.");
+      toast.error(error?.message || "Lỗi khi lưu thông tin học kỳ.");
     }
   };
 
@@ -138,8 +156,10 @@ export default function TermClientView({ initialTerms = [] }: Props) {
       });
 
       if (updated) {
-        toast.success(`Đã ${updated.isActive ? "kích hoạt" : "tạm dừng"} học kỳ thành công!`);
-        setTerms((current) => current.map((item) => (item.id === term.id ? updated : item)));
+        toast.success(
+          `Đã ${updated.isActive ? "kích hoạt" : "tạm dừng"} học kỳ thành công!`,
+        );
+        await fetchTerms();
       }
     } catch (error) {
       toast.error("Không thể thay đổi trạng thái học kỳ.");
@@ -153,10 +173,10 @@ export default function TermClientView({ initialTerms = [] }: Props) {
           <nav className="mb-2 flex gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
             <span>Học thuật</span>
             <span>/</span>
-            <span className="text-blue-600">Quản lý Học kỳ</span>
+            <span className="text-blue-600">Quản lý học kỳ</span>
           </nav>
           <h2 className="text-3xl font-black leading-none tracking-tight text-slate-900">
-            Danh mục Học kỳ
+            Danh mục học kỳ
           </h2>
         </div>
         <button
@@ -179,7 +199,7 @@ export default function TermClientView({ initialTerms = [] }: Props) {
             <select
               className="min-w-[180px] cursor-pointer rounded-lg border-none bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-600"
               value={courseFilter}
-              onChange={(event) => setCourseFilter(event.target.value)}
+              onChange={(event) => handleFilterChange(event.target.value)}
             >
               <option value="All">Tất cả hạng bằng</option>
               {EXAM_LEVEL_OPTIONS.map((option) => (
@@ -213,7 +233,12 @@ export default function TermClientView({ initialTerms = [] }: Props) {
         </div>
       ) : (
         <TermTable
-          terms={filteredTerms}
+          terms={terms}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
           onEdit={(term) => {
             setEditingTerm(term);
             setIsModalOpen(true);

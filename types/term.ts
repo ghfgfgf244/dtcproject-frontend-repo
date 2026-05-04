@@ -16,6 +16,7 @@ export interface TermRecord {
   courseId: string;
   name: string;
   courseName: string;
+  licenseType?: string;
   startDate: string;
   endDate: string;
   currentStudents: number;

@@ -15,6 +15,14 @@ export interface Blog {
   authorAvatar?: string;
 }
 
+export interface BlogPage {
+  pageNumber: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  items: Blog[];
+}
+
 export interface CreateBlogRequest {
   title: string;
   categoryId: number;
@@ -33,13 +41,9 @@ export interface UpdateBlogRequest {
   status?: boolean;
 }
 
-// Default category for homepage posts (seeded: "Tin dao tao")
 const DEFAULT_CATEGORY_ID = 1;
 
 export const blogService = {
-  /**
-   * Create a new blog post.
-   */
   async create(data: CreateBlogRequest): Promise<Blog | null> {
     try {
       const response = await api.post<{ data: Blog }>("/Blog", {
@@ -57,10 +61,7 @@ export const blogService = {
     }
   },
 
-  /**
-   * Fetch all blogs.
-   */
-  async getAll(onlyPublished: boolean = false): Promise<Blog[]> {
+  async getAll(onlyPublished = false): Promise<Blog[]> {
     try {
       const response = await api.get<{ data: Blog[] }>("/Blog", {
         params: { onlyPublished },
@@ -72,9 +73,56 @@ export const blogService = {
     }
   },
 
-  /**
-   * Fetch blogs created by a specific user.
-   */
+  async getPaged(options?: {
+    onlyPublished?: boolean;
+    pageNumber?: number;
+    pageSize?: number;
+    searchTerm?: string;
+    categoryName?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<BlogPage> {
+    try {
+      const response = await api.get<{
+        data: {
+          pageNumber: number;
+          pageSize: number;
+          totalItems: number;
+          totalPages: number;
+          items: Blog[];
+        };
+      }>("/Blog/paged", {
+        params: {
+          onlyPublished: options?.onlyPublished ?? false,
+          pageNumber: options?.pageNumber ?? 1,
+          pageSize: options?.pageSize ?? 10,
+          searchTerm: options?.searchTerm?.trim() || undefined,
+          categoryName: options?.categoryName?.trim() || undefined,
+          startDate: options?.startDate || undefined,
+          endDate: options?.endDate || undefined,
+        },
+      });
+
+      const payload = response.data.data;
+      return {
+        pageNumber: payload?.pageNumber ?? 1,
+        pageSize: payload?.pageSize ?? options?.pageSize ?? 10,
+        totalItems: payload?.totalItems ?? 0,
+        totalPages: payload?.totalPages ?? 0,
+        items: payload?.items ?? [],
+      };
+    } catch (error) {
+      console.error("Failed to fetch paged blogs:", error);
+      return {
+        pageNumber: options?.pageNumber ?? 1,
+        pageSize: options?.pageSize ?? 10,
+        totalItems: 0,
+        totalPages: 0,
+        items: [],
+      };
+    }
+  },
+
   async getByUserId(userId: string): Promise<Blog[]> {
     try {
       const response = await api.get<{ data: Blog[] }>(`/Blog/user/${userId}`);
@@ -85,9 +133,6 @@ export const blogService = {
     }
   },
 
-  /**
-   * Delete a blog post.
-   */
   async delete(id: string): Promise<void> {
     try {
       await api.delete(`/Blog/${id}`);
@@ -97,9 +142,6 @@ export const blogService = {
     }
   },
 
-  /**
-   * Update a blog post.
-   */
   async update(id: string, data: UpdateBlogRequest): Promise<Blog | null> {
     try {
       const response = await api.put<{ data: Blog }>(`/Blog/${id}`, data);
@@ -110,9 +152,6 @@ export const blogService = {
     }
   },
 
-  /**
-   * Publish a blog post.
-   */
   async publish(id: string): Promise<void> {
     try {
       await api.patch(`/Blog/${id}/publish`);
@@ -122,9 +161,6 @@ export const blogService = {
     }
   },
 
-  /**
-   * Unpublish a blog post.
-   */
   async unpublish(id: string): Promise<void> {
     try {
       await api.patch(`/Blog/${id}/unpublish`);
@@ -134,9 +170,6 @@ export const blogService = {
     }
   },
 
-  /**
-   * Toggle publish status of a blog post based on current state.
-   */
   async togglePublish(id: string, currentlyPublished: boolean): Promise<void> {
     if (currentlyPublished) {
       await this.unpublish(id);
