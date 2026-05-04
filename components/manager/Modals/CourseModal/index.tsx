@@ -2,21 +2,21 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  X,
+  ChevronDown,
+  Image as ImageIcon,
+  Loader2,
   Save,
   ShieldCheck,
-  ChevronDown,
-  Loader2,
   Upload,
-  Image as ImageIcon,
+  X,
 } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
-import { setAuthToken } from "@/lib/api";
-import { Course } from "@/types/course";
-import { centerService, Center } from "@/services/centerService";
-import { fileUploadService } from "@/services/fileUploadService";
-import { EXAM_LEVEL_OPTIONS, EXAM_LEVEL_VALUE_BY_LABEL } from "@/constants/exam-levels";
 import toast from "react-hot-toast";
+import { setAuthToken } from "@/lib/api";
+import { centerService, Center } from "@/services/centerService";
+import { EXAM_LEVEL_OPTIONS, EXAM_LEVEL_VALUE_BY_LABEL } from "@/constants/exam-levels";
+import { fileUploadService } from "@/services/fileUploadService";
+import { Course } from "@/types/course";
 
 export interface CourseSubmitData {
   id?: string;
@@ -74,7 +74,7 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
     }
 
     void fetchCenters();
-  }, [isOpen, getToken]);
+  }, [getToken, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -118,7 +118,7 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
         thumbnailUrl: imageUrl,
       }));
 
-      toast.success("Đã tải ảnh khóa học lên Cloudinary.");
+      toast.success("Đã tải ảnh khóa học lên thành công.");
     } catch (error) {
       console.error("Failed to upload course image", error);
       toast.error("Không thể tải ảnh khóa học lên.");
@@ -127,8 +127,8 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     await onSubmit({
       ...formData,
       id: initialData?.id || undefined,
@@ -138,7 +138,7 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl duration-200 animate-in fade-in zoom-in-95">
         <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-blue-50 to-transparent p-6">
           <div>
             <h2 className="text-xl font-black text-slate-900">
@@ -159,8 +159,8 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
 
         <form
           id="courseForm"
-          onSubmit={(e) => {
-            void handleSubmit(e);
+          onSubmit={(event) => {
+            void handleSubmit(event);
           }}
           className="custom-scrollbar max-h-[70vh] space-y-5 overflow-y-auto p-6"
         >
@@ -173,7 +173,9 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                 className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-700 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:opacity-50"
                 required
                 value={formData.centerId}
-                onChange={(e) => setFormData({ ...formData, centerId: e.target.value })}
+                onChange={(event) =>
+                  setFormData((prev) => ({ ...prev, centerId: event.target.value }))
+                }
                 disabled={loadingCenters}
               >
                 <option value="" disabled>
@@ -185,6 +187,7 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                   </option>
                 ))}
               </select>
+
               {loadingCenters ? (
                 <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
               ) : (
@@ -203,7 +206,9 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
               placeholder="Ví dụ: Khóa đào tạo lái xe hạng B"
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
               value={formData.courseName}
-              onChange={(e) => setFormData({ ...formData, courseName: e.target.value })}
+              onChange={(event) =>
+                setFormData((prev) => ({ ...prev, courseName: event.target.value }))
+              }
             />
           </div>
 
@@ -217,11 +222,11 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                   className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-700 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   required
                   value={formData.licenseType}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      licenseType: parseInt(e.target.value, 10),
-                    })
+                  onChange={(event) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      licenseType: parseInt(event.target.value, 10),
+                    }))
                   }
                 >
                   {EXAM_LEVEL_OPTIONS.map((option) => (
@@ -246,11 +251,11 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                   required
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-16 font-medium text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   value={formData.price}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      price: parseInt(e.target.value, 10) || 0,
-                    })
+                  onChange={(event) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      price: parseInt(event.target.value, 10) || 0,
+                    }))
                   }
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
@@ -269,11 +274,11 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                 required
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                 value={formData.durationInWeeks}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    durationInWeeks: parseInt(e.target.value, 10) || 0,
-                  })
+                onChange={(event) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    durationInWeeks: parseInt(event.target.value, 10) || 0,
+                  }))
                 }
               />
             </div>
@@ -288,24 +293,28 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                 required
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                 value={formData.maxStudents}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    maxStudents: parseInt(e.target.value, 10) || 0,
-                  })
+                onChange={(event) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    maxStudents: parseInt(event.target.value, 10) || 0,
+                  }))
                 }
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-700">Mô tả</label>
+            <label className="block text-sm font-bold text-slate-700">
+              Mô tả <span className="text-red-500">*</span>
+            </label>
             <textarea
               rows={3}
               placeholder="Cung cấp thông tin chi tiết về giáo trình, thời lượng..."
               className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(event) =>
+                setFormData((prev) => ({ ...prev, description: event.target.value }))
+              }
             />
           </div>
 
@@ -341,9 +350,9 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                       accept="image/png,image/jpeg,image/jpg,image/webp"
                       className="hidden"
                       disabled={uploadingImage}
-                      onChange={(e) => {
-                        void handleUploadImage(e.target.files?.[0]);
-                        e.currentTarget.value = "";
+                      onChange={(event) => {
+                        void handleUploadImage(event.target.files?.[0]);
+                        event.currentTarget.value = "";
                       }}
                     />
                   </label>
@@ -353,11 +362,11 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                     placeholder="Hoặc dán URL ảnh công khai..."
                     className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                     value={formData.thumbnailUrl || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        thumbnailUrl: e.target.value,
-                      })
+                    onChange={(event) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        thumbnailUrl: event.target.value,
+                      }))
                     }
                   />
 
@@ -386,7 +395,9 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
                 type="checkbox"
                 className="peer sr-only"
                 checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                onChange={(event) =>
+                  setFormData((prev) => ({ ...prev, isActive: event.target.checked }))
+                }
               />
               <div className="h-6 w-11 rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full" />
             </label>
@@ -401,12 +412,14 @@ export default function CourseModal({ isOpen, onClose, initialData, onSubmit }: 
           >
             Hủy bỏ
           </button>
+
           <button
             type="submit"
             form="courseForm"
             className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-2.5 font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95"
           >
-            <Save className="h-5 w-5" /> Lưu khóa học
+            <Save className="h-5 w-5" />
+            Lưu khóa học
           </button>
         </div>
       </div>

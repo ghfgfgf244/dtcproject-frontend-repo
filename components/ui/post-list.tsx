@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { blogService, Blog } from "@/services/blogService";
+import { useEffect, useMemo, useRef } from "react";
+import { Blog } from "@/services/blogService";
 import PostCard, { PostData } from "./post-card";
 import styles from "@/styles/feed.module.css";
 
@@ -17,42 +17,46 @@ function mapBlogToPost(blog: Blog): PostData {
   };
 }
 
-export default function PostList({ 
-  refreshKey, 
-  initialPosts,
-  onlyPublished = false
-}: { 
-  refreshKey?: number, 
-  initialPosts?: Blog[],
-  onlyPublished?: boolean
-}) {
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface PostListProps {
+  initialPosts?: Blog[];
+  loading?: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+}
 
-  const fetchPosts = useCallback(async () => {
-    if (initialPosts) {
-      setPosts(initialPosts.map(mapBlogToPost));
-      setLoading(false);
+export default function PostList({
+  initialPosts = [],
+  loading = false,
+  loadingMore = false,
+  hasMore = false,
+  onLoadMore,
+}: PostListProps) {
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const posts = useMemo(() => initialPosts.map(mapBlogToPost), [initialPosts]);
+
+  useEffect(() => {
+    if (!hasMore || !onLoadMore || !sentinelRef.current) {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    try {
-      // Fetch blogs based on the onlyPublished prop
-      const blogs = await blogService.getAll(onlyPublished);
-      setPosts(blogs.map(mapBlogToPost));
-    } catch {
-      setError("Không thể tải bài viết. Vui lòng thử lại.");
-    } finally {
-      setLoading(false);
-    }
-  }, [initialPosts]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && !loadingMore) {
+          onLoadMore();
+        }
+      },
+      {
+        rootMargin: "200px 0px",
+        threshold: 0.1,
+      },
+    );
 
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts, refreshKey, initialPosts]);
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, onLoadMore]);
 
   if (loading) {
     return (
@@ -63,19 +67,10 @@ export default function PostList({
     );
   }
 
-  if (error) {
-    return (
-      <div className={styles.errorState}>
-        <p>{error}</p>
-        <button onClick={fetchPosts}>Thử lại</button>
-      </div>
-    );
-  }
-
   if (posts.length === 0) {
     return (
       <div className={styles.emptyState}>
-        <p>Chưa có bài viết nào. Hãy là người đầu tiên đăng bài! 🎉</p>
+        <p>Chưa có bài viết nào phù hợp với bộ lọc hiện tại.</p>
       </div>
     );
   }
@@ -85,6 +80,19 @@ export default function PostList({
       {posts.map((post) => (
         <PostCard key={post.id} post={post} />
       ))}
+
+      <div ref={sentinelRef} className="flex min-h-8 items-center justify-center py-4">
+        {loadingMore ? (
+          <div className={styles.loadingState}>
+            <div className={styles.loadingSpinner} />
+            <p>Đang tải thêm bài viết...</p>
+          </div>
+        ) : hasMore ? (
+          <p className="text-sm font-medium text-slate-400">Cuộn xuống để tải thêm bài viết</p>
+        ) : (
+          <p className="text-sm font-medium text-slate-400">Đã hiển thị hết bài viết</p>
+        )}
+      </div>
     </div>
   );
 }

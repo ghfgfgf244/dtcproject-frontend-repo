@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Breadcrumbs } from '@/components/manager/Shared/Breadcrumbs/index';
+import { useState, useEffect, useCallback } from "react";
+import { Breadcrumbs } from "@/components/manager/Shared/Breadcrumbs/index";
 import CreatePost from "@/components/ui/create-post";
 import PostList from "@/components/ui/post-list";
 import PostCompactList from "@/components/manager/PostManagement/PostCompactList";
@@ -14,101 +14,138 @@ import { categoryService, Category } from "@/services/categoryService";
 import toast from "react-hot-toast";
 import feedStyles from "@/styles/feed.module.css";
 import shellStyles from "@/styles/user-shell.module.css";
-
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { setAuthToken } from "@/lib/api";
+
+const PAGE_SIZE = 10;
 
 export default function AdmissionPostsPage() {
   const { getToken, isLoaded: authLoaded, isSignedIn } = useAuth();
-  const { user } = useUser();
-  
   const breadcrumbsItems = [
-    { label: 'Trang chủ', href: '/enrollment-manager/dashboard' },
-    { label: 'Bài đăng Tuyển sinh', href: '/enrollment-manager/posts' }
+    { label: "Trang chủ", href: "/enrollment-manager/dashboard" },
+    { label: "Bài đăng tuyển sinh", href: "/enrollment-manager/posts" },
   ];
 
   const [posts, setPosts] = useState<Blog[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
 
-  // Detail Modal state
   const [selectedPost, setSelectedPost] = useState<Blog | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Create Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
-  // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!authLoaded || !isSignedIn) return;
+  const ensureAuthToken = useCallback(async () => {
+    const token = await getToken();
+    setAuthToken(token);
+    return token;
+  }, [getToken]);
 
-      setLoading(true);
+  const fetchCategories = useCallback(async () => {
+    const cats = await categoryService.getAll();
+    setCategories(cats);
+  }, []);
+
+  const fetchPostsPage = useCallback(
+    async (page: number, reset = false) => {
+      if (!authLoaded || !isSignedIn) {
+        return;
+      }
+
+      if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
       try {
-        const token = await getToken();
-        setAuthToken(token);
+        await ensureAuthToken();
 
-        const [blogs, cats] = await Promise.all([
-          blogService.getAll(false),
-          categoryService.getAll()
-        ]);
-        setPosts(blogs);
-        setCategories(cats);
-      } catch (error) {
+        const result = await blogService.getPaged({
+          onlyPublished: false,
+          pageNumber: page,
+          pageSize: PAGE_SIZE,
+          searchTerm,
+          categoryName: categoryFilter,
+          startDate,
+          endDate,
+        });
+
+        setPosts((current) => (reset ? result.items : [...current, ...result.items]));
+        setPageNumber(result.pageNumber);
+        setTotalItems(result.totalItems);
+        setHasMore(result.pageNumber < result.totalPages);
+      } catch {
         toast.error("Không thể tải dữ liệu");
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
-    };
-    fetchData();
-  }, [refreshKey, authLoaded, isSignedIn]);
+    },
+    [authLoaded, isSignedIn, ensureAuthToken, searchTerm, categoryFilter, startDate, endDate],
+  );
 
-  // Filter logic
-  const filteredPosts = useMemo(() => {
-    return posts.filter(post => {
-      const matchSearch = !searchTerm || 
-        post.title.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchCategory = !categoryFilter || 
-        post.categoryName === categoryFilter;
-      
-      let matchDate = true;
-      if (startDate && endDate) {
-        const postDate = new Date(post.updatedAt || post.createdAt);
-        matchDate = postDate >= new Date(startDate) && postDate <= new Date(endDate);
-      } else if (startDate) {
-        matchDate = new Date(post.updatedAt || post.createdAt) >= new Date(startDate);
-      } else if (endDate) {
-        matchDate = new Date(post.updatedAt || post.createdAt) <= new Date(endDate);
-      }
+  useEffect(() => {
+    if (!authLoaded || !isSignedIn) return;
 
-      return matchSearch && matchCategory && matchDate;
-    });
-  }, [posts, searchTerm, categoryFilter, startDate, endDate]);
+    fetchCategories();
+  }, [authLoaded, isSignedIn, fetchCategories]);
+
+  useEffect(() => {
+    if (!authLoaded || !isSignedIn) return;
+
+    setPosts([]);
+    setPageNumber(1);
+    setHasMore(false);
+    fetchPostsPage(1, true);
+  }, [
+    refreshKey,
+    authLoaded,
+    isSignedIn,
+    searchTerm,
+    categoryFilter,
+    startDate,
+    endDate,
+    fetchPostsPage,
+  ]);
+
+  const handleLoadMore = useCallback(() => {
+    if (loadingMore || loading || !hasMore) {
+      return;
+    }
+
+    fetchPostsPage(pageNumber + 1, false);
+  }, [fetchPostsPage, hasMore, loading, loadingMore, pageNumber]);
 
   const handleToggleStatus = async (postId: string, currentStatus: boolean) => {
     try {
-      const token = await getToken();
-      setAuthToken(token);
-      
+      await ensureAuthToken();
       await blogService.togglePublish(postId, currentStatus);
+
+      setPosts((current) =>
+        current.map((post) =>
+          post.id === postId ? { ...post, status: !currentStatus } : post,
+        ),
+      );
+
       toast.success(currentStatus ? "Đã ẩn bài viết" : "Đã hiển thị bài viết");
-      setRefreshKey(k => k + 1);
-    } catch (error) {
+    } catch {
       toast.error("Không thể cập nhật trạng thái");
     }
   };
 
   const handleViewDetail = (postId: string) => {
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find((item) => item.id === postId);
     if (post) {
       setSelectedPost(post);
       setIsModalOpen(true);
@@ -125,14 +162,12 @@ export default function AdmissionPostsPage() {
   const handleCreatePost = async (values: BlogEditorValues) => {
     setIsSubmitting(true);
     try {
-      const token = await getToken();
-      setAuthToken(token);
-
+      await ensureAuthToken();
       await blogService.create(values);
 
       toast.success("Đăng bài thành công!");
       setIsCreateModalOpen(false);
-      setRefreshKey(k => k + 1);
+      setRefreshKey((value) => value + 1);
     } catch {
       toast.error("Đăng bài thất bại. Vui lòng thử lại!");
     } finally {
@@ -147,52 +182,49 @@ export default function AdmissionPostsPage() {
           <Breadcrumbs items={breadcrumbsItems} />
         </div>
 
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <h2 className="text-4xl font-black text-slate-900 tracking-tight">
-                Quản lý Bài đăng
+              <h2 className="text-4xl font-black tracking-tight text-slate-900">
+                Quản lý bài đăng
               </h2>
-              <p className="text-slate-500 font-medium mt-2 text-lg">
+              <p className="mt-2 text-lg font-medium text-slate-500">
                 Giám sát và kiểm duyệt dòng thời gian tuyển sinh
               </p>
             </div>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 group"
+              className="group flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700"
             >
-              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+              <Plus className="h-5 w-5 transition-transform duration-300 group-hover:rotate-90" />
               Tạo bài viết mới
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left: Feed (Social-style) */}
-            <div className="lg:col-span-8 space-y-6">
-              <div className={`${feedStyles.feedContainer} !p-0 !max-w-none`}>
-                <CreatePost onPostCreated={() => setRefreshKey(k => k + 1)} />
-                
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+            <div className="space-y-6 lg:col-span-8">
+              <div className={`${feedStyles.feedContainer} !max-w-none !p-0`}>
+                <CreatePost onPostCreated={() => setRefreshKey((value) => value + 1)} />
+
                 <div className="mt-8">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="mb-6 flex items-center justify-between">
                     <h3 className="text-xl font-bold text-slate-800">
-                      Dòng thời gian ({filteredPosts.length})
+                      Dòng thời gian ({totalItems})
                     </h3>
                   </div>
-                  
-                  {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                      <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-slate-500 font-medium mt-4">Đang chuẩn bị dữ liệu...</p>
-                    </div>
-                  ) : (
-                    <PostList initialPosts={filteredPosts} refreshKey={refreshKey} />
-                  )}
+
+                  <PostList
+                    initialPosts={posts}
+                    loading={loading}
+                    loadingMore={loadingMore}
+                    hasMore={hasMore}
+                    onLoadMore={handleLoadMore}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Right: Sticky & Scrollable Sidebar */}
-            <div className="lg:col-span-4 sticky top-8 max-h-[calc(100vh-6rem)] flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2 pb-8">
+            <div className="custom-scrollbar sticky top-8 flex max-h-[calc(100vh-6rem)] flex-col gap-6 overflow-y-auto pb-8 pr-2 lg:col-span-4">
               <PostFilterPanel
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -206,16 +238,16 @@ export default function AdmissionPostsPage() {
                 categories={categories}
               />
 
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-shrink-0">
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+              <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 bg-slate-50/50 p-5">
+                  <h3 className="flex items-center gap-2 font-bold text-slate-900">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-blue-600" />
                     Quản lý nhanh
                   </h3>
                 </div>
                 <div className="p-4">
                   <PostCompactList
-                    posts={filteredPosts}
+                    posts={posts}
                     onToggleStatus={handleToggleStatus}
                     onViewDetail={handleViewDetail}
                   />
@@ -226,14 +258,12 @@ export default function AdmissionPostsPage() {
         </div>
       </div>
 
-      {/* Post Detail Modal */}
       <PostDetailModal
         open={isModalOpen}
         post={selectedPost}
         onClose={() => setIsModalOpen(false)}
       />
 
-      {/* New Post Creation Modal */}
       <PostModal
         open={isCreateModalOpen}
         title="Tạo bài viết tuyển sinh mới"

@@ -28,16 +28,22 @@ type SummarySection = {
   blocks: SectionBlock[];
 };
 
-const COLOR_PREFIXES = ["màu sắc:", "mau sac:"];
+const COLOR_PREFIXES = ["mau sac:"];
 
 function cleanText(value: string) {
   return value
     .replace(/\r/g, "")
     .replace(/\uFFFD/g, "")
-    .replace(/â€¢/g, "•")
-    .replace(/â€“/g, "-")
-    .replace(/á»/g, "ỳ")
+    .replace(/Ã¢â‚¬Â¢|â€¢/g, "•")
+    .replace(/Ã¢â‚¬â€œ/g, "-")
     .trim();
+}
+
+function normalizeInlineDelimiters(value: string) {
+  return value
+    .replace(/\s+\*\s+/g, "\n- ")
+    .replace(/([^\n])\s+(I{1,3}|IV)\.\s+/g, "$1\n$2. ")
+    .replace(/([^\n])\s+([A-Z][^:\n|]{3,48}):\s+/g, "$1\n$2:\n");
 }
 
 function isNoiseLine(line: string) {
@@ -48,7 +54,7 @@ function isNoiseLine(line: string) {
 function normalizeLines(summary?: string | null) {
   if (!summary) return [];
 
-  return cleanText(summary)
+  return normalizeInlineDelimiters(cleanText(summary))
     .replace(/##+\s*/g, "\n")
     .replace(/\*\*/g, "")
     .split("\n")
@@ -58,11 +64,17 @@ function normalizeLines(summary?: string | null) {
 }
 
 function isRomanHeading(line: string) {
-  return /^[IVX]+\.\s+/.test(line);
+  return /^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.\s+/.test(line);
 }
 
 function isColonHeading(line: string) {
   return /:$/.test(line) && !line.startsWith("|");
+}
+
+function isStandaloneHeading(line: string) {
+  return /^(Tong quan|Xu huong chinh|Van de can uu tien|De xuat hanh dong|Doanh thu.*|Hieu suat.*|Ky thi.*)$/i.test(
+    line,
+  );
 }
 
 function isBullet(line: string) {
@@ -95,10 +107,15 @@ function parseBlocks(lines: string[]): SectionBlock[] {
     if (isBullet(current)) {
       const items: string[] = [];
       while (index < lines.length && isBullet(lines[index])) {
-        items.push(lines[index].replace(/^[-•*]\s+/, "").trim());
+        const item = lines[index].replace(/^[-•*]\s+/, "").trim();
+        if (item && item !== "-") {
+          items.push(item);
+        }
         index += 1;
       }
-      blocks.push({ type: "bullet-list", items });
+      if (items.length > 0) {
+        blocks.push({ type: "bullet-list", items });
+      }
       continue;
     }
 
@@ -115,9 +132,9 @@ function parseBlocks(lines: string[]): SectionBlock[] {
         blocks.push({
           type: "table",
           headers: parseTableRow(headerLine),
-          rows: rowLines.map(parseTableRow),
+          rows: rowLines.map(parseTableRow).filter((row) => row.length > 0),
         });
-      } else if (meaningfulRows.length === 1) {
+      } else if (meaningfulRows.length === 1 && meaningfulRows[0] !== "-") {
         blocks.push({ type: "paragraph", text: meaningfulRows[0] });
       }
       continue;
@@ -135,10 +152,13 @@ function parseBlocks(lines: string[]): SectionBlock[] {
       index += 1;
     }
 
-    blocks.push({
-      type: "paragraph",
-      text: paragraphLines.join(" "),
-    });
+    const text = paragraphLines.join(" ").trim();
+    if (text && text !== "-") {
+      blocks.push({
+        type: "paragraph",
+        text,
+      });
+    }
   }
 
   return blocks;
@@ -150,7 +170,12 @@ function parseSummary(summary?: string | null) {
   let intro = "";
   let index = 0;
 
-  while (index < lines.length && !isRomanHeading(lines[index]) && !isColonHeading(lines[index])) {
+  while (
+    index < lines.length &&
+    !isRomanHeading(lines[index]) &&
+    !isColonHeading(lines[index]) &&
+    !isStandaloneHeading(lines[index])
+  ) {
     intro += `${intro ? " " : ""}${lines[index]}`;
     index += 1;
   }
@@ -160,9 +185,11 @@ function parseSummary(summary?: string | null) {
     let title = current;
 
     if (isRomanHeading(current)) {
-      title = current.replace(/^[IVX]+\.\s+/, "").trim();
+      title = current.replace(/^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.\s+/, "").trim();
     } else if (isColonHeading(current)) {
       title = current.replace(/:$/, "").trim();
+    } else if (isStandaloneHeading(current)) {
+      title = current.trim();
     }
 
     index += 1;
@@ -171,28 +198,29 @@ function parseSummary(summary?: string | null) {
     while (
       index < lines.length &&
       !isRomanHeading(lines[index]) &&
-      !isColonHeading(lines[index])
+      !isColonHeading(lines[index]) &&
+      !isStandaloneHeading(lines[index])
     ) {
       contentLines.push(lines[index]);
       index += 1;
     }
 
-    sections.push({
-      title,
-      blocks: parseBlocks(contentLines),
-    });
+    const blocks = parseBlocks(contentLines);
+    if (blocks.length > 0) {
+      sections.push({
+        title,
+        blocks,
+      });
+    }
   }
 
-  return {
-    intro,
-    sections,
-  };
+  return { intro, sections };
 }
 
 function renderBlock(block: SectionBlock, key: string) {
   if (block.type === "paragraph") {
     return (
-      <p key={key} className="text-sm leading-7 text-slate-700">
+      <p key={key} className="break-words text-sm leading-7 text-slate-700">
         {block.text}
       </p>
     );
@@ -204,7 +232,7 @@ function renderBlock(block: SectionBlock, key: string) {
         {block.items.map((item, index) => (
           <div key={`${key}-${index}`} className="flex items-start gap-3 rounded-2xl bg-white/70 px-4 py-3">
             <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-            <p className="text-sm leading-7 text-slate-700">{item}</p>
+            <p className="break-words text-sm leading-7 text-slate-700">{item}</p>
           </div>
         ))}
       </div>
@@ -252,9 +280,7 @@ export default function AiInsightCard({ title, insight, loading = false }: Props
       <div className="border-b border-blue-100/70 bg-white/80 px-6 py-5 backdrop-blur-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-600">
-              Nhận định AI
-            </p>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-600">Nhận định AI</p>
             <h2 className="mt-2 text-2xl font-black text-slate-900">{title}</h2>
           </div>
 
@@ -276,7 +302,7 @@ export default function AiInsightCard({ title, insight, loading = false }: Props
           <>
             {intro ? (
               <div className="rounded-2xl border border-sky-100 bg-white/80 px-4 py-4">
-                <p className="text-sm leading-7 text-slate-700">{intro}</p>
+                <p className="break-words text-sm leading-7 text-slate-700">{intro}</p>
               </div>
             ) : null}
 
@@ -293,7 +319,7 @@ export default function AiInsightCard({ title, insight, loading = false }: Props
                     <h3 className="pt-0.5 text-sm font-bold text-slate-900">{section.title}</h3>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="min-w-0 space-y-3">
                     {section.blocks.map((block, blockIndex) =>
                       renderBlock(block, `${section.title}-${blockIndex}`),
                     )}
@@ -304,9 +330,7 @@ export default function AiInsightCard({ title, insight, loading = false }: Props
 
             {insight?.highlights?.length ? (
               <div className="rounded-2xl border border-blue-100 bg-white/80 p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
-                  Điểm nổi bật
-                </p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Điểm nổi bật</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {insight.highlights.map((highlight, index) => (
                     <span
