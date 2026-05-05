@@ -22,7 +22,10 @@ export default function ExamModal({ isOpen, onClose, batchContext, initialData, 
 
   useEffect(() => {
     const fetchOptions = async () => {
-      const [courseData, addressData] = await Promise.all([courseService.getAvailableCourses(), addressService.getAll()]);
+      const [courseData, addressData] = await Promise.all([
+        courseService.getAllAdminCourses(),
+        addressService.getAll(),
+      ]);
       setCourses(courseData);
       setAddresses(addressData);
     };
