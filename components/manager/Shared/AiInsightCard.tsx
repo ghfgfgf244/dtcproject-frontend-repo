@@ -29,6 +29,19 @@ type SummarySection = {
 };
 
 const COLOR_PREFIXES = ["mau sac:"];
+const NOISE_PREFIXES = [
+  "note:",
+  "wait,",
+  "revised content",
+  "check sections",
+  "final polish",
+  "user constraints",
+  "mandatory output format",
+  "content of the problem",
+  "role:",
+  "language:",
+  "context:",
+];
 
 function cleanText(value: string) {
   return value
@@ -48,7 +61,11 @@ function normalizeInlineDelimiters(value: string) {
 
 function isNoiseLine(line: string) {
   const normalized = line.replace(/\*/g, "").trim().toLowerCase();
-  return COLOR_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  return (
+    COLOR_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
+    NOISE_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
+    normalized.endsWith("- ok")
+  );
 }
 
 function normalizeLines(summary?: string | null) {

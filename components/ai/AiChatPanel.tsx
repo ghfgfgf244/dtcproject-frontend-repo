@@ -20,6 +20,16 @@ type AnswerSection = {
   items: string[];
 };
 
+const BLOCKED_SECTION_TITLES = new Set([
+  "user constraints",
+  "mandatory output format",
+  "content of the problem",
+  "role",
+  "language",
+  "context",
+  "constraints",
+]);
+
 function cleanAiText(value?: string | null) {
   if (!value) return "";
 
@@ -51,12 +61,53 @@ function stripListPrefix(line: string) {
     .trim();
 }
 
+function normalizeSectionTitle(title: string) {
+  const normalized = stripListPrefix(title).replace(/:$/, "").trim().toLowerCase();
+
+  if (normalized === "giai thich") return "Giải thích";
+  if (normalized === "can ghi nho") return "Cần ghi nhớ";
+  if (normalized === "meo hoc nhanh") return "Mẹo học nhanh";
+  if (normalized === "ghi nho nhanh") return "Ghi nhớ nhanh";
+  if (normalized === "tom lai") return "Tóm lại";
+  if (normalized === "ket luan") return "Kết luận";
+
+  return stripListPrefix(title).replace(/:$/, "").trim();
+}
+
+function shouldSkipLine(line: string) {
+  const lower = stripListPrefix(line).toLowerCase();
+
+  return (
+    lower.includes("user constraints") ||
+    lower.includes("mandatory output format") ||
+    lower.includes("content of the problem") ||
+    lower.startsWith("note:") ||
+    lower.startsWith("wait,") ||
+    lower.includes("revised content") ||
+    lower.includes("check sections") ||
+    lower.includes("final polish") ||
+    lower.includes("the user asked") ||
+    lower.includes("the context provided was") ||
+    lower.includes("since the persona is") ||
+    lower.startsWith("i will") ||
+    lower.includes(" - ok") ||
+    lower.startsWith("role:") ||
+    lower.startsWith("language:") ||
+    lower.startsWith("input question:") ||
+    lower.startsWith("question:") ||
+    lower.startsWith("context:") ||
+    lower.includes("only vietnamese") ||
+    lower.includes("no english unless requested") ||
+    lower.includes("mandatory for every answer")
+  );
+}
+
 function parseAnswer(answer?: string | null): {
   intro: string[];
   sections: AnswerSection[];
   closing: string[];
 } {
-  const lines = normalizeAnswerLines(answer);
+  const lines = normalizeAnswerLines(answer).filter((line) => !shouldSkipLine(line));
 
   if (lines.length === 0) {
     return { intro: [], sections: [], closing: [] };
@@ -69,26 +120,35 @@ function parseAnswer(answer?: string | null): {
 
   for (const line of lines) {
     if (isSectionHeading(line)) {
-      if (currentSection) {
+      if (currentSection && currentSection.items.length > 0) {
         sections.push(currentSection);
       }
 
-      currentSection = {
-        title: line.replace(/:$/, "").trim(),
-        items: [],
-      };
+      const title = normalizeSectionTitle(line);
+      currentSection = BLOCKED_SECTION_TITLES.has(title.toLowerCase())
+        ? null
+        : {
+            title,
+            items: [],
+          };
       continue;
     }
 
     if (currentSection) {
-      currentSection.items.push(stripListPrefix(line));
+      const item = stripListPrefix(line);
+      if (item && item !== "-") {
+        currentSection.items.push(item);
+      }
       continue;
     }
 
-    intro.push(stripListPrefix(line));
+    const introItem = stripListPrefix(line);
+    if (introItem && introItem !== "-") {
+      intro.push(introItem);
+    }
   }
 
-  if (currentSection) {
+  if (currentSection && currentSection.items.length > 0) {
     sections.push(currentSection);
   }
 
@@ -109,7 +169,7 @@ function parseAnswer(answer?: string | null): {
 export default function AiChatPanel({
   title = "Trợ lý AI",
   placeholder = "Nhập câu hỏi của bạn...",
-  description = "Nhập câu hỏi để nhận trả lời, nguồn tham khảo và chủ đề nên ôn tiếp.",
+  description = "Nhập câu hỏi để nhận câu trả lời, nguồn tham khảo và chủ đề nên ôn tiếp.",
   submitLabel = "Gửi câu hỏi",
   helperText = "Khung AI dùng chung này có thể tái sử dụng cho tư vấn khóa học, giải đáp lý thuyết và các use case AI khác.",
   emptyStateTitle = "Sẵn sàng hỗ trợ",
@@ -306,12 +366,8 @@ export default function AiChatPanel({
         </div>
       ) : (
         <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
-          <p className="text-sm font-semibold text-slate-900">
-            {emptyStateTitle}
-          </p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            {emptyStateDescription}
-          </p>
+          <p className="text-sm font-semibold text-slate-900">{emptyStateTitle}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{emptyStateDescription}</p>
         </div>
       )}
     </section>
