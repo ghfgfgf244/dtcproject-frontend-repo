@@ -8,62 +8,118 @@ type Props = {
 
 type SummarySection = {
   title: string;
-  body: string;
+  items: string[];
 };
 
-function normalizeSummary(summary: string) {
+const BLOCKED_LINES = [
+  "note:",
+  "wait,",
+  "revised content",
+  "check sections",
+  "final polish",
+  "user constraints",
+  "mandatory output format",
+  "content of the problem",
+  "role:",
+  "language:",
+  "context:",
+  "the user asked",
+  "the context provided was",
+  "since the persona is",
+  "i will",
+];
+
+function cleanSummary(summary: string) {
   return summary
     .replace(/\r/g, "")
-    .replace(/\n+/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\uFFFD/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
+function normalizeTitle(line: string) {
+  const cleaned = line.replace(/:$/, "").trim();
+  const lower = cleaned.toLowerCase();
+
+  if (lower === "tong quan") return "Tổng quan";
+  if (lower === "top goi y") return "Top gợi ý";
+  if (lower === "loi khuyen tiep theo") return "Lời khuyên tiếp theo";
+  if (lower === "giai thich") return "Giải thích";
+  if (lower === "can ghi nho") return "Cần ghi nhớ";
+  if (lower === "meo hoc nhanh") return "Mẹo học nhanh";
+
+  return cleaned;
+}
+
+function isHeading(line: string) {
+  return /:$/.test(line) || /^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.\s+/.test(line);
+}
+
+function isBullet(line: string) {
+  return /^[-*•]\s+/.test(line);
+}
+
+function shouldSkip(line: string) {
+  const normalized = line.trim().toLowerCase();
+  return BLOCKED_LINES.some((item) => normalized.startsWith(item)) || normalized.endsWith("- ok");
+}
+
 function parseSummary(summary: string): {
-  intro: string;
+  intro: string[];
   sections: SummarySection[];
-  closing: string;
+  closing: string[];
 } {
-  const normalized = normalizeSummary(summary);
+  const lines = cleanSummary(summary)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !shouldSkip(line));
 
-  const strongPattern = /\*\*(.+?)\*\*/g;
-  const matches = [...normalized.matchAll(strongPattern)];
+  const intro: string[] = [];
+  const sections: SummarySection[] = [];
+  const closing: string[] = [];
+  let current: SummarySection | null = null;
 
-  if (matches.length === 0) {
-    return {
-      intro: normalized,
-      sections: [],
-      closing: "",
-    };
+  for (const line of lines) {
+    if (isHeading(line)) {
+      if (current && current.items.length > 0) {
+        sections.push(current);
+      }
+
+      const title = normalizeTitle(line.replace(/^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.\s+/, ""));
+      current = { title, items: [] };
+      continue;
+    }
+
+    const item = line.replace(/^[-*•]\s+/, "").trim();
+    if (!item || item === "-") {
+      continue;
+    }
+
+    if (current) {
+      current.items.push(item);
+    } else {
+      intro.push(item);
+    }
   }
 
-  const intro = normalized.slice(0, matches[0].index).trim();
-  const sections: SummarySection[] = [];
+  if (current && current.items.length > 0) {
+    sections.push(current);
+  }
 
-  matches.forEach((match, index) => {
-    const title = match[1].replace(/:+$/, "").trim();
-    const bodyStart = (match.index || 0) + match[0].length;
-    const bodyEnd =
-      index < matches.length - 1 ? matches[index + 1].index || normalized.length : normalized.length;
-    const body = normalized.slice(bodyStart, bodyEnd).trim().replace(/^[:\-–]\s*/, "");
+  const lastSection = sections[sections.length - 1];
+  if (
+    lastSection &&
+    ["mẹo học nhanh", "ghi nhớ nhanh", "tóm lại", "kết luận", "lời khuyên tiếp theo"].includes(
+      lastSection.title.toLowerCase(),
+    )
+  ) {
+    closing.push(...lastSection.items);
+    sections.pop();
+  }
 
-    if (title && body) {
-      sections.push({ title, body });
-    }
-  });
-
-  const closing =
-    sections.length > 0
-      ? sections[sections.length - 1].body.includes("Vui lòng cung cấp thêm")
-        ? sections.pop()?.body || ""
-        : ""
-      : "";
-
-  return {
-    intro,
-    sections,
-    closing,
-  };
+  return { intro, sections, closing };
 }
 
 export default function AiSummaryBlock({
@@ -96,9 +152,15 @@ export default function AiSummaryBlock({
         ) : null}
       </div>
 
-      {intro ? (
+      {intro.length > 0 ? (
         <div className="mt-4 rounded-2xl border border-sky-100 bg-white/80 px-4 py-4">
-          <p className="text-sm leading-7 text-slate-700">{intro}</p>
+          <div className="space-y-2">
+            {intro.map((item, index) => (
+              <p key={`intro-${index}`} className="text-sm leading-7 text-slate-700">
+                {item}
+              </p>
+            ))}
+          </div>
         </div>
       ) : null}
 
@@ -109,23 +171,38 @@ export default function AiSummaryBlock({
               key={`${section.title}-${index}`}
               className="rounded-2xl border border-slate-200 bg-white/85 px-4 py-4 shadow-sm"
             >
-              <div className="flex items-start gap-3">
+              <div className="mb-3 flex items-start gap-3">
                 <span className="mt-0.5 rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-black text-sky-700">
-                  Gợi ý {index + 1}
+                  Mục {index + 1}
                 </span>
-                <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-slate-900">{section.title}</h3>
-                  <p className="text-sm leading-6 text-slate-600">{section.body}</p>
-                </div>
+                <h3 className="text-sm font-bold text-slate-900">{section.title}</h3>
+              </div>
+
+              <div className="space-y-3">
+                {section.items.map((item, itemIndex) => (
+                  <div
+                    key={`${section.title}-${itemIndex}`}
+                    className="flex items-start gap-3 rounded-2xl bg-white/70 px-4 py-3"
+                  >
+                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-sky-500" />
+                    <p className="text-sm leading-7 text-slate-700">{item}</p>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       ) : null}
 
-      {closing ? (
+      {closing.length > 0 ? (
         <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
-          <p className="text-sm leading-6 text-amber-900">{closing}</p>
+          <div className="space-y-2">
+            {closing.map((item, index) => (
+              <p key={`closing-${index}`} className="text-sm leading-6 text-amber-900">
+                {item}
+              </p>
+            ))}
+          </div>
         </div>
       ) : null}
 
